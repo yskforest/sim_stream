@@ -48,7 +48,7 @@ function buildServerRack() {
                 vent.position.set(0, 0, 0.011);
                 bladeGroup.add(vent);
 
-                // 陷ｿ蛹∫・ (陝ｾ・ｦ陷ｿ・ｳ)
+                // ブレード前面の取っ手（保守時の引き出し操作を表現）
                 const handleGeo = new THREE.BoxGeometry(0.015, bladeHeight - 0.04, 0.04);
                 const handleMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 });
                 const handleL = new THREE.Mesh(handleGeo, handleMat);
@@ -92,3 +92,4 @@ function buildServerRack() {
 
             scene.add(rackGroup);
         }
+

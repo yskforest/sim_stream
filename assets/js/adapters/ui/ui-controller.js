@@ -36,6 +36,7 @@
     }
 
     function executeCommand(source, target, action, valueOrParams) {
+        // UI入力値の単一値/オブジェクト差を吸収してコマンドバスへ統一形式で渡す
         var params = (typeof valueOrParams === 'object' && valueOrParams !== null)
             ? valueOrParams
             : { value: valueOrParams };
@@ -312,6 +313,7 @@
     }
 
     function setPanelVisibilityForViewport() {
+        // 縦長画面でも3D表示領域を確保するため、非表示フラグ付きパネルのみ畳む
         var mobile = mobileMedia && mobileMedia.matches;
         var panels = document.querySelectorAll('.ui-panel');
         if (!mobile) {
