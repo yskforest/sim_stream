@@ -57,6 +57,7 @@ function buildServerRack() {
                 handleR.position.set(rackWidth/2 - 0.06, 0, 0.02);
                 bladeGroup.add(handleL); bladeGroup.add(handleR);
 
+                const lblGeo = new THREE.PlaneGeometry(0.08, 0.03);
                 const lblMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
                 const lbl = new THREE.Mesh(lblGeo, lblMat);
                 lbl.position.set(-rackWidth/2 + 0.14, 0, 0.012);

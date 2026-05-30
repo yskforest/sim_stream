@@ -62,6 +62,7 @@ function buildControlRoom() {
             
             for (let i = 0; i < 6; i++) {
                 const isStartBtn = (i === 0);
+                const rTop = isStartBtn ? 0.018 : 0.012;
                 const rBot = isStartBtn ? 0.022 : 0.015;
                 const h = isStartBtn ? 0.025 : 0.015;
                 
