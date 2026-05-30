@@ -1,174 +1,378 @@
-<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CT 3D Simulator</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="./assets/css/ct-simulator.css">
-</head>
-<body class="text-white">
-  <div id="canvas-container"></div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CT 3D Simulator</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="./assets/css/ct-simulator.css" />
+    </head>
+    <body class="text-white">
+        <div id="canvas-container"></div>
 
-  <div id="ui-layer">
-    <div id="ui-toolbar" class="pointer-events-auto">
-      <button class="toolbar-btn" data-panel-target="panel-console">Console</button>
-      <button class="toolbar-btn" data-panel-target="panel-monitor">Monitor</button>
-      <button class="toolbar-btn" data-panel-target="panel-hw-config">HW</button>
-      <button class="toolbar-btn" data-panel-target="panel-3d-config">3D</button>
-      <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
-    </div>
-
-    <div id="ui-panels">
-      <section id="panel-console" class="ui-panel panel-left panel-top pointer-events-auto">
-        <header class="ui-panel-header">
-          <div>
-            <h1 class="text-sm font-bold text-blue-300">CT Console Mock</h1>
-            <p class="text-[10px] text-gray-400">Command Driven</p>
-          </div>
-          <div class="panel-actions">
-            <button class="panel-action" data-panel-action="collapse">_</button>
-            <button class="panel-action" data-panel-action="hide">×</button></div>
-        </header>
-        <div class="ui-panel-body">
-          <div class="space-y-2">
-            <button id="btn-scan-toggle" onclick="toggleScan()" class="w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded font-bold">Start Scan</button>
-            <label class="text-xs text-gray-400 flex justify-between"><span>Rotor Speed</span><span id="rotor-speed-val">0 rpm</span></label>
-            <input type="range" id="slider-rotor-speed" min="0" max="100" value="0" class="w-full accent-green-500" disabled>
-          </div>
-
-          <hr class="border-gray-700 my-3">
-
-          <div class="space-y-2">
-            <div id="batch-container" class="flex flex-wrap gap-2"></div>
-            <div class="flex gap-2">
-              <button id="btn-add-batch" onclick="addScanBatch()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded py-1.5 text-xs">+ Batch</button>
-              <button id="btn-run-sequence" onclick="runAutoSequence()" class="flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold">RUN</button>
+        <div id="ui-layer">
+            <div id="ui-toolbar" class="pointer-events-auto">
+                <button class="toolbar-btn" data-panel-target="panel-console">Console</button>
+                <button class="toolbar-btn" data-panel-target="panel-monitor">Monitor</button>
+                <button class="toolbar-btn" data-panel-target="panel-hw-config">HW</button>
+                <button class="toolbar-btn" data-panel-target="panel-3d-config">3D</button>
+                <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
             </div>
-          </div>
 
+            <div id="ui-panels">
+                <section id="panel-console" class="ui-panel panel-left panel-top pointer-events-auto">
+                    <header class="ui-panel-header">
+                        <div>
+                            <h1 class="text-sm font-bold text-blue-300">CT Console Mock</h1>
+                            <p class="text-[10px] text-gray-400">Command Driven</p>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="panel-action" data-panel-action="collapse">_</button>
+                            <button class="panel-action" data-panel-action="hide">×</button>
+                        </div>
+                    </header>
+                    <div class="ui-panel-body">
+                        <div class="space-y-2">
+                            <button
+                                id="btn-scan-toggle"
+                                onclick="toggleScan()"
+                                class="w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded font-bold"
+                            >
+                                Start Scan
+                            </button>
+                            <label class="text-xs text-gray-400 flex justify-between"
+                                ><span>Rotor Speed</span><span id="rotor-speed-val">0 rpm</span></label
+                            >
+                            <input
+                                type="range"
+                                id="slider-rotor-speed"
+                                min="0"
+                                max="100"
+                                value="0"
+                                class="w-full accent-green-500"
+                                disabled
+                            />
+                        </div>
+
+                        <hr class="border-gray-700 my-3" />
+
+                        <div class="space-y-2">
+                            <div id="batch-container" class="flex flex-wrap gap-2"></div>
+                            <div class="flex gap-2">
+                                <button
+                                    id="btn-add-batch"
+                                    onclick="addScanBatch()"
+                                    class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded py-1.5 text-xs"
+                                >
+                                    + Batch
+                                </button>
+                                <button
+                                    id="btn-run-sequence"
+                                    onclick="runAutoSequence()"
+                                    class="flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold"
+                                >
+                                    RUN
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="panel-monitor" class="ui-panel panel-right panel-top pointer-events-auto">
+                    <header class="ui-panel-header">
+                        <h3 class="text-xs font-bold text-gray-300">HW STATE MONITOR</h3>
+                        <div class="panel-actions">
+                            <button class="panel-action" data-panel-action="collapse">_</button
+                            ><button class="panel-action" data-panel-action="hide">×</button>
+                        </div>
+                    </header>
+                    <div class="ui-panel-body">
+                        <div class="flex items-center justify-between mb-2">
+                            <span
+                                id="status-badge"
+                                class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600"
+                                >STANDBY</span
+                            >
+                        </div>
+                        <div class="text-xs">
+                            Gantry <span id="monitor-rpm" class="font-mono text-green-400">0 rpm</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1 mb-2">
+                            <div id="monitor-rpm-bar" class="bg-green-500 h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <div class="text-[10px] text-gray-400">
+                            Mode: <span id="monitor-mode">SCANO</span> / Rows: <span id="monitor-rows">320</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div class="bg-gray-800 p-2 rounded text-center">
+                                <div class="text-[10px] text-gray-500">Couch Y</div>
+                                <div id="monitor-couch-y" class="text-sm font-mono">0%</div>
+                            </div>
+                            <div class="bg-gray-800 p-2 rounded text-center">
+                                <div class="text-[10px] text-gray-500">Couch Z</div>
+                                <div id="monitor-couch-z" class="text-sm font-mono">0%</div>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-[10px] space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="w-12">A</span>
+                                <div class="flex-1 bg-gray-800 rounded h-2">
+                                    <div
+                                        id="monitor-inj-a-bar"
+                                        class="bg-purple-500 h-2 rounded"
+                                        style="width: 100%"
+                                    ></div>
+                                </div>
+                                <span id="monitor-inj-a" class="w-8 text-right">100%</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-12">B</span>
+                                <div class="flex-1 bg-gray-800 rounded h-2">
+                                    <div
+                                        id="monitor-inj-b-bar"
+                                        class="bg-blue-400 h-2 rounded"
+                                        style="width: 100%"
+                                    ></div>
+                                </div>
+                                <span id="monitor-inj-b" class="w-8 text-right">100%</span>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-700 mt-2 pt-2 text-[10px] text-gray-400">
+                            <div>Last Source: <span id="monitor-last-source">-</span></div>
+                            <div>Last Result: <span id="monitor-last-result">-</span></div>
+                            <div>Error: <span id="monitor-last-error" class="text-red-300">-</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="panel-hw-config" class="ui-panel panel-right panel-mid pointer-events-auto">
+                    <header class="ui-panel-header">
+                        <h3 class="text-xs font-bold text-gray-300">HW設定</h3>
+                        <div class="panel-actions">
+                            <button class="panel-action" data-panel-action="collapse">_</button
+                            ><button class="panel-action" data-panel-action="hide">×</button>
+                        </div>
+                    </header>
+                    <div class="ui-panel-body space-y-2">
+                        <div>
+                            <label class="text-[11px] text-gray-400">Detector Rows</label
+                            ><select
+                                id="select-detector-rows"
+                                class="w-full mt-1 bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
+                            ></select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-400 flex justify-between"
+                                ><span>Couch Y</span><span id="couch-y-val">0%</span></label
+                            ><input
+                                type="range"
+                                id="slider-couch-y"
+                                min="0"
+                                max="100"
+                                value="0"
+                                class="w-full accent-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-400 flex justify-between"
+                                ><span>Couch Z</span><span id="couch-z-val">0%</span></label
+                            ><input
+                                type="range"
+                                id="slider-couch-z"
+                                min="0"
+                                max="100"
+                                value="0"
+                                class="w-full accent-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-400 flex justify-between"
+                                ><span>Contrast A</span><span id="inject-a-val">0%</span></label
+                            ><input
+                                type="range"
+                                id="slider-inject-a"
+                                min="0"
+                                max="100"
+                                value="0"
+                                class="w-full accent-purple-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-400 flex justify-between"
+                                ><span>Saline B</span><span id="inject-b-val">0%</span></label
+                            ><input
+                                type="range"
+                                id="slider-inject-b"
+                                min="0"
+                                max="100"
+                                value="0"
+                                class="w-full accent-cyan-400"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <section id="panel-3d-config" class="ui-panel panel-right panel-bottom pointer-events-auto">
+                    <header class="ui-panel-header">
+                        <h3 class="text-xs font-bold text-gray-300">3D表示/操作</h3>
+                        <div class="panel-actions">
+                            <button class="panel-action" data-panel-action="collapse">_</button
+                            ><button class="panel-action" data-panel-action="hide">×</button>
+                        </div>
+                    </header>
+                    <div class="ui-panel-body space-y-2">
+                        <select
+                            id="select-focus"
+                            onchange="handleFocusChange(this.value)"
+                            class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600"
+                        >
+                            <option value="" disabled selected>フォーカス対象を選択...</option>
+                            <optgroup label="CT Room Components">
+                                <option value="Injector">Injector</option>
+                                <option value="Gantry">CT Gantry</option>
+                                <option value="Couch">CT Couch</option>
+                                <option value="TouchPanel">CT Touch Panel</option>
+                                <option value="XrayTube">X-ray Tube</option>
+                                <option value="Detector">Detector</option>
+                                <option value="ConsoleDisplay">Console Display</option>
+                                <option value="OperationSwitcher">Operation Switcher</option>
+                            </optgroup>
+                            <optgroup label="Server Rack (Console BOX)">
+                                <option value="SCON">Server: SCON</option>
+                                <option value="DCON">Server: DCON</option>
+                                <option value="RTM">Server: RTM</option>
+                                <option value="IDD">Server: IDD</option>
+                                <option value="RDD">Server: RDD</option>
+                                <option value="SAC">Server: SAC</option>
+                                <option value="FullRack">Console BOX (Full Rack)</option>
+                            </optgroup>
+                        </select>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button
+                                onclick="setCameraView('free')"
+                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Free
+                            </button>
+                            <button
+                                onclick="setCameraView('operator')"
+                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Operator
+                            </button>
+                            <button
+                                onclick="setCameraView('patient')"
+                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Patient
+                            </button>
+                            <button
+                                onclick="setCameraView('injector')"
+                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Injector
+                            </button>
+                            <button
+                                onclick="setCameraView('gantryTop')"
+                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Gantry Top
+                            </button>
+                            <button
+                                onclick="setCameraView('gantrySide')"
+                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Gantry Side
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button
+                                id="btn-gantry-opaque"
+                                onclick="setGantryOpacity(false)"
+                                class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
+                            >
+                                Opaque
+                            </button>
+                            <button
+                                id="btn-gantry-trans"
+                                onclick="setGantryOpacity(true)"
+                                class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                            >
+                                Translucent
+                            </button>
+                        </div>
+                        <button
+                            id="btn-xray-toggle"
+                            onclick="toggleXRay()"
+                            class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                        >
+                            Show X-Ray Beam
+                        </button>
+                        <button
+                            id="btn-patient-toggle"
+                            onclick="togglePatient()"
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
+                        >
+                            Hide Patient
+                        </button>
+                    </div>
+                </section>
+
+                <section id="panel-command-log" class="ui-panel panel-left panel-bottom pointer-events-auto">
+                    <header class="ui-panel-header">
+                        <h3 class="text-xs font-bold text-gray-300">Command Log</h3>
+                        <div class="panel-actions">
+                            <button id="btn-clear-command-log" class="panel-action">C</button
+                            ><button class="panel-action" data-panel-action="collapse">_</button
+                            ><button class="panel-action" data-panel-action="hide">×</button>
+                        </div>
+                    </header>
+                    <div class="ui-panel-body">
+                        <div
+                            id="command-log-list"
+                            class="h-40 overflow-y-auto text-[10px] font-mono bg-gray-950/70 border border-gray-800 rounded p-2 space-y-1"
+                        ></div>
+                    </div>
+                </section>
+
+                <div id="info-dialog" class="hidden ui-info pointer-events-auto">
+                    <div class="flex justify-between items-start mb-2 border-b border-gray-700 pb-2">
+                        <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
+                        <button onclick="hideInfoDialog()" class="text-gray-400 hover:text-white text-2xl leading-none">
+                            &times;
+                        </button>
+                    </div>
+                    <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">
+                        Description goes here...
+                    </p>
+                </div>
+            </div>
         </div>
-      </section>
 
-      <section id="panel-monitor" class="ui-panel panel-right panel-top pointer-events-auto">
-        <header class="ui-panel-header">
-          <h3 class="text-xs font-bold text-gray-300">HW STATE MONITOR</h3>
-          <div class="panel-actions"><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div>
-        </header>
-        <div class="ui-panel-body">
-          <div class="flex items-center justify-between mb-2"><span id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600">STANDBY</span></div>
-          <div class="text-xs">Gantry <span id="monitor-rpm" class="font-mono text-green-400">0 rpm</span></div>
-          <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1 mb-2"><div id="monitor-rpm-bar" class="bg-green-500 h-1.5 rounded-full" style="width:0%"></div></div>
-          <div class="text-[10px] text-gray-400">Mode: <span id="monitor-mode">SCANO</span> / Rows: <span id="monitor-rows">320</span></div>
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <div class="bg-gray-800 p-2 rounded text-center"><div class="text-[10px] text-gray-500">Couch Y</div><div id="monitor-couch-y" class="text-sm font-mono">0%</div></div>
-            <div class="bg-gray-800 p-2 rounded text-center"><div class="text-[10px] text-gray-500">Couch Z</div><div id="monitor-couch-z" class="text-sm font-mono">0%</div></div>
-          </div>
-          <div class="mt-2 text-[10px] space-y-1">
-            <div class="flex items-center gap-2"><span class="w-12">A</span><div class="flex-1 bg-gray-800 rounded h-2"><div id="monitor-inj-a-bar" class="bg-purple-500 h-2 rounded" style="width:100%"></div></div><span id="monitor-inj-a" class="w-8 text-right">100%</span></div>
-            <div class="flex items-center gap-2"><span class="w-12">B</span><div class="flex-1 bg-gray-800 rounded h-2"><div id="monitor-inj-b-bar" class="bg-blue-400 h-2 rounded" style="width:100%"></div></div><span id="monitor-inj-b" class="w-8 text-right">100%</span></div>
-          </div>
-          <div class="border-t border-gray-700 mt-2 pt-2 text-[10px] text-gray-400">
-            <div>Last Source: <span id="monitor-last-source">-</span></div>
-            <div>Last Result: <span id="monitor-last-result">-</span></div>
-            <div>Error: <span id="monitor-last-error" class="text-red-300">-</span></div>
-          </div>
-        </div>
-      </section>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 
-      <section id="panel-hw-config" class="ui-panel panel-right panel-mid pointer-events-auto">
-        <header class="ui-panel-header"><h3 class="text-xs font-bold text-gray-300">HW設定</h3><div class="panel-actions"><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div></header>
-        <div class="ui-panel-body space-y-2">
-          <div><label class="text-[11px] text-gray-400">Detector Rows</label><select id="select-detector-rows" class="w-full mt-1 bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"></select></div>
-          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Couch Y</span><span id="couch-y-val">0%</span></label><input type="range" id="slider-couch-y" min="0" max="100" value="0" class="w-full accent-blue-500"></div>
-          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Couch Z</span><span id="couch-z-val">0%</span></label><input type="range" id="slider-couch-z" min="0" max="100" value="0" class="w-full accent-blue-500"></div>
-          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Contrast A</span><span id="inject-a-val">0%</span></label><input type="range" id="slider-inject-a" min="0" max="100" value="0" class="w-full accent-purple-500"></div>
-          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Saline B</span><span id="inject-b-val">0%</span></label><input type="range" id="slider-inject-b" min="0" max="100" value="0" class="w-full accent-cyan-400"></div>
-        </div>
-      </section>
-
-      <section id="panel-3d-config" class="ui-panel panel-right panel-bottom pointer-events-auto">
-        <header class="ui-panel-header"><h3 class="text-xs font-bold text-gray-300">3D表示/操作</h3><div class="panel-actions"><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div></header>
-        <div class="ui-panel-body space-y-2">
-          <select id="select-focus" onchange="handleFocusChange(this.value)" class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600">
-            <option value="" disabled selected>フォーカス対象を選択...</option>
-            <optgroup label="CT Room Components">
-              <option value="Injector">Injector</option>
-              <option value="Gantry">CT Gantry</option>
-              <option value="Couch">CT Couch</option>
-              <option value="TouchPanel">CT Touch Panel</option>
-              <option value="XrayTube">X-ray Tube</option>
-              <option value="Detector">Detector</option>
-              <option value="ConsoleDisplay">Console Display</option>
-              <option value="OperationSwitcher">Operation Switcher</option>
-            </optgroup>
-            <optgroup label="Server Rack (Console BOX)">
-              <option value="SCON">Server: SCON</option>
-              <option value="DCON">Server: DCON</option>
-              <option value="RTM">Server: RTM</option>
-              <option value="IDD">Server: IDD</option>
-              <option value="RDD">Server: RDD</option>
-              <option value="SAC">Server: SAC</option>
-              <option value="FullRack">Console BOX (Full Rack)</option>
-            </optgroup>
-          </select>
-
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Free</button>
-            <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Operator</button>
-            <button onclick="setCameraView('patient')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Patient</button>
-            <button onclick="setCameraView('injector')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Injector</button>
-            <button onclick="setCameraView('gantryTop')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Gantry Top</button>
-            <button onclick="setCameraView('gantrySide')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Gantry Side</button>
-          </div>
-          <div class="flex gap-2">
-            <button id="btn-gantry-opaque" onclick="setGantryOpacity(false)" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold">Opaque</button>
-            <button id="btn-gantry-trans" onclick="setGantryOpacity(true)" class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Translucent</button>
-          </div>
-          <button id="btn-xray-toggle" onclick="toggleXRay()" class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Show X-Ray Beam</button>
-          <button id="btn-patient-toggle" onclick="togglePatient()" class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold">Hide Patient</button>
-        </div>
-      </section>
-
-      <section id="panel-command-log" class="ui-panel panel-left panel-bottom pointer-events-auto">
-        <header class="ui-panel-header"><h3 class="text-xs font-bold text-gray-300">Command Log</h3><div class="panel-actions"><button id="btn-clear-command-log" class="panel-action">C</button><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div></header>
-        <div class="ui-panel-body"><div id="command-log-list" class="h-40 overflow-y-auto text-[10px] font-mono bg-gray-950/70 border border-gray-800 rounded p-2 space-y-1"></div></div>
-      </section>
-
-      <div id="info-dialog" class="hidden ui-info pointer-events-auto">
-        <div class="flex justify-between items-start mb-2 border-b border-gray-700 pb-2">
-          <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
-          <button onclick="hideInfoDialog()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
-        </div>
-        <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">Description goes here...</p>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-
-  <script src="./assets/js/core/store.js"></script>
-  <script src="./assets/js/core/state.js"></script>
-  <script src="./assets/js/core/profile/default-profile.js"></script>
-  <script src="./assets/js/core/profile/profile-service.js"></script>
-  <script src="./assets/js/core/hw/gantry-sim.js"></script>
-  <script src="./assets/js/core/hw/couch-sim.js"></script>
-  <script src="./assets/js/core/hw/injector-sim.js"></script>
-  <script src="./assets/js/core/services/command-log-service.js"></script>
-  <script src="./assets/js/core/commands/command-bus.js"></script>
-  <script src="./assets/js/core/services/sequence-service.js"></script>
-  <script src="./assets/js/adapters/external/protocol-v1.js"></script>
-  <script src="./assets/js/adapters/external/external-gateway.js"></script>
-  <script src="./assets/js/adapters/ui/ui-controller.js"></script>
-  <script src="./assets/js/view/models/room-model.js"></script>
-  <script src="./assets/js/view/models/gantry-model.js"></script>
-  <script src="./assets/js/view/models/injector-model.js"></script>
-  <script src="./assets/js/view/models/control-room-model.js"></script>
-  <script src="./assets/js/view/models/server-rack-model.js"></script>
-  <script src="./assets/js/core/main.js"></script>
-</body>
+        <script src="./assets/js/core/store.js"></script>
+        <script src="./assets/js/core/state.js"></script>
+        <script src="./assets/js/core/profile/default-profile.js"></script>
+        <script src="./assets/js/core/profile/profile-service.js"></script>
+        <script src="./assets/js/core/hw/gantry-sim.js"></script>
+        <script src="./assets/js/core/hw/couch-sim.js"></script>
+        <script src="./assets/js/core/hw/injector-sim.js"></script>
+        <script src="./assets/js/core/services/command-log-service.js"></script>
+        <script src="./assets/js/core/commands/command-bus.js"></script>
+        <script src="./assets/js/core/services/sequence-service.js"></script>
+        <script src="./assets/js/adapters/external/protocol-v1.js"></script>
+        <script src="./assets/js/adapters/external/external-gateway.js"></script>
+        <script src="./assets/js/adapters/ui/ui-controller.js"></script>
+        <script src="./assets/js/view/models/room-model.js"></script>
+        <script src="./assets/js/view/models/gantry-model.js"></script>
+        <script src="./assets/js/view/models/injector-model.js"></script>
+        <script src="./assets/js/view/models/control-room-model.js"></script>
+        <script src="./assets/js/view/models/server-rack-model.js"></script>
+        <script src="./assets/js/core/main.js"></script>
+    </body>
 </html>
-

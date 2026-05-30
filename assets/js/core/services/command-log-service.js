@@ -25,9 +25,9 @@
         add: function add(entry) {
             push({
                 timestamp: new Date().toISOString(),
-                source: entry && entry.source ? entry.source : 'unknown',
+                source: entry && entry.source ? entry.source : "unknown",
                 command: entry && entry.command ? entry.command : null,
-                result: entry && entry.result ? entry.result : null
+                result: entry && entry.result ? entry.result : null,
             });
         },
         list: function list() {
@@ -37,17 +37,19 @@
             entries = [];
         },
         subscribe: function subscribe(listener) {
-            if (typeof listener !== 'function') {
+            if (typeof listener !== "function") {
                 return function noop() {};
             }
             listeners.push(listener);
             return function unsubscribe() {
-                listeners = listeners.filter(function (cb) { return cb !== listener; });
+                listeners = listeners.filter(function (cb) {
+                    return cb !== listener;
+                });
             };
         },
         exportJson: function exportJson() {
             return JSON.stringify(entries, null, 2);
-        }
+        },
     };
 
     global.CTCommandLogService = service;
