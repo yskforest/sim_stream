@@ -21,8 +21,13 @@ Open `index.html` in a browser.
   - `hw/*.js`: 仮想HW（gantry/couch/injector）
   - `services/sequence-service.js`: シーケンス実行補助
   - `services/command-log-service.js`: コマンド監査ログ
-  - `main.js`: 3D構築・アニメーション
-- `assets/js/adapters/`
+  - `main.js`: アプリ起動・制御フロー（モデル実装は分離済み）
+- `assets/js/view/models/`
+  - `room-model.js`: 検査室/共通形状
+  - `gantry-model.js`: ガントリモデル
+  - `injector-model.js`: インジェクタモデル
+  - `control-room-model.js`: 操作室モデル
+  - `server-rack-model.js`: サーバラックモデル- `assets/js/adapters/`
   - `ui/ui-controller.js`: UIイベント束縛と監視表示
   - `external/protocol-v1.js`: 外部I/Fバリデーション
   - `external/external-gateway.js`: 外部API公開
@@ -117,3 +122,16 @@ node scripts/verify-external-interface.js
 ## Notes
 - 互換エントリとして `onefile.html` と `ct-simulator.html` を保持しています。
 - 開発・運用の基準エントリは `index.html` です。
+
+## Model Customization (Low-Complexity)
+機種差分は基本的に次の1ファイルを変更します。
+- `assets/js/core/profile/default-profile.js`
+
+主な変更項目:
+- `capabilities.gantry.detectorRows.options`
+- `capabilities.couch` / `capabilities.injector` の制御範囲
+- `mappings.couchWorld` / `mappings.detectorRows` の3D反映係数
+
+共通ロジック（Command Bus / UI / 3D本体）はそのまま使えるため、
+機種変更時の変更範囲を最小化できます。
+

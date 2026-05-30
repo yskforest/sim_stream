@@ -1,4 +1,44 @@
 ﻿(function attachUIController(global) {
+function applyProfileUIConfig() {
+            if (!window.CTProfileService) return;
+
+            const yCap = CTProfileService.getAxisCapability('couch', 'y');
+            const zCap = CTProfileService.getAxisCapability('couch', 'z');
+            const aCap = CTProfileService.getAxisCapability('injector', 'a');
+            const bCap = CTProfileService.getAxisCapability('injector', 'b');
+            const rows = CTProfileService.getDetectorRowsOptions();
+
+            if (yCap) {
+                UI.sliderCouchY.min = yCap.min;
+                UI.sliderCouchY.max = yCap.max;
+                if (typeof yCap.defaultValue === 'number') UI.sliderCouchY.value = yCap.defaultValue;
+            }
+            if (zCap) {
+                UI.sliderCouchZ.min = zCap.min;
+                UI.sliderCouchZ.max = zCap.max;
+                if (typeof zCap.defaultValue === 'number') UI.sliderCouchZ.value = zCap.defaultValue;
+            }
+            if (aCap) {
+                UI.sliderInjectA.min = aCap.min;
+                UI.sliderInjectA.max = aCap.max;
+                if (typeof aCap.defaultValue === 'number') UI.sliderInjectA.value = aCap.defaultValue;
+            }
+            if (bCap) {
+                UI.sliderInjectB.min = bCap.min;
+                UI.sliderInjectB.max = bCap.max;
+                if (typeof bCap.defaultValue === 'number') UI.sliderInjectB.value = bCap.defaultValue;
+            }
+
+            UI.selectDetectorRows.innerHTML = '';
+            rows.forEach((v) => {
+                const option = document.createElement('option');
+                option.value = String(v);
+                option.textContent = `${v} Rows`;
+                if (AppState.gantry.detectorRows === v) option.selected = true;
+                UI.selectDetectorRows.appendChild(option);
+            });
+        }
+
 function setupUI() {
             UI.sliderCouchY = document.getElementById('slider-couch-y');
             UI.sliderCouchZ = document.getElementById('slider-couch-z');
@@ -9,6 +49,7 @@ function setupUI() {
             UI.btnXrayToggle = document.getElementById('btn-xray-toggle');
             UI.selectDetectorRows = document.getElementById('select-detector-rows');
             UI.btnPatientToggle = document.getElementById('btn-patient-toggle');
+            applyProfileUIConfig();
 
             UI.sliderCouchY.addEventListener('input', e => CTCommandBus.execute({ target: 'couch', action: 'moveY', params: { value: parseFloat(e.target.value) } }));
             UI.sliderCouchZ.addEventListener('input', e => CTCommandBus.execute({ target: 'couch', action: 'moveZ', params: { value: parseFloat(e.target.value) } }));
@@ -277,3 +318,5 @@ function updateStateMonitor() {
     global.updateStateMonitor = updateStateMonitor;
     global.renderBatchUI = renderBatchUI;
 })(window);
+
+

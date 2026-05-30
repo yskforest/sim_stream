@@ -40,7 +40,15 @@
             if (target === 'gantry') {
                 if (!global.GantrySim) return withLog(command, fail('GANTRY_SIM_UNAVAILABLE'));
                 if (action === 'setField') return withLog(command, global.CTStore.dispatch({ type: 'set', scope: 'gantry', key: params.key, value: params.value }));
-                if (action === 'setDetectorRows') return withLog(command, global.GantrySim.setDetectorRows(params.value));
+                if (action === 'setDetectorRows') {
+                    var allowedRows = (global.CTProfileService && global.CTProfileService.getDetectorRowsOptions)
+                        ? global.CTProfileService.getDetectorRowsOptions()
+                        : [320];
+                    if (allowedRows.indexOf(params.value) === -1) {
+                        return withLog(command, fail('INVALID_DETECTOR_ROWS'));
+                    }
+                    return withLog(command, global.GantrySim.setDetectorRows(params.value));
+                }
                 if (action === 'setScanning') return withLog(command, global.GantrySim.setScanning(params.value));
                 if (action === 'setXrayVisible') return withLog(command, global.GantrySim.setXrayVisible(params.value));
                 if (action === 'setRotorSpeed') return withLog(command, global.GantrySim.setRotorSpeed(params.value));
