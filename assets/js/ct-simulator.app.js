@@ -1,377 +1,4 @@
-<!DOCTYPE html>
-<html lang="ja">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CT 3D Simulator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #111;
-            font-family: 'Inter', sans-serif;
-        }
-
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        .pointer-events-auto {
-            pointer-events: auto;
-        }
-
-        /* Custom Scrollbar for UI */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.4);
-        }
-    </style>
-</head>
-
-<body class="text-white">
-
-    <!-- 3D Viewport -->
-    <div id="canvas-container"></div>
-
-    <!-- UI Overlay -->
-    <div id="ui-layer" class="flex flex-col justify-between p-4">
-        <!-- Header -->
-        <div class="flex justify-between items-start w-full relative h-full">
-            
-            <!-- 操作パネル (折りたたみ&スクロール対応) -->
-            <div class="bg-gray-900/80 backdrop-blur-md p-4 rounded-xl border border-gray-700 shadow-xl w-80 pointer-events-auto flex flex-col max-h-[calc(100vh-2rem)]">
-                
-                <!-- タイトルエリア (固定) -->
-                <div class="shrink-0">
-                    <h1 class="text-xl font-bold text-blue-400 mb-1">CT Simulator</h1>
-                    <p class="text-xs text-gray-400 mb-4">State Manager & 3D Visualization</p>
-                </div>
-
-                <!-- スクロール可能な設定エリア -->
-                <div class="space-y-3 overflow-y-auto pr-2 flex-grow">
-                    
-                    <!-- 1. カメラ制御 -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Camera View</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Free</button>
-                            <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Operator</button>
-                            <button onclick="setCameraView('patient')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Patient</button>
-                            <button onclick="setCameraView('injector')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Injector</button>
-                            <button onclick="setCameraView('gantryTop')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Gantry Cam (Top)</button>
-                            <button onclick="setCameraView('gantrySide')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Gantry Cam (Side)</button>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 2. 表示設定 -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Display Settings</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-3">
-                            <div>
-                                <div class="text-[10px] text-gray-400 mb-1">Gantry Shell & X-Ray</div>
-                                <div class="flex gap-2 mb-2">
-                                    <button id="btn-gantry-opaque" onclick="setGantryOpacity(false)" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold">Opaque</button>
-                                    <button id="btn-gantry-trans" onclick="setGantryOpacity(true)" class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Translucent</button>
-                                </div>
-                                <button id="btn-xray-toggle" onclick="toggleXRay()" class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Show X-Ray Beam</button>
-                            </div>
-                            <div>
-                                <div class="text-[10px] text-gray-400 mb-1">Patient Model</div>
-                                <button id="btn-patient-toggle" onclick="togglePatient()" class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold">Hide Patient</button>
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 3. スキャンパラメータ -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Scan Parameters</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-3">
-                            <div>
-                                <div class="text-[10px] text-gray-400 mb-1">Detector Rows (Slices)</div>
-                                <select id="select-detector-rows" class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600 outline-none">
-                                    <option value="16">16 Rows</option>
-                                    <option value="32">32 Rows</option>
-                                    <option value="64">64 Rows</option>
-                                    <option value="80">80 Rows</option>
-                                    <option value="160">160 Rows</option>
-                                    <option value="320" selected>320 Rows (Aquilion ONE)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 4. 寝台（カウチ）制御 -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Couch Control</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-2">
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Height (Y)</span>
-                                    <span id="couch-y-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-couch-y" min="0" max="100" value="0" class="w-full accent-blue-500">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Position (Z)</span>
-                                    <span id="couch-z-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-couch-z" min="0" max="100" value="0" class="w-full accent-blue-500">
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 5. スキャン制御 -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Scan Control</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3">
-                            <div class="flex gap-2 mb-2">
-                                <button id="btn-scan-toggle" onclick="toggleScan()" class="flex-1 bg-green-600 hover:bg-green-500 text-sm py-2 rounded font-bold transition">Start Scan</button>
-                            </div>
-                            <label class="text-xs text-gray-400 flex justify-between">
-                                <span>Rotor Speed</span>
-                                <span id="rotor-speed-val">0 rpm</span>
-                            </label>
-                            <input type="range" id="slider-rotor-speed" min="0" max="100" value="0" class="w-full accent-green-500" disabled>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 6. インジェクタ制御 -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Injector Control</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-2">
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Contrast (A)</span>
-                                    <span id="inject-a-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-inject-a" min="0" max="100" value="0" class="w-full accent-purple-500">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Saline (B)</span>
-                                    <span id="inject-b-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-inject-b" min="0" max="100" value="0" class="w-full accent-blue-300">
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 7. フォーカス (Focus) -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Focus Targets</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3">
-                            <select id="select-focus" onchange="handleFocusChange(this.value)" class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600 outline-none hover:border-blue-500 transition-colors">
-                                <option value="" disabled selected>Select a target to focus...</option>
-                                <optgroup label="CT Room Components">
-                                    <option value="Injector">Injector (インジェクタ)</option>
-                                    <option value="Gantry">CT Gantry (CTガントリ)</option>
-                                    <option value="Couch">CT Couch (CT寝台)</option>
-                                    <option value="TouchPanel">CT Touch Panel (CTタッチパネル)</option>
-                                    <option value="XrayTube">X-ray Tube (X線管球)</option>
-                                    <option value="Detector">Detector (ディテクタ)</option>
-                                    <option value="ConsoleDisplay">Console Display (コンソールディスプレイ)</option>
-                                    <option value="OperationSwitcher">Operation Switcher (操作スイッチャ)</option>
-                                </optgroup>
-                                <optgroup label="Server Rack (Console BOX)">
-                                    <option value="SCON">Server: SCON (System Control Node)</option>
-                                    <option value="DCON">Server: DCON (Data Control Node)</option>
-                                    <option value="RTM">Server: RTM (Real Time Monitor)</option>
-                                    <option value="IDD">Server: IDD (Image Data Disk)</option>
-                                    <option value="RDD">Server: RDD (Raw Data Disk)</option>
-                                    <option value="SAC">Server: SAC (Scan Array Controller)</option>
-                                    <option value="FullRack">Console BOX (Full Rack)</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                    </details>
-                </div>
-            </div>
-
-            <!-- ステータスモニター -->
-            <div class="bg-gray-900/90 backdrop-blur-md border border-gray-700 p-4 rounded-xl shadow-2xl w-72 pointer-events-auto flex flex-col gap-4 transition-all h-fit">
-
-                <!-- ヘッダー & ステータスバッジ -->
-                <div class="flex items-center justify-between border-b border-gray-700 pb-2">
-                    <h3 class="text-xs font-bold text-gray-300 tracking-wider">SYSTEM STATUS</h3>
-                    <span id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300">STANDBY</span>
-                </div>
-
-                <!-- Gantry (回転数とモード) -->
-                <div class="space-y-1.5">
-                    <div class="flex justify-between items-end">
-                        <span class="text-xs text-gray-400 font-semibold">Gantry / Rotor</span>
-                        <span id="monitor-rpm" class="text-sm font-mono text-green-400">0 rpm</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden shadow-inner">
-                        <div id="monitor-rpm-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-1.5 rounded-full transition-all duration-200" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-                        <span>Mode: <span id="monitor-mode" class="text-gray-300 font-bold">HELICAL</span></span>
-                        <span>Detector: <span id="monitor-rows" class="text-gray-300 font-bold">320</span> slices</span>
-                    </div>
-                </div>
-
-                <!-- Couch (寝台位置) -->
-                <div class="space-y-2">
-                    <span class="text-xs text-gray-400 font-semibold">Patient Couch</span>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 shadow-inner text-center">
-                            <div class="text-[10px] text-gray-500 mb-0.5">Height (Y)</div>
-                            <div id="monitor-couch-y" class="text-sm font-mono text-blue-400 font-bold">0%</div>
-                        </div>
-                        <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 shadow-inner text-center">
-                            <div class="text-[10px] text-gray-500 mb-0.5">Position (Z)</div>
-                            <div id="monitor-couch-z" class="text-sm font-mono text-blue-400 font-bold">0%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Injector (造影剤残量) -->
-                <div class="space-y-1.5">
-                    <span class="text-xs text-gray-400 font-semibold">Injector Volume</span>
-                    <!-- Contrast (A) -->
-                    <div class="flex items-center gap-2">
-                        <div class="text-[10px] text-gray-500 font-bold w-12">Contrast</div>
-                        <div class="w-full bg-gray-800 rounded-full h-2 relative overflow-hidden border border-gray-700 shadow-inner">
-                            <div id="monitor-inj-a-bar" class="bg-gradient-to-l from-purple-500 to-purple-700 h-full transition-all duration-200 absolute left-0 rounded-r-full" style="width: 100%"></div>
-                        </div>
-                        <div id="monitor-inj-a" class="text-xs font-mono text-purple-400 w-8 text-right">100%</div>
-                    </div>
-                    <!-- Saline (B) -->
-                    <div class="flex items-center gap-2">
-                        <div class="text-[10px] text-gray-500 font-bold w-12">Saline</div>
-                        <div class="w-full bg-gray-800 rounded-full h-2 relative overflow-hidden border border-gray-700 shadow-inner">
-                            <div id="monitor-inj-b-bar" class="bg-gradient-to-l from-blue-300 to-blue-500 h-full transition-all duration-200 absolute left-0 rounded-r-full" style="width: 100%"></div>
-                        </div>
-                        <div id="monitor-inj-b" class="text-xs font-mono text-blue-300 w-8 text-right">100%</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- フォーカス＆情報ダイアログ (位置を修正) -->
-            <div id="info-dialog" class="hidden absolute top-4 left-[340px] bg-gray-900/95 border border-blue-500/50 p-5 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] w-80 pointer-events-auto transition-opacity duration-300 z-50">
-                <div class="flex justify-between items-start mb-3 border-b border-gray-700 pb-2">
-                    <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
-                    <button onclick="hideInfoDialog()" class="text-gray-400 hover:text-white transition text-2xl leading-none">&times;</button>
-                </div>
-                <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">Description goes here...</p>
-            </div>
-
-            <!-- バッチ処理ビルダーUI (画面下部中央) -->
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-lg border border-gray-700 p-3 rounded-xl shadow-2xl pointer-events-auto flex items-center gap-3 transition-all z-40">
-                
-                <div class="text-[10px] font-bold text-gray-500 mr-1 flex flex-col items-center tracking-widest">
-                    <span>SCAN</span>
-                    <span>QUEUE</span>
-                </div>
-
-                <div class="w-px h-12 bg-gray-700 mx-1"></div>
-                
-                <!-- バッチカードが並ぶコンテナ -->
-                <div id="batch-container" class="flex gap-2 items-center">
-                    <!-- JavaScriptで動的生成されます -->
-                </div>
-
-                <button id="btn-add-batch" onclick="addScanBatch()" class="h-16 w-8 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition" title="Add Batch (Max 5)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
-                </button>
-
-                <div class="w-px h-12 bg-gray-700 mx-1"></div>
-
-                <button id="btn-run-sequence" onclick="runAutoSequence()" class="h-16 px-6 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg border border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 tracking-wider">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                    RUN SEQUENCE
-                </button>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Three.js & Controls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-
-    <script>
-        const AppState = {
+﻿const AppState = {
             couch: { y: 0, z: 0 },
             gantry: { 
                 isScanning: false, 
@@ -406,31 +33,31 @@
 
         const Descriptions = {
             // Focus Targets
-            'SCON': 'SCON (System Control Node)\n\nCTシステム全体を統括するメインコントローラーです。オペレーターからのスキャン指示を受け取り、各ノードに適切なシーケンスとパラメーターを配信します。',
-            'DCON': 'DCON (Data Control Node)\n\nガントリ内の検出器（DAS）から光ファイバー経由で送られてくる膨大な生データをリアルタイムで受信し、バッファリングや前処理を行います。',
-            'RTM': 'RTM (Real Time Monitor)\n\nスキャン進行中にリアルタイムで簡易的な画像再構成を行い、コンソールモニターにプレビュー画像を表示するための専用ノードです。',
-            'IDD': 'IDD (Image Data Disk)\n\n再構成エンジンによって生成された高精細なDICOM画像データを高速かつ安全に保存するための、大容量ストレージアレイ（RAID構成）です。',
-            'RDD': 'RDD (Raw Data Disk)\n\n検出器から取得した未処理のローデータを一時的に蓄積する高速ストレージです。スキャン後の再計算（レトロスペクティブ再構成）に使用されます。',
-            'SAC': 'SAC (Scan Array Controller)\n\nガントリの回転速度（ローター制御）、X線管球の照射タイミング、寝台（カウチ）の移動速度をマイクロ秒単位で高精度に同期制御するハードウェアユニットです。',
-            'FullRack': 'Console BOX (Server Rack)\n\nCTスキャナの頭脳となる各種計算ノード、制御ノード、大容量ストレージが格納された19インチサーバーラックです。外装を白ベースにし、清潔感と視認性を向上させています。',
-            'Injector': 'Injector (インジェクタ)\n\n造影剤と生理食塩水を適切なタイミングと圧力で自動注入する装置です。スキャンと連動して動作します。',
-            'Gantry': 'CT Gantry (CTガントリ)\n\nX線管球や検出器を内蔵し、高速で回転しながらデータを収集するCTの本体部分です。内部では1秒間に数回転する精密な制御が行われています。',
-            'Couch': 'CT Couch (CT寝台)\n\n患者が横たわる寝台です。スキャン中にガントリ内をサブミリ単位の正確な速度と位置で移動します。',
-            'TouchPanel': 'CT Touch Panel (CTタッチパネル)\n\nガントリ前面に配置され、患者の位置決めや寝台の上下移動、レーザーポインターの操作などを直感的に行うためのインターフェースです。',
-            'XrayTube': 'X-ray Tube (X線管球)\n\n高電圧をかけて電子線をターゲットに衝突させることで、人体を透過するX線を発生させる心臓部です。非常に高温になるため強力な冷却機構を備えています。',
-            'Detector': 'Detector (ディテクタ / 検出器)\n\n人体を透過したX線を検知し、光信号から電気信号へ変換する高感度なセンサーアレイです。多列CTでは数百列ものセンサーが並びます。',
-            'ConsoleDisplay': 'Console Display (コンソールディスプレイ)\n\nオペレーターがスキャン計画（プロトコル設定）を立て、再構成された画像をリアルタイムに確認・解析するための操作モニターです。',
-            'OperationSwitcher': 'Operation Switcher (操作スイッチャ)\n\nスキャンの開始・停止、寝台の緊急停止などを物理ボタンで即座に行うための専用デバイスです。直感的な操作と安全性のためにハードウェアスイッチが採用されています。',
+            'SCON': 'SCON (System Control Node)\n\nCT繧ｷ繧ｹ繝・Β蜈ｨ菴薙ｒ邨ｱ諡ｬ縺吶ｋ繝｡繧､繝ｳ繧ｳ繝ｳ繝医Ο繝ｼ繝ｩ繝ｼ縺ｧ縺吶ゅが繝壹Ξ繝ｼ繧ｿ繝ｼ縺九ｉ縺ｮ繧ｹ繧ｭ繝｣繝ｳ謖・､ｺ繧貞女縺大叙繧翫∝推繝弱・繝峨↓驕ｩ蛻・↑繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ縺ｨ繝代Λ繝｡繝ｼ繧ｿ繝ｼ繧帝・菫｡縺励∪縺吶・,
+            'DCON': 'DCON (Data Control Node)\n\n繧ｬ繝ｳ繝医Μ蜀・・讀懷・蝎ｨ・・AS・峨°繧牙・繝輔ぃ繧､繝舌・邨檎罰縺ｧ騾√ｉ繧後※縺上ｋ閹ｨ螟ｧ縺ｪ逕溘ョ繝ｼ繧ｿ繧偵Μ繧｢繝ｫ繧ｿ繧､繝縺ｧ蜿嶺ｿ｡縺励√ヰ繝・ヵ繧｡繝ｪ繝ｳ繧ｰ繧・燕蜃ｦ逅・ｒ陦後＞縺ｾ縺吶・,
+            'RTM': 'RTM (Real Time Monitor)\n\n繧ｹ繧ｭ繝｣繝ｳ騾ｲ陦御ｸｭ縺ｫ繝ｪ繧｢繝ｫ繧ｿ繧､繝縺ｧ邁｡譏鍋噪縺ｪ逕ｻ蜒丞・讒区・繧定｡後＞縲√さ繝ｳ繧ｽ繝ｼ繝ｫ繝｢繝九ち繝ｼ縺ｫ繝励Ξ繝薙Η繝ｼ逕ｻ蜒上ｒ陦ｨ遉ｺ縺吶ｋ縺溘ａ縺ｮ蟆ら畑繝弱・繝峨〒縺吶・,
+            'IDD': 'IDD (Image Data Disk)\n\n蜀肴ｧ区・繧ｨ繝ｳ繧ｸ繝ｳ縺ｫ繧医▲縺ｦ逕滓・縺輔ｌ縺滄ｫ倡ｲｾ邏ｰ縺ｪDICOM逕ｻ蜒上ョ繝ｼ繧ｿ繧帝ｫ倬溘°縺､螳牙・縺ｫ菫晏ｭ倥☆繧九◆繧√・縲∝､ｧ螳ｹ驥上せ繝医Ξ繝ｼ繧ｸ繧｢繝ｬ繧､・・AID讒区・・峨〒縺吶・,
+            'RDD': 'RDD (Raw Data Disk)\n\n讀懷・蝎ｨ縺九ｉ蜿門ｾ励＠縺滓悴蜃ｦ逅・・繝ｭ繝ｼ繝・・繧ｿ繧剃ｸ譎ら噪縺ｫ闢・ｩ阪☆繧矩ｫ倬溘せ繝医Ξ繝ｼ繧ｸ縺ｧ縺吶ゅせ繧ｭ繝｣繝ｳ蠕後・蜀崎ｨ育ｮ暦ｼ医Ξ繝医Ο繧ｹ繝壹け繝・ぅ繝門・讒区・・峨↓菴ｿ逕ｨ縺輔ｌ縺ｾ縺吶・,
+            'SAC': 'SAC (Scan Array Controller)\n\n繧ｬ繝ｳ繝医Μ縺ｮ蝗櫁ｻ｢騾溷ｺｦ・医Ο繝ｼ繧ｿ繝ｼ蛻ｶ蠕｡・峨々邱夂ｮ｡逅・・辣ｧ蟆・ち繧､繝溘Φ繧ｰ縲∝ｯ晏床・医き繧ｦ繝・ｼ峨・遘ｻ蜍暮溷ｺｦ繧偵・繧､繧ｯ繝ｭ遘貞腰菴阪〒鬮倡ｲｾ蠎ｦ縺ｫ蜷梧悄蛻ｶ蠕｡縺吶ｋ繝上・繝峨え繧ｧ繧｢繝ｦ繝九ャ繝医〒縺吶・,
+            'FullRack': 'Console BOX (Server Rack)\n\nCT繧ｹ繧ｭ繝｣繝翫・鬆ｭ閼ｳ縺ｨ縺ｪ繧句推遞ｮ險育ｮ励ヮ繝ｼ繝峨∝宛蠕｡繝弱・繝峨∝､ｧ螳ｹ驥上せ繝医Ξ繝ｼ繧ｸ縺梧ｼ邏阪＆繧後◆19繧､繝ｳ繝√し繝ｼ繝舌・繝ｩ繝・け縺ｧ縺吶ょ､冶｣・ｒ逋ｽ繝吶・繧ｹ縺ｫ縺励∵ｸ・ｽ疲─縺ｨ隕冶ｪ肴ｧ繧貞髄荳翫＆縺帙※縺・∪縺吶・,
+            'Injector': 'Injector (繧､繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ)\n\n騾蠖ｱ蜑､縺ｨ逕溽炊鬟溷｡ｩ豌ｴ繧帝←蛻・↑繧ｿ繧､繝溘Φ繧ｰ縺ｨ蝨ｧ蜉帙〒閾ｪ蜍墓ｳｨ蜈･縺吶ｋ陬・ｽｮ縺ｧ縺吶ゅせ繧ｭ繝｣繝ｳ縺ｨ騾｣蜍輔＠縺ｦ蜍穂ｽ懊＠縺ｾ縺吶・,
+            'Gantry': 'CT Gantry (CT繧ｬ繝ｳ繝医Μ)\n\nX邱夂ｮ｡逅・ｄ讀懷・蝎ｨ繧貞・阡ｵ縺励・ｫ倬溘〒蝗櫁ｻ｢縺励↑縺後ｉ繝・・繧ｿ繧貞庶髮・☆繧気T縺ｮ譛ｬ菴馴Κ蛻・〒縺吶ょ・驛ｨ縺ｧ縺ｯ1遘帝俣縺ｫ謨ｰ蝗櫁ｻ｢縺吶ｋ邊ｾ蟇・↑蛻ｶ蠕｡縺瑚｡後ｏ繧後※縺・∪縺吶・,
+            'Couch': 'CT Couch (CT蟇晏床)\n\n謔｣閠・′讓ｪ縺溘ｏ繧句ｯ晏床縺ｧ縺吶ゅせ繧ｭ繝｣繝ｳ荳ｭ縺ｫ繧ｬ繝ｳ繝医Μ蜀・ｒ繧ｵ繝悶Α繝ｪ蜊倅ｽ阪・豁｣遒ｺ縺ｪ騾溷ｺｦ縺ｨ菴咲ｽｮ縺ｧ遘ｻ蜍輔＠縺ｾ縺吶・,
+            'TouchPanel': 'CT Touch Panel (CT繧ｿ繝・メ繝代ロ繝ｫ)\n\n繧ｬ繝ｳ繝医Μ蜑埼擇縺ｫ驟咲ｽｮ縺輔ｌ縲∵ぅ閠・・菴咲ｽｮ豎ｺ繧√ｄ蟇晏床縺ｮ荳贋ｸ狗ｧｻ蜍輔√Ξ繝ｼ繧ｶ繝ｼ繝昴う繝ｳ繧ｿ繝ｼ縺ｮ謫堺ｽ懊↑縺ｩ繧堤峩諢溽噪縺ｫ陦後≧縺溘ａ縺ｮ繧､繝ｳ繧ｿ繝ｼ繝輔ぉ繝ｼ繧ｹ縺ｧ縺吶・,
+            'XrayTube': 'X-ray Tube (X邱夂ｮ｡逅・\n\n鬮倬崕蝨ｧ繧偵°縺代※髮ｻ蟄千ｷ壹ｒ繧ｿ繝ｼ繧ｲ繝・ヨ縺ｫ陦晉ｪ√＆縺帙ｋ縺薙→縺ｧ縲∽ｺｺ菴薙ｒ騾城℃縺吶ｋX邱壹ｒ逋ｺ逕溘＆縺帙ｋ蠢・∮驛ｨ縺ｧ縺吶る撼蟶ｸ縺ｫ鬮俶ｸｩ縺ｫ縺ｪ繧九◆繧∝ｼｷ蜉帙↑蜀ｷ蜊ｴ讖滓ｧ九ｒ蛯吶∴縺ｦ縺・∪縺吶・,
+            'Detector': 'Detector (繝・ぅ繝・け繧ｿ / 讀懷・蝎ｨ)\n\n莠ｺ菴薙ｒ騾城℃縺励◆X邱壹ｒ讀懃衍縺励∝・菫｡蜿ｷ縺九ｉ髮ｻ豌嶺ｿ｡蜿ｷ縺ｸ螟画鋤縺吶ｋ鬮俶─蠎ｦ縺ｪ繧ｻ繝ｳ繧ｵ繝ｼ繧｢繝ｬ繧､縺ｧ縺吶ょ､壼・CT縺ｧ縺ｯ謨ｰ逋ｾ蛻励ｂ縺ｮ繧ｻ繝ｳ繧ｵ繝ｼ縺御ｸｦ縺ｳ縺ｾ縺吶・,
+            'ConsoleDisplay': 'Console Display (繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ繝・ぅ繧ｹ繝励Ξ繧､)\n\n繧ｪ繝壹Ξ繝ｼ繧ｿ繝ｼ縺後せ繧ｭ繝｣繝ｳ險育判・医・繝ｭ繝医さ繝ｫ險ｭ螳夲ｼ峨ｒ遶九※縲∝・讒区・縺輔ｌ縺溽判蜒上ｒ繝ｪ繧｢繝ｫ繧ｿ繧､繝縺ｫ遒ｺ隱阪・隗｣譫舌☆繧九◆繧√・謫堺ｽ懊Δ繝九ち繝ｼ縺ｧ縺吶・,
+            'OperationSwitcher': 'Operation Switcher (謫堺ｽ懊せ繧､繝・メ繝｣)\n\n繧ｹ繧ｭ繝｣繝ｳ縺ｮ髢句ｧ九・蛛懈ｭ｢縲∝ｯ晏床縺ｮ邱頑･蛛懈ｭ｢縺ｪ縺ｩ繧堤黄逅・・繧ｿ繝ｳ縺ｧ蜊ｳ蠎ｧ縺ｫ陦後≧縺溘ａ縺ｮ蟆ら畑繝・ヰ繧､繧ｹ縺ｧ縺吶ら峩諢溽噪縺ｪ謫堺ｽ懊→螳牙・諤ｧ縺ｮ縺溘ａ縺ｫ繝上・繝峨え繧ｧ繧｢繧ｹ繧､繝・メ縺梧治逕ｨ縺輔ｌ縺ｦ縺・∪縺吶・,
             
             // Scan Modes
-            'helical': 'Helical Scan (ヘリカルスキャン)\n\n寝台を一定速度で移動させながらX線管を連続回転させ、らせん状にデータを収集する、現在のCTの主流となる高速スキャンモードです。',
-            'axial': 'Axial Scan (アキシャルスキャン)\n\n寝台を一定間隔で停止させ、その場で1回転スキャンを行う「ステップ・アンド・シュート」方式です。主に頭部領域や高分解能が求められる部位で使用されます。',
-            'scano': 'Scano (スキャノグラム)\n\nX線管を0度（真上）に固定した状態で寝台を移動させ、X線の透過画像を撮影します。本スキャンの撮影範囲を決めるための位置決め画像として使用します。',
-            'dual_scano': 'Dual Scano (デュアルスキャノ)\n\n正面と側面の2方向からスキャノグラムを撮影します。より正確な位置決めや、被ばく低減のための自動電流変調（AEC）の計算に役立ちます。',
-            '3d_landmark': '3D Landmark (3Dランドマーク)\n\n低線量で高速なヘリカルスキャンを行い、3Dの粗いボリュームデータを作成して精緻な位置決めを行うモードです。',
-            'volume': 'Volume Scan (ボリュームスキャン)\n\n広範囲検出器を用い、寝台を動かさずに1回転で臓器全体（心臓や脳など）を丸ごと撮影するモードです。動きのアーティファクトを極限まで抑えられます。',
-            'dynamic': 'Dynamic Scan (ダイナミックスキャン)\n\n造影剤の流入・流出プロセスや関節の動きなどを観察するため、同じ位置で連続して複数回のスキャンを繰り返すモードです（4D撮影）。',
-            'real_prep': 'Real Prep (リアルプレップ)\n\n造影剤が目的の血管や臓器に到達した瞬間を捉えるため、低線量でモニタリングスキャンを繰り返し、CT値が閾値を超えたら本スキャンへ自動移行する機能です。'
+            'helical': 'Helical Scan (繝倥Μ繧ｫ繝ｫ繧ｹ繧ｭ繝｣繝ｳ)\n\n蟇晏床繧剃ｸ螳夐溷ｺｦ縺ｧ遘ｻ蜍輔＆縺帙↑縺後ｉX邱夂ｮ｡繧帝｣邯壼屓霆｢縺輔○縲√ｉ縺帙ｓ迥ｶ縺ｫ繝・・繧ｿ繧貞庶髮・☆繧九∫樟蝨ｨ縺ｮCT縺ｮ荳ｻ豬√→縺ｪ繧矩ｫ倬溘せ繧ｭ繝｣繝ｳ繝｢繝ｼ繝峨〒縺吶・,
+            'axial': 'Axial Scan (繧｢繧ｭ繧ｷ繝｣繝ｫ繧ｹ繧ｭ繝｣繝ｳ)\n\n蟇晏床繧剃ｸ螳夐俣髫斐〒蛛懈ｭ｢縺輔○縲√◎縺ｮ蝣ｴ縺ｧ1蝗櫁ｻ｢繧ｹ繧ｭ繝｣繝ｳ繧定｡後≧縲後せ繝・ャ繝励・繧｢繝ｳ繝峨・繧ｷ繝･繝ｼ繝医肴婿蠑上〒縺吶ゆｸｻ縺ｫ鬆ｭ驛ｨ鬆伜沺繧・ｫ伜・隗｣閭ｽ縺梧ｱゅａ繧峨ｌ繧矩Κ菴阪〒菴ｿ逕ｨ縺輔ｌ縺ｾ縺吶・,
+            'scano': 'Scano (繧ｹ繧ｭ繝｣繝弱げ繝ｩ繝)\n\nX邱夂ｮ｡繧・蠎ｦ・育悄荳奇ｼ峨↓蝗ｺ螳壹＠縺溽憾諷九〒蟇晏床繧堤ｧｻ蜍輔＆縺帙々邱壹・騾城℃逕ｻ蜒上ｒ謦ｮ蠖ｱ縺励∪縺吶よ悽繧ｹ繧ｭ繝｣繝ｳ縺ｮ謦ｮ蠖ｱ遽・峇繧呈ｱｺ繧√ｋ縺溘ａ縺ｮ菴咲ｽｮ豎ｺ繧∫判蜒上→縺励※菴ｿ逕ｨ縺励∪縺吶・,
+            'dual_scano': 'Dual Scano (繝・Η繧｢繝ｫ繧ｹ繧ｭ繝｣繝・\n\n豁｣髱｢縺ｨ蛛ｴ髱｢縺ｮ2譁ｹ蜷代°繧峨せ繧ｭ繝｣繝弱げ繝ｩ繝繧呈聴蠖ｱ縺励∪縺吶ゅｈ繧頑ｭ｣遒ｺ縺ｪ菴咲ｽｮ豎ｺ繧√ｄ縲∬｢ｫ縺ｰ縺丈ｽ取ｸ帙・縺溘ａ縺ｮ閾ｪ蜍暮崕豬∝､芽ｪｿ・・EC・峨・險育ｮ励↓蠖ｹ遶九■縺ｾ縺吶・,
+            '3d_landmark': '3D Landmark (3D繝ｩ繝ｳ繝峨・繝ｼ繧ｯ)\n\n菴守ｷ夐㍼縺ｧ鬮倬溘↑繝倥Μ繧ｫ繝ｫ繧ｹ繧ｭ繝｣繝ｳ繧定｡後＞縲・D縺ｮ邊励＞繝懊Μ繝･繝ｼ繝繝・・繧ｿ繧剃ｽ懈・縺励※邊ｾ邱ｻ縺ｪ菴咲ｽｮ豎ｺ繧√ｒ陦後≧繝｢繝ｼ繝峨〒縺吶・,
+            'volume': 'Volume Scan (繝懊Μ繝･繝ｼ繝繧ｹ繧ｭ繝｣繝ｳ)\n\n蠎・ｯ・峇讀懷・蝎ｨ繧堤畑縺・∝ｯ晏床繧貞虚縺九＆縺壹↓1蝗櫁ｻ｢縺ｧ閾灘勣蜈ｨ菴難ｼ亥ｿ・∮繧・┻縺ｪ縺ｩ・峨ｒ荳ｸ縺斐→謦ｮ蠖ｱ縺吶ｋ繝｢繝ｼ繝峨〒縺吶ょ虚縺阪・繧｢繝ｼ繝・ぅ繝輔ぃ繧ｯ繝医ｒ讌ｵ髯舌∪縺ｧ謚代∴繧峨ｌ縺ｾ縺吶・,
+            'dynamic': 'Dynamic Scan (繝繧､繝翫Α繝・け繧ｹ繧ｭ繝｣繝ｳ)\n\n騾蠖ｱ蜑､縺ｮ豬∝・繝ｻ豬∝・繝励Ο繧ｻ繧ｹ繧・未遽縺ｮ蜍輔″縺ｪ縺ｩ繧定ｦｳ蟇溘☆繧九◆繧√∝酔縺倅ｽ咲ｽｮ縺ｧ騾｣邯壹＠縺ｦ隍・焚蝗槭・繧ｹ繧ｭ繝｣繝ｳ繧堤ｹｰ繧願ｿ斐☆繝｢繝ｼ繝峨〒縺呻ｼ・D謦ｮ蠖ｱ・峨・,
+            'real_prep': 'Real Prep (繝ｪ繧｢繝ｫ繝励Ξ繝・・)\n\n騾蠖ｱ蜑､縺檎岼逧・・陦邂｡繧・∮蝎ｨ縺ｫ蛻ｰ驕斐＠縺溽椪髢薙ｒ謐峨∴繧九◆繧√∽ｽ守ｷ夐㍼縺ｧ繝｢繝九ち繝ｪ繝ｳ繧ｰ繧ｹ繧ｭ繝｣繝ｳ繧堤ｹｰ繧願ｿ斐＠縲，T蛟､縺碁明蛟､繧定ｶ・∴縺溘ｉ譛ｬ繧ｹ繧ｭ繝｣繝ｳ縺ｸ閾ｪ蜍慕ｧｻ陦後☆繧区ｩ溯・縺ｧ縺吶・
         };
 
         const UI = {};
@@ -529,7 +156,7 @@
         function buildCTScanner() {
             const ctGroup = new THREE.Group();
 
-            // --- 1. ガントリ ---
+            // --- 1. 繧ｬ繝ｳ繝医Μ ---
             const gantryGroup = new THREE.Group();
             gantryGroup.position.set(0, 1.2, 0);
 
@@ -594,7 +221,7 @@
             const taperDepth = 0.1;
             for (let i = 0; i <= 30; i++) {
                 const t = i / 30;
-                // なだらかな曲線のテーパー
+                // 縺ｪ縺繧峨°縺ｪ譖ｲ邱壹・繝・・繝代・
                 const r = tunnelRadius + (boreRadius - tunnelRadius) * Math.sin(t * Math.PI / 2);
                 const y = taperDepth * t;
                 taperPoints.push(new THREE.Vector2(r, y));
@@ -602,18 +229,18 @@
             const taperGeo = new THREE.LatheGeometry(taperPoints, 64);
 
             const frontTaper = new THREE.Mesh(taperGeo, gantryMat);
-            frontTaper.rotation.x = -Math.PI / 2; // 手前へ向く
-            frontTaper.position.z = 0.15; // Z=0.15 から Z=0.25へ広がる
+            frontTaper.rotation.x = -Math.PI / 2; // 謇句燕縺ｸ蜷代￥
+            frontTaper.position.z = 0.15; // Z=0.15 縺九ｉ Z=0.25縺ｸ蠎・′繧・
             frontTaper.receiveShadow = true;
             gantryGroup.add(frontTaper);
 
             const rearTaper = new THREE.Mesh(taperGeo, gantryMat);
-            rearTaper.rotation.x = Math.PI / 2; // 奥へ向く
-            rearTaper.position.z = -0.15; // Z=-0.15 から Z=-0.25へ広がる
+            rearTaper.rotation.x = Math.PI / 2; // 螂･縺ｸ蜷代￥
+            rearTaper.position.z = -0.15; // Z=-0.15 縺九ｉ Z=-0.25縺ｸ蠎・′繧・
             rearTaper.receiveShadow = true;
             gantryGroup.add(rearTaper);
 
-            // トンネルの長さを 0.45 から 0.3 に短縮（内部パーツのはみ出しを防止）
+            // 繝医Φ繝阪Ν縺ｮ髟ｷ縺輔ｒ 0.45 縺九ｉ 0.3 縺ｫ遏ｭ邵ｮ・亥・驛ｨ繝代・繝・・縺ｯ縺ｿ蜃ｺ縺励ｒ髦ｲ豁｢・・
             const tunnelGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.3, 64, 1, true);
             const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
             tunnel.rotation.x = Math.PI / 2;
@@ -621,11 +248,11 @@
 
             const ringGeo = new THREE.TorusGeometry(0.462, 0.008, 16, 64);
             const ringFront = new THREE.Mesh(ringGeo, blueLightMat);
-            ringFront.position.z = 0.14; // トンネルの端に合わせて調整
+            ringFront.position.z = 0.14; // 繝医Φ繝阪Ν縺ｮ遶ｯ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ
             gantryGroup.add(ringFront);
 
             const ringRear = ringFront.clone();
-            ringRear.position.z = -0.14; // トンネルの端に合わせて調整
+            ringRear.position.z = -0.14; // 繝医Φ繝阪Ν縺ｮ遶ｯ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ
             gantryGroup.add(ringRear);
 
             const gantryBase = createRoundedBox(2.7, 0.1, 1.0, 0.1, baseCoverMat);
@@ -708,7 +335,7 @@
             ledGreen.position.set(0.6, 1.05, 0.42);
             gantryGroup.add(ledGreen);
 
-            // --- 内部ロータ (X線管球と検出器) ---
+            // --- 蜀・Κ繝ｭ繝ｼ繧ｿ (X邱夂ｮ｡逅・→讀懷・蝎ｨ) ---
             const rotorGroup = new THREE.Group();
 
             const rotorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.59, 0.59, 0.25, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0x222, side: THREE.DoubleSide }));
@@ -718,7 +345,7 @@
             const tubeGroup = new THREE.Group();
             tubeGroup.position.set(0, 0.52, 0);
 
-            // はみ出し防止のため、管球ケースを幅広く、奥行きをスリムに調整
+            // 縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢縺ｮ縺溘ａ縲∫ｮ｡逅・こ繝ｼ繧ｹ繧貞ｹ・ｺ・￥縲∝･･陦後″繧偵せ繝ｪ繝縺ｫ隱ｿ謨ｴ
             const caseGeo = new THREE.BoxGeometry(0.38, 0.14, 0.22);
             const caseMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6 });
             tubeGroup.add(new THREE.Mesh(caseGeo, caseMat));
@@ -799,10 +426,10 @@
             Meshes.rotor = rotorGroup;
             ctGroup.add(gantryGroup);
 
-            // --- 2. 寝台 (カウチ) ---
+            // --- 2. 蟇晏床 (繧ｫ繧ｦ繝・ ---
             const couchGroup = new THREE.Group();
 
-            // 修正: 初期位置を手前(Z:2.6)へ移動しめり込みを解消
+            // 菫ｮ豁｣: 蛻晄悄菴咲ｽｮ繧呈焔蜑・Z:2.6)縺ｸ遘ｻ蜍輔＠繧√ｊ霎ｼ縺ｿ繧定ｧ｣豸・
             const couchBase = createRoundedBox(0.8, 0.2, 1.8, 0.15, baseCoverMat);
             couchBase.position.set(0, 0.1, 2.6);
             couchGroup.add(couchBase);
@@ -862,7 +489,7 @@
 
                 model.rotation.x = -Math.PI / 2;
                 model.scale.set(0.85, 0.85, 0.85);
-                // 患者モデルをさらにガントリ方向(奥側)へスライド
+                // 謔｣閠・Δ繝・Ν繧偵＆繧峨↓繧ｬ繝ｳ繝医Μ譁ｹ蜷・螂･蛛ｴ)縺ｸ繧ｹ繝ｩ繧､繝・
                 model.position.set(0, 0, 0.1);
 
                 model.traverse(function (child) {
@@ -962,7 +589,7 @@
         function buildControlRoom() {
             const controlGroup = new THREE.Group();
             
-            // 修正: 机をさらに奥へ移動（ガントリや寝台から遠ざける）
+            // 菫ｮ豁｣: 譛ｺ繧偵＆繧峨↓螂･縺ｸ遘ｻ蜍包ｼ医ぎ繝ｳ繝医Μ繧・ｯ晏床縺九ｉ驕縺悶￠繧具ｼ・
             controlGroup.position.set(6.0, 0, 0);
 
             const deskTop = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 2.2), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
@@ -1010,7 +637,7 @@
             const kb1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.4), kbMat); kb1.position.set(-0.2, 0.775, -0.4); controlGroup.add(kb1);
             const kb2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.4), kbMat); kb2.position.set(-0.2, 0.775, 0.4); controlGroup.add(kb2);
 
-            // 操作スイッチャ (Operation Switcher)
+            // 謫堺ｽ懊せ繧､繝・メ繝｣ (Operation Switcher)
             const switcherGroup = new THREE.Group();
             switcherGroup.position.set(0.0, 0.78, 0.0);
             switcherGroup.rotation.y = -Math.PI / 16;
@@ -1021,12 +648,12 @@
             const swBase = new THREE.Mesh(swBaseGeo, swBaseMat);
             switcherGroup.add(swBase);
 
-            // 6つのボタンを横一列に (緑, 赤, 黄, 青, 白, 白)
+            // 6縺､縺ｮ繝懊ち繝ｳ繧呈ｨｪ荳蛻励↓ (邱・ 襍､, 鮟・ 髱・ 逋ｽ, 逋ｽ)
             const btnColors = [0x22cc22, 0xcc2222, 0xddcc22, 0x2288dd, 0xcccccc, 0xcccccc];
             
             for (let i = 0; i < 6; i++) {
                 const isStartBtn = (i === 0);
-                // 開始ボタンのみ大きくする
+                // 髢句ｧ九・繧ｿ繝ｳ縺ｮ縺ｿ螟ｧ縺阪￥縺吶ｋ
                 const rTop = isStartBtn ? 0.018 : 0.012;
                 const rBot = isStartBtn ? 0.022 : 0.015;
                 const h = isStartBtn ? 0.025 : 0.015;
@@ -1047,17 +674,17 @@
         function buildServerRack() {
             const rackGroup = new THREE.Group();
             
-            // 修正: 机の隣（Z軸でマイナス方向へ）に配置
+            // 菫ｮ豁｣: 譛ｺ縺ｮ髫｣・・霆ｸ縺ｧ繝槭う繝翫せ譁ｹ蜷代∈・峨↓驟咲ｽｮ
             const rackX = 6.0;
             const rackZ = -2.2;
             rackGroup.position.set(rackX, 0, rackZ);
 
-            // 外枠 (幅60cm x 高さ160cm x 奥行80cm に微調整)
+            // 螟匁棧 (蟷・0cm x 鬮倥＆160cm x 螂･陦・0cm 縺ｫ蠕ｮ隱ｿ謨ｴ)
             const rackWidth = 0.6;
             const rackHeight = 1.6;
             const rackDepth = 0.8;
 
-            // 修正: ラックの外装を白ベースに変更
+            // 菫ｮ豁｣: 繝ｩ繝・け縺ｮ螟冶｣・ｒ逋ｽ繝吶・繧ｹ縺ｫ螟画峩
             const frameMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.2, roughness: 0.8 });
             const frameGeo = new THREE.BoxGeometry(rackWidth, rackHeight, rackDepth);
             const frame = new THREE.Mesh(frameGeo, frameMat);
@@ -1065,7 +692,7 @@
             frame.castShadow = true; frame.receiveShadow = true;
             rackGroup.add(frame);
 
-            // 内部の黒い背景（サーバーユニットをはめ込む部分）
+            // 蜀・Κ縺ｮ鮟偵＞閭梧勹・医し繝ｼ繝舌・繝ｦ繝九ャ繝医ｒ縺ｯ繧∬ｾｼ繧驛ｨ蛻・ｼ・
             const innerMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
             const innerPanel = new THREE.Mesh(new THREE.BoxGeometry(rackWidth - 0.04, rackHeight - 0.1, rackDepth + 0.01), innerMat);
             innerPanel.position.y = rackHeight / 2;
@@ -1074,12 +701,12 @@
             Meshes.serverBlades = {};
             Meshes.serverLeds = [];
 
-            // サーバー名を定義 (全6台)
+            // 繧ｵ繝ｼ繝舌・蜷阪ｒ螳夂ｾｩ (蜈ｨ6蜿ｰ)
             const serverNames = ['SCON', 'DCON', 'RTM', 'IDD', 'RDD', 'SAC'];
             const bladeCount = serverNames.length;
             const bladeHeight = 0.2;
             const bladeMargin = 0.04;
-            // ラック下部からのオフセット
+            // 繝ｩ繝・け荳矩Κ縺九ｉ縺ｮ繧ｪ繝輔そ繝・ヨ
             const startY = 0.1; 
 
             for(let i=0; i<bladeCount; i++) {
@@ -1087,23 +714,23 @@
                 const bladeGroup = new THREE.Group();
                 const yPos = startY + i * (bladeHeight + bladeMargin) + bladeHeight/2;
                 
-                // 手前（正面）に配置
+                // 謇句燕・域ｭ｣髱｢・峨↓驟咲ｽｮ
                 bladeGroup.position.set(0, yPos, rackDepth / 2 + 0.006);
 
-                // ブレード前面パネル
+                // 繝悶Ξ繝ｼ繝牙燕髱｢繝代ロ繝ｫ
                 const bladeGeo = new THREE.BoxGeometry(rackWidth - 0.06, bladeHeight, 0.02);
                 const bladeMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 });
                 const blade = new THREE.Mesh(bladeGeo, bladeMat);
                 bladeGroup.add(blade);
 
-                // 換気口（メッシュ風の横線）
+                // 謠帶ｰ怜哨・医Γ繝・す繝･鬚ｨ縺ｮ讓ｪ邱夲ｼ・
                 const ventGeo = new THREE.PlaneGeometry(0.3, 0.1);
                 const ventMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
                 const vent = new THREE.Mesh(ventGeo, ventMat);
                 vent.position.set(0, 0, 0.011);
                 bladeGroup.add(vent);
 
-                // 取手 (左右)
+                // 蜿匁焔 (蟾ｦ蜿ｳ)
                 const handleGeo = new THREE.BoxGeometry(0.015, bladeHeight - 0.04, 0.04);
                 const handleMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 });
                 const handleL = new THREE.Mesh(handleGeo, handleMat);
@@ -1112,21 +739,21 @@
                 handleR.position.set(rackWidth/2 - 0.06, 0, 0.02);
                 bladeGroup.add(handleL); bladeGroup.add(handleR);
 
-                // サーバーラベル用の小さいパネル
+                // 繧ｵ繝ｼ繝舌・繝ｩ繝吶Ν逕ｨ縺ｮ蟆上＆縺・ヱ繝阪Ν
                 const lblGeo = new THREE.PlaneGeometry(0.08, 0.03);
                 const lblMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
                 const lbl = new THREE.Mesh(lblGeo, lblMat);
                 lbl.position.set(-rackWidth/2 + 0.14, 0, 0.012);
                 bladeGroup.add(lbl);
 
-                // ステータスLED (電源)
+                // 繧ｹ繝・・繧ｿ繧ｹLED (髮ｻ貅・
                 const ledGeo = new THREE.CircleGeometry(0.008, 16);
                 const pwrLedMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                 const pwrLed = new THREE.Mesh(ledGeo, pwrLedMat);
                 pwrLed.position.set(-rackWidth/2 + 0.20, 0.02, 0.012);
                 bladeGroup.add(pwrLed);
 
-                // アクセスLED (チカチカする青いランプ群)
+                // 繧｢繧ｯ繧ｻ繧ｹLED (繝√き繝√き縺吶ｋ髱偵＞繝ｩ繝ｳ繝礼ｾ､)
                 for(let j=0; j<3; j++) {
                     const actLedMat = new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true });
                     const actLed = new THREE.Mesh(ledGeo, actLedMat);
@@ -1137,14 +764,14 @@
 
                 rackGroup.add(bladeGroup);
 
-                // カメラのターゲット情報を保存 (机の配置に合わせて調整)
+                // 繧ｫ繝｡繝ｩ縺ｮ繧ｿ繝ｼ繧ｲ繝・ヨ諠・ｱ繧剃ｿ晏ｭ・(譛ｺ縺ｮ驟咲ｽｮ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ)
                 Meshes.serverBlades[label] = {
                     target: new THREE.Vector3(rackX, yPos, rackZ + rackDepth/2),
                     cameraPos: new THREE.Vector3(rackX - 1.0, yPos + 0.1, rackZ + rackDepth/2 + 1.2)
                 };
             }
 
-            // ラック全体のカメラビュー
+            // 繝ｩ繝・け蜈ｨ菴薙・繧ｫ繝｡繝ｩ繝薙Η繝ｼ
             Meshes.serverBlades['FullRack'] = {
                 target: new THREE.Vector3(rackX, rackHeight/2, rackZ),
                 cameraPos: new THREE.Vector3(rackX - 2.5, rackHeight/2 + 0.2, rackZ + 2.0)
@@ -1170,7 +797,7 @@
             UI.sliderInjectB.addEventListener('input', e => AppState.update('injector', 'b', parseFloat(e.target.value)));
             UI.selectDetectorRows.addEventListener('change', e => AppState.update('gantry', 'detectorRows', parseInt(e.target.value)));
 
-            // 初回描画
+            // 蛻晏屓謠冗判
             renderBatchUI();
 
             AppState.subscribe(state => {
@@ -1304,7 +931,7 @@
             document.getElementById('monitor-inj-b-bar').style.width = remainB + '%';
         }
 
-        // 新規追加: バッチUIのレンダリング関数
+        // 譁ｰ隕剰ｿｽ蜉: 繝舌ャ繝ゞI縺ｮ繝ｬ繝ｳ繝繝ｪ繝ｳ繧ｰ髢｢謨ｰ
         function renderBatchUI() {
             const container = document.getElementById('batch-container');
             const seq = AppState.gantry.scanSequence;
@@ -1321,7 +948,7 @@
                 const delay = batch.delay;
                 const isSyncTarget = index === syncIdx;
 
-                // カードの生成
+                // 繧ｫ繝ｼ繝峨・逕滓・
                 const card = document.createElement('div');
                 let cardClasses = `relative rounded-lg p-2.5 w-36 flex flex-col items-center transition-all duration-300 `;
                 if (isActive) {
@@ -1331,7 +958,7 @@
                 }
                 card.className = cardClasses;
 
-                // オーバーレイカウントダウン
+                // 繧ｪ繝ｼ繝舌・繝ｬ繧､繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ
                 if (isActive && countdown > 0) {
                     const overlay = document.createElement('div');
                     overlay.className = 'absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]';
@@ -1339,7 +966,7 @@
                     card.appendChild(overlay);
                 }
                 
-                // ヘッダー (ラベルと削除ボタン)
+                // 繝倥ャ繝繝ｼ (繝ｩ繝吶Ν縺ｨ蜑企勁繝懊ち繝ｳ)
                 const header = document.createElement('div');
                 header.className = 'text-[10px] text-gray-400 mb-1.5 w-full flex justify-between items-center';
                 
@@ -1357,7 +984,7 @@
                 header.appendChild(label);
                 header.appendChild(delBtn);
                 
-                // モード選択プルダウン
+                // 繝｢繝ｼ繝蛾∈謚槭・繝ｫ繝繧ｦ繝ｳ
                 const select = document.createElement('select');
                 select.className = 'w-full bg-gray-900 text-white text-[11px] p-1.5 rounded border border-gray-700 outline-none hover:border-blue-500 transition-colors cursor-pointer';
                 select.disabled = isRunning;
@@ -1383,7 +1010,7 @@
                     select.appendChild(option);
                 });
                 
-                // Delay入力
+                // Delay蜈･蜉・
                 const delayWrapper = document.createElement('div');
                 delayWrapper.className = 'w-full flex items-center justify-between mt-2 text-[10px] text-gray-400';
                 delayWrapper.innerHTML = '<span>Delay (s)</span>';
@@ -1399,7 +1026,7 @@
                 
                 delayWrapper.appendChild(delayInput);
 
-                // インジェクタ同期設定ボタン
+                // 繧､繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ蜷梧悄險ｭ螳壹・繧ｿ繝ｳ
                 const syncBtn = document.createElement('button');
                 syncBtn.innerText = isSyncTarget ? 'INJ SYNC: ON' : 'INJ SYNC: OFF';
                 syncBtn.className = `w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors ${isSyncTarget ? 'bg-purple-600/80 text-white border border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'bg-gray-900 text-gray-500 border border-gray-700 hover:bg-gray-700'}`;
@@ -1415,7 +1042,7 @@
                 card.appendChild(delayWrapper);
                 card.appendChild(syncBtn);
                 
-                // 次のカードへつなぐ矢印アイコン
+                // 谺｡縺ｮ繧ｫ繝ｼ繝峨∈縺､縺ｪ縺千泙蜊ｰ繧｢繧､繧ｳ繝ｳ
                 if (index < seq.length - 1) {
                     const arrowWrap = document.createElement('div');
                     arrowWrap.className = 'flex items-center justify-center text-gray-500';
@@ -1429,7 +1056,7 @@
 
             const isRunning = AppState.gantry.isScanning || activeIdx >= 0;
 
-            // 追加ボタンの状態更新
+            // 霑ｽ蜉繝懊ち繝ｳ縺ｮ迥ｶ諷区峩譁ｰ
             const addBtn = document.getElementById('btn-add-batch');
             addBtn.disabled = seq.length >= 5 || isRunning;
             if(addBtn.disabled) {
@@ -1440,11 +1067,11 @@
                 addBtn.classList.add('hover:bg-gray-700', 'hover:text-white');
             }
             
-            // RUNボタンの状態更新
+            // RUN繝懊ち繝ｳ縺ｮ迥ｶ諷区峩譁ｰ
             const runBtn = document.getElementById('btn-run-sequence');
             if (isRunning) {
                 runBtn.disabled = false;
-                runBtn.onclick = stopAutoSequence; // 実行中はストップボタンにする
+                runBtn.onclick = stopAutoSequence; // 螳溯｡御ｸｭ縺ｯ繧ｹ繝医ャ繝励・繧ｿ繝ｳ縺ｫ縺吶ｋ
                 
                 if (AppState.gantry.cancelRequested) {
                     runBtn.className = 'h-16 px-6 bg-gray-700 text-gray-400 text-xs font-bold rounded-lg border border-gray-600 flex items-center gap-2 transition-all cursor-not-allowed';
@@ -1465,20 +1092,20 @@
             }
         }
 
-        // 選択したバッチだけインジェクタ同期をONにする (他はOFF)
+        // 驕ｸ謚槭＠縺溘ヰ繝・メ縺縺代う繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ蜷梧悄繧丹N縺ｫ縺吶ｋ (莉悶・OFF)
         function setInjectorSync(index) {
             const current = AppState.gantry.injectorSyncIndex;
             AppState.update('gantry', 'injectorSyncIndex', current === index ? -1 : index);
         }
 
-        // バッチの追加
+        // 繝舌ャ繝√・霑ｽ蜉
         function addScanBatch() {
             if (AppState.gantry.scanSequence.length >= 5) return;
             const newSeq = [...AppState.gantry.scanSequence, {mode: 'helical', delay: 0}];
             AppState.update('gantry', 'scanSequence', newSeq);
         }
 
-        // バッチの削除
+        // 繝舌ャ繝√・蜑企勁
         function removeScanBatch(index) {
             if (AppState.gantry.scanSequence.length <= 1) return;
             const newSeq = [...AppState.gantry.scanSequence];
@@ -1486,7 +1113,7 @@
             AppState.update('gantry', 'scanSequence', newSeq);
         }
 
-        // バッチのデータ変更 (モードやDelay)
+        // 繝舌ャ繝√・繝・・繧ｿ螟画峩 (繝｢繝ｼ繝峨ｄDelay)
         function updateBatchData(index, key, value) {
             const newSeq = [...AppState.gantry.scanSequence];
             newSeq[index] = { ...newSeq[index], [key]: value };
@@ -1500,7 +1127,7 @@
             }
         }
 
-        // フォーカス＆スキャンモード共通のダイアログ表示関数
+        // 繝輔か繝ｼ繧ｫ繧ｹ・・せ繧ｭ繝｣繝ｳ繝｢繝ｼ繝牙・騾壹・繝繧､繧｢繝ｭ繧ｰ陦ｨ遉ｺ髢｢謨ｰ
         function showInfoDialog(key) {
             if (!key || key === 'none') return;
 
@@ -1511,8 +1138,8 @@
             const text = Descriptions[key] || 'Description not found.';
             const lines = text.split('\n\n');
             
-            titleElem.innerText = lines[0]; // 1行目をタイトルに
-            descElem.innerText = lines[1] || ''; // 2行目以降を説明文に
+            titleElem.innerText = lines[0]; // 1陦檎岼繧偵ち繧､繝医Ν縺ｫ
+            descElem.innerText = lines[1] || ''; // 2陦檎岼莉･髯阪ｒ隱ｬ譏取枚縺ｫ
 
             dialog.classList.remove('hidden');
             dialog.classList.remove('opacity-0');
@@ -1521,14 +1148,14 @@
         function hideInfoDialog() {
             const dialog = document.getElementById('info-dialog');
             dialog.classList.add('hidden');
-            // セレクトボックスの選択状態を解除 (Focusのみ)
+            // 繧ｻ繝ｬ繧ｯ繝医・繝・け繧ｹ縺ｮ驕ｸ謚樒憾諷九ｒ隗｣髯､ (Focus縺ｮ縺ｿ)
             document.getElementById('select-focus').value = "";
         }
 
         function handleFocusChange(value) {
             if (!value) return;
 
-            // X線管球・ディテクタの時は中身を見せるためガントリを半透明化
+            // X邱夂ｮ｡逅・・繝・ぅ繝・け繧ｿ縺ｮ譎ゅ・荳ｭ霄ｫ繧定ｦ九○繧九◆繧√ぎ繝ｳ繝医Μ繧貞濠騾乗・蛹・
             if (value === 'XrayTube' || value === 'Detector') {
                 setGantryOpacity(true);
             } else if (value === 'Gantry' || value === 'TouchPanel') {
@@ -1555,7 +1182,7 @@
         }
 
         function setCameraView(viewType) {
-            // フォーカス以外のカメラビューに切り替わった場合はダイアログを隠す
+            // 繝輔か繝ｼ繧ｫ繧ｹ莉･螟悶・繧ｫ繝｡繝ｩ繝薙Η繝ｼ縺ｫ蛻・ｊ譖ｿ繧上▲縺溷ｴ蜷医・繝繧､繧｢繝ｭ繧ｰ繧帝國縺・
             if (!viewType.startsWith('focus_')) {
                 hideInfoDialog();
             }
@@ -1572,18 +1199,18 @@
         }
 
         function getCameraTarget(type) {
-            // 統合フォーカス用のカメラ処理
+            // 邨ｱ蜷医ヵ繧ｩ繝ｼ繧ｫ繧ｹ逕ｨ縺ｮ繧ｫ繝｡繝ｩ蜃ｦ逅・
             if (type.startsWith('focus_')) {
                 const label = type.replace('focus_', '');
                 
-                // 1. サーバーラック内の検索
+                // 1. 繧ｵ繝ｼ繝舌・繝ｩ繝・け蜀・・讀懃ｴ｢
                 if (Meshes.serverBlades && Meshes.serverBlades[label]) {
                     return { pos: Meshes.serverBlades[label].cameraPos, lookAt: Meshes.serverBlades[label].target };
                 }
                 
-                // 2. その他のコンポーネントの検索
+                // 2. 縺昴・莉悶・繧ｳ繝ｳ繝昴・繝阪Φ繝医・讀懃ｴ｢
                 const focusTargets = {
-                    // 修正: 机の位置を全体的に +2 ほどずらしたためカメラも連動
+                    // 菫ｮ豁｣: 譛ｺ縺ｮ菴咲ｽｮ繧貞・菴鍋噪縺ｫ +2 縺ｻ縺ｩ縺壹ｉ縺励◆縺溘ａ繧ｫ繝｡繝ｩ繧る｣蜍・
                     'Injector': { cameraPos: new THREE.Vector3(-2.8, 1.6, 2.8), target: new THREE.Vector3(-1.5, 1.3, 1.8) },
                     'Gantry': { cameraPos: new THREE.Vector3(0, 2.0, 4.0), target: new THREE.Vector3(0, 1.2, 0) },
                     'Couch': { cameraPos: new THREE.Vector3(2.5, 1.8, 3.5), target: new THREE.Vector3(0, 0.8, 2.0) },
@@ -1669,7 +1296,7 @@
             }
         }
 
-        // キャンセル可能な Wait 関数
+        // 繧ｭ繝｣繝ｳ繧ｻ繝ｫ蜿ｯ閭ｽ縺ｪ Wait 髢｢謨ｰ
         function wait(ms) {
             return new Promise(resolve => {
                 const interval = 100;
@@ -1693,7 +1320,7 @@
                         AppState.notify();
                         if (AppState.gantry.cancelRequested) {
                             tween.stop();
-                            resolve(); // キャンセル時は即座に解決して次へ（エラー処理用）
+                            resolve(); // 繧ｭ繝｣繝ｳ繧ｻ繝ｫ譎ゅ・蜊ｳ蠎ｧ縺ｫ隗｣豎ｺ縺励※谺｡縺ｸ・医お繝ｩ繝ｼ蜃ｦ逅・畑・・
                         }
                     })
                     .onComplete(resolve)
@@ -1703,7 +1330,7 @@
 
         let isSequenceRunning = false;
 
-        // シーケンスの中断要求
+        // 繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ縺ｮ荳ｭ譁ｭ隕∵ｱ・
         function stopAutoSequence() {
             if (!isSequenceRunning) return;
             AppState.update('gantry', 'cancelRequested', true);
@@ -1714,19 +1341,19 @@
             isSequenceRunning = true;
             AppState.update('gantry', 'cancelRequested', false);
 
-            // 状態のリセット
+            // 迥ｶ諷九・繝ｪ繧ｻ繝・ヨ
             AppState.update('couch', 'y', 0);
             AppState.update('couch', 'z', 0);
             AppState.update('injector', 'a', 0);
             if (AppState.gantry.xrayVisible) toggleXRay();
             if (AppState.gantry.isScanning) toggleScan();
 
-            // 1. 寝台の上昇
+            // 1. 蟇晏床縺ｮ荳頑・
             await tweenPromise(AppState.couch, { y: 80 }, 2000);
 
             const seq = AppState.gantry.scanSequence;
 
-            // バッチ処理ループ
+            // 繝舌ャ繝∝・逅・Ν繝ｼ繝・
             for (let i = 0; i < seq.length; i++) {
                 if (AppState.gantry.cancelRequested) break;
 
@@ -1735,11 +1362,11 @@
                 const delay = batch.delay || 0;
                 const isSyncTarget = (AppState.gantry.injectorSyncIndex === i);
                 
-                // 現在実行中のバッチインデックスを更新
+                // 迴ｾ蝨ｨ螳溯｡御ｸｭ縺ｮ繝舌ャ繝√う繝ｳ繝・ャ繧ｯ繧ｹ繧呈峩譁ｰ
                 AppState.update('gantry', 'activeBatchIndex', i);
                 AppState.update('gantry', 'currentScanMode', mode);
 
-                // --- Delay処理 (カウントダウン) ---
+                // --- Delay蜃ｦ逅・(繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ) ---
                 if (delay > 0) {
                     for(let d = delay; d > 0; d--) {
                         if (AppState.gantry.cancelRequested) break;
@@ -1751,7 +1378,7 @@
 
                 if (AppState.gantry.cancelRequested) break;
 
-                // 同期設定されていれば、スキャン開始と同時に造影剤注入
+                // 蜷梧悄險ｭ螳壹＆繧後※縺・ｌ縺ｰ縲√せ繧ｭ繝｣繝ｳ髢句ｧ九→蜷梧凾縺ｫ騾蠖ｱ蜑､豕ｨ蜈･
                 if (isSyncTarget) {
                     tweenPromise(AppState.injector, { a: 100 }, 4000);
                 }
@@ -1761,7 +1388,7 @@
                 const isHelicalLike = mode === 'helical' || mode === '3d_landmark';
 
                 if (isScano) {
-                    // --- スキャノグラム (回転停止 ＋ 連続移動) ---
+                    // --- 繧ｹ繧ｭ繝｣繝弱げ繝ｩ繝 (蝗櫁ｻ｢蛛懈ｭ｢ ・・騾｣邯夂ｧｻ蜍・ ---
                     new TWEEN.Tween(Meshes.rotor.rotation).to({ z: 0 }, 1000).start();
                     await wait(1000);
                     if (AppState.gantry.cancelRequested) break;
@@ -1774,7 +1401,7 @@
                     if (AppState.gantry.xrayVisible) toggleXRay();
 
                 } else {
-                    // 回転を伴うスキャン
+                    // 蝗櫁ｻ｢繧剃ｼｴ縺・せ繧ｭ繝｣繝ｳ
                     if (!AppState.gantry.isScanning) {
                         toggleScan();
                         await wait(2000);
@@ -1782,7 +1409,7 @@
                     if (AppState.gantry.cancelRequested) break;
 
                     if (isHelicalLike) {
-                        // --- ヘリカル / 3D Landmark ---
+                        // --- 繝倥Μ繧ｫ繝ｫ / 3D Landmark ---
                         await tweenPromise(AppState.couch, { z: 80 }, 1500);
                         if (AppState.gantry.cancelRequested) break;
 
@@ -1791,8 +1418,8 @@
                         if (AppState.gantry.xrayVisible) toggleXRay();
 
                     } else if (isVolume) {
-                        // --- ボリューム系 (その場で停止) ---
-                        // 修正: Z=70% (人体胸部) に移動する
+                        // --- 繝懊Μ繝･繝ｼ繝邉ｻ (縺昴・蝣ｴ縺ｧ蛛懈ｭ｢) ---
+                        // 菫ｮ豁｣: Z=70% (莠ｺ菴楢・驛ｨ) 縺ｫ遘ｻ蜍輔☆繧・
                         await tweenPromise(AppState.couch, { z: 70 }, 1500);
                         if (AppState.gantry.cancelRequested) break;
 
@@ -1801,7 +1428,7 @@
                         if (AppState.gantry.xrayVisible) toggleXRay();
 
                     } else if (mode === 'axial') {
-                        // --- アキシャル (ステップ) ---
+                        // --- 繧｢繧ｭ繧ｷ繝｣繝ｫ (繧ｹ繝・ャ繝・ ---
                         await tweenPromise(AppState.couch, { z: 80 }, 1500);
                         if (AppState.gantry.cancelRequested) break;
 
@@ -1828,9 +1455,9 @@
                 await wait(1000);
             }
 
-            // --- クリーンアップと退出処理 ---
+            // --- 繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝・・縺ｨ騾蜃ｺ蜃ｦ逅・---
             
-            // X線が万が一ONなら消す
+            // X邱壹′荳・′荳ON縺ｪ繧画ｶ医☆
             if (AppState.gantry.xrayVisible) {
                 toggleXRay();
             }
@@ -1838,22 +1465,22 @@
             AppState.update('gantry', 'activeBatchIndex', -1);
             AppState.update('gantry', 'countdown', 0);
 
-            // ローターが回っていれば停止
+            // 繝ｭ繝ｼ繧ｿ繝ｼ縺悟屓縺｣縺ｦ縺・ｌ縺ｰ蛛懈ｭ｢
             if (AppState.gantry.isScanning) {
                 toggleScan();
                 await wait(2000);
             }
 
-            // 寝台退出
+            // 蟇晏床騾蜃ｺ
             await tweenPromise(AppState.couch, { z: 0 }, 2000);
             await tweenPromise(AppState.couch, { y: 0 }, 2000);
 
-            // 状態の復元
+            // 迥ｶ諷九・蠕ｩ蜈・
             AppState.update('gantry', 'currentScanMode', AppState.gantry.scanSequence[0].mode);
             AppState.update('gantry', 'cancelRequested', false);
 
             isSequenceRunning = false;
-            renderBatchUI(); // ボタンの表示を通常に戻す
+            renderBatchUI(); // 繝懊ち繝ｳ縺ｮ陦ｨ遉ｺ繧帝壼ｸｸ縺ｫ謌ｻ縺・
         }
 
         function onWindowResize() {
@@ -1877,7 +1504,7 @@
                 mixer.update(delta);
             }
 
-            // サーバーのアクセスランプをランダムに点滅させる演出
+            // 繧ｵ繝ｼ繝舌・縺ｮ繧｢繧ｯ繧ｻ繧ｹ繝ｩ繝ｳ繝励ｒ繝ｩ繝ｳ繝繝縺ｫ轤ｹ貊・＆縺帙ｋ貍泌・
             if (Meshes.serverLeds) {
                 Meshes.serverLeds.forEach(mat => {
                     if (Math.random() > 0.85) {
@@ -1889,7 +1516,3 @@
             controls.update();
             renderer.render(scene, camera);
         }
-    </script>
-</body>
-
-</html>
