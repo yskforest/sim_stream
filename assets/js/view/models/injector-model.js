@@ -63,4 +63,3 @@ function buildInjector() {
             injectorGroup.add(headGroup);
             scene.add(injectorGroup);
         }
-

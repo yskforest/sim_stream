@@ -33,31 +33,31 @@ const AppState = {
 
         const Descriptions = {
             // Focus Targets
-            'SCON': 'SCON (System Control Node)\n\nCT繧ｷ繧ｹ繝・Β蜈ｨ菴薙ｒ邨ｱ諡ｬ縺吶ｋ繝｡繧､繝ｳ繧ｳ繝ｳ繝医Ο繝ｼ繝ｩ繝ｼ縺ｧ縺吶ゅが繝壹Ξ繝ｼ繧ｿ繝ｼ縺九ｉ縺ｮ繧ｹ繧ｭ繝｣繝ｳ謖・､ｺ繧貞女縺大叙繧翫∝推繝弱・繝峨↓驕ｩ蛻・↑繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ縺ｨ繝代Λ繝｡繝ｼ繧ｿ繝ｼ繧帝・菫｡縺励∪縺吶・,
-            'DCON': 'DCON (Data Control Node)\n\n繧ｬ繝ｳ繝医Μ蜀・・讀懷・蝎ｨ・・AS・峨°繧牙・繝輔ぃ繧､繝舌・邨檎罰縺ｧ騾√ｉ繧後※縺上ｋ閹ｨ螟ｧ縺ｪ逕溘ョ繝ｼ繧ｿ繧偵Μ繧｢繝ｫ繧ｿ繧､繝縺ｧ蜿嶺ｿ｡縺励√ヰ繝・ヵ繧｡繝ｪ繝ｳ繧ｰ繧・燕蜃ｦ逅・ｒ陦後＞縺ｾ縺吶・,
-            'RTM': 'RTM (Real Time Monitor)\n\n繧ｹ繧ｭ繝｣繝ｳ騾ｲ陦御ｸｭ縺ｫ繝ｪ繧｢繝ｫ繧ｿ繧､繝縺ｧ邁｡譏鍋噪縺ｪ逕ｻ蜒丞・讒区・繧定｡後＞縲√さ繝ｳ繧ｽ繝ｼ繝ｫ繝｢繝九ち繝ｼ縺ｫ繝励Ξ繝薙Η繝ｼ逕ｻ蜒上ｒ陦ｨ遉ｺ縺吶ｋ縺溘ａ縺ｮ蟆ら畑繝弱・繝峨〒縺吶・,
-            'IDD': 'IDD (Image Data Disk)\n\n蜀肴ｧ区・繧ｨ繝ｳ繧ｸ繝ｳ縺ｫ繧医▲縺ｦ逕滓・縺輔ｌ縺滄ｫ倡ｲｾ邏ｰ縺ｪDICOM逕ｻ蜒上ョ繝ｼ繧ｿ繧帝ｫ倬溘°縺､螳牙・縺ｫ菫晏ｭ倥☆繧九◆繧√・縲∝､ｧ螳ｹ驥上せ繝医Ξ繝ｼ繧ｸ繧｢繝ｬ繧､・・AID讒区・・峨〒縺吶・,
-            'RDD': 'RDD (Raw Data Disk)\n\n讀懷・蝎ｨ縺九ｉ蜿門ｾ励＠縺滓悴蜃ｦ逅・・繝ｭ繝ｼ繝・・繧ｿ繧剃ｸ譎ら噪縺ｫ闢・ｩ阪☆繧矩ｫ倬溘せ繝医Ξ繝ｼ繧ｸ縺ｧ縺吶ゅせ繧ｭ繝｣繝ｳ蠕後・蜀崎ｨ育ｮ暦ｼ医Ξ繝医Ο繧ｹ繝壹け繝・ぅ繝門・讒区・・峨↓菴ｿ逕ｨ縺輔ｌ縺ｾ縺吶・,
-            'SAC': 'SAC (Scan Array Controller)\n\n繧ｬ繝ｳ繝医Μ縺ｮ蝗櫁ｻ｢騾溷ｺｦ・医Ο繝ｼ繧ｿ繝ｼ蛻ｶ蠕｡・峨々邱夂ｮ｡逅・・辣ｧ蟆・ち繧､繝溘Φ繧ｰ縲∝ｯ晏床・医き繧ｦ繝・ｼ峨・遘ｻ蜍暮溷ｺｦ繧偵・繧､繧ｯ繝ｭ遘貞腰菴阪〒鬮倡ｲｾ蠎ｦ縺ｫ蜷梧悄蛻ｶ蠕｡縺吶ｋ繝上・繝峨え繧ｧ繧｢繝ｦ繝九ャ繝医〒縺吶・,
-            'FullRack': 'Console BOX (Server Rack)\n\nCT繧ｹ繧ｭ繝｣繝翫・鬆ｭ閼ｳ縺ｨ縺ｪ繧句推遞ｮ險育ｮ励ヮ繝ｼ繝峨∝宛蠕｡繝弱・繝峨∝､ｧ螳ｹ驥上せ繝医Ξ繝ｼ繧ｸ縺梧ｼ邏阪＆繧後◆19繧､繝ｳ繝√し繝ｼ繝舌・繝ｩ繝・け縺ｧ縺吶ょ､冶｣・ｒ逋ｽ繝吶・繧ｹ縺ｫ縺励∵ｸ・ｽ疲─縺ｨ隕冶ｪ肴ｧ繧貞髄荳翫＆縺帙※縺・∪縺吶・,
-            'Injector': 'Injector (繧､繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ)\n\n騾蠖ｱ蜑､縺ｨ逕溽炊鬟溷｡ｩ豌ｴ繧帝←蛻・↑繧ｿ繧､繝溘Φ繧ｰ縺ｨ蝨ｧ蜉帙〒閾ｪ蜍墓ｳｨ蜈･縺吶ｋ陬・ｽｮ縺ｧ縺吶ゅせ繧ｭ繝｣繝ｳ縺ｨ騾｣蜍輔＠縺ｦ蜍穂ｽ懊＠縺ｾ縺吶・,
-            'Gantry': 'CT Gantry (CT繧ｬ繝ｳ繝医Μ)\n\nX邱夂ｮ｡逅・ｄ讀懷・蝎ｨ繧貞・阡ｵ縺励・ｫ倬溘〒蝗櫁ｻ｢縺励↑縺後ｉ繝・・繧ｿ繧貞庶髮・☆繧気T縺ｮ譛ｬ菴馴Κ蛻・〒縺吶ょ・驛ｨ縺ｧ縺ｯ1遘帝俣縺ｫ謨ｰ蝗櫁ｻ｢縺吶ｋ邊ｾ蟇・↑蛻ｶ蠕｡縺瑚｡後ｏ繧後※縺・∪縺吶・,
-            'Couch': 'CT Couch (CT蟇晏床)\n\n謔｣閠・′讓ｪ縺溘ｏ繧句ｯ晏床縺ｧ縺吶ゅせ繧ｭ繝｣繝ｳ荳ｭ縺ｫ繧ｬ繝ｳ繝医Μ蜀・ｒ繧ｵ繝悶Α繝ｪ蜊倅ｽ阪・豁｣遒ｺ縺ｪ騾溷ｺｦ縺ｨ菴咲ｽｮ縺ｧ遘ｻ蜍輔＠縺ｾ縺吶・,
-            'TouchPanel': 'CT Touch Panel (CT繧ｿ繝・メ繝代ロ繝ｫ)\n\n繧ｬ繝ｳ繝医Μ蜑埼擇縺ｫ驟咲ｽｮ縺輔ｌ縲∵ぅ閠・・菴咲ｽｮ豎ｺ繧√ｄ蟇晏床縺ｮ荳贋ｸ狗ｧｻ蜍輔√Ξ繝ｼ繧ｶ繝ｼ繝昴う繝ｳ繧ｿ繝ｼ縺ｮ謫堺ｽ懊↑縺ｩ繧堤峩諢溽噪縺ｫ陦後≧縺溘ａ縺ｮ繧､繝ｳ繧ｿ繝ｼ繝輔ぉ繝ｼ繧ｹ縺ｧ縺吶・,
-            'XrayTube': 'X-ray Tube (X邱夂ｮ｡逅・\n\n鬮倬崕蝨ｧ繧偵°縺代※髮ｻ蟄千ｷ壹ｒ繧ｿ繝ｼ繧ｲ繝・ヨ縺ｫ陦晉ｪ√＆縺帙ｋ縺薙→縺ｧ縲∽ｺｺ菴薙ｒ騾城℃縺吶ｋX邱壹ｒ逋ｺ逕溘＆縺帙ｋ蠢・∮驛ｨ縺ｧ縺吶る撼蟶ｸ縺ｫ鬮俶ｸｩ縺ｫ縺ｪ繧九◆繧∝ｼｷ蜉帙↑蜀ｷ蜊ｴ讖滓ｧ九ｒ蛯吶∴縺ｦ縺・∪縺吶・,
-            'Detector': 'Detector (繝・ぅ繝・け繧ｿ / 讀懷・蝎ｨ)\n\n莠ｺ菴薙ｒ騾城℃縺励◆X邱壹ｒ讀懃衍縺励∝・菫｡蜿ｷ縺九ｉ髮ｻ豌嶺ｿ｡蜿ｷ縺ｸ螟画鋤縺吶ｋ鬮俶─蠎ｦ縺ｪ繧ｻ繝ｳ繧ｵ繝ｼ繧｢繝ｬ繧､縺ｧ縺吶ょ､壼・CT縺ｧ縺ｯ謨ｰ逋ｾ蛻励ｂ縺ｮ繧ｻ繝ｳ繧ｵ繝ｼ縺御ｸｦ縺ｳ縺ｾ縺吶・,
-            'ConsoleDisplay': 'Console Display (繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ繝・ぅ繧ｹ繝励Ξ繧､)\n\n繧ｪ繝壹Ξ繝ｼ繧ｿ繝ｼ縺後せ繧ｭ繝｣繝ｳ險育判・医・繝ｭ繝医さ繝ｫ險ｭ螳夲ｼ峨ｒ遶九※縲∝・讒区・縺輔ｌ縺溽判蜒上ｒ繝ｪ繧｢繝ｫ繧ｿ繧､繝縺ｫ遒ｺ隱阪・隗｣譫舌☆繧九◆繧√・謫堺ｽ懊Δ繝九ち繝ｼ縺ｧ縺吶・,
-            'OperationSwitcher': 'Operation Switcher (謫堺ｽ懊せ繧､繝・メ繝｣)\n\n繧ｹ繧ｭ繝｣繝ｳ縺ｮ髢句ｧ九・蛛懈ｭ｢縲∝ｯ晏床縺ｮ邱頑･蛛懈ｭ｢縺ｪ縺ｩ繧堤黄逅・・繧ｿ繝ｳ縺ｧ蜊ｳ蠎ｧ縺ｫ陦後≧縺溘ａ縺ｮ蟆ら畑繝・ヰ繧､繧ｹ縺ｧ縺吶ら峩諢溽噪縺ｪ謫堺ｽ懊→螳牙・諤ｧ縺ｮ縺溘ａ縺ｫ繝上・繝峨え繧ｧ繧｢繧ｹ繧､繝・メ縺梧治逕ｨ縺輔ｌ縺ｦ縺・∪縺吶・,
+            'SCON': 'SCON (System Control Node)\n\nCT郢ｧ・ｷ郢ｧ・ｹ郢昴・ﾎ定怦・ｨ闖ｴ阮呻ｽ帝お・ｱ隲｡・ｬ邵ｺ蜷ｶ・狗ｹ晢ｽ｡郢ｧ・､郢晢ｽｳ郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ溽ｹ晢ｽｼ郢晢ｽｩ郢晢ｽｼ邵ｺ・ｧ邵ｺ蜷ｶﾂ繧・′郢晏｣ｹﾎ樒ｹ晢ｽｼ郢ｧ・ｿ郢晢ｽｼ邵ｺ荵晢ｽ臥ｸｺ・ｮ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ隰悶・・､・ｺ郢ｧ雋槫･ｳ邵ｺ螟ｧ蜿咏ｹｧ鄙ｫﾂ竏晄耳郢晏ｼｱ繝ｻ郢晏ｳｨ竊馴ｩ包ｽｩ陋ｻ繝ｻ竊醍ｹｧ・ｷ郢晢ｽｼ郢ｧ・ｱ郢晢ｽｳ郢ｧ・ｹ邵ｺ・ｨ郢昜ｻ｣ﾎ帷ｹ晢ｽ｡郢晢ｽｼ郢ｧ・ｿ郢晢ｽｼ郢ｧ蟶昴・闖ｫ・｡邵ｺ蜉ｱ竏ｪ邵ｺ蜷ｶﾂ繝ｻ,
+            'DCON': 'DCON (Data Control Node)\n\n郢ｧ・ｬ郢晢ｽｳ郢晏現ﾎ懆怙繝ｻ繝ｻ隶諛ｷ繝ｻ陜趣ｽｨ繝ｻ繝ｻAS繝ｻ蟲ｨﾂｰ郢ｧ迚吶・郢晁ｼ斐＜郢ｧ・､郢晁・繝ｻ驍ｨ讙守ｽｰ邵ｺ・ｧ鬨ｾ竏夲ｽ臥ｹｧ蠕娯ｻ邵ｺ荳奇ｽ矩婿・ｨ陞滂ｽｧ邵ｺ・ｪ騾墓ｺ倥Ι郢晢ｽｼ郢ｧ・ｿ郢ｧ蛛ｵﾎ懃ｹｧ・｢郢晢ｽｫ郢ｧ・ｿ郢ｧ・､郢晢｣ｰ邵ｺ・ｧ陷ｿ蠍ｺ・ｿ・｡邵ｺ蜉ｱﾂ竏壹Σ郢昴・繝ｵ郢ｧ・｡郢晢ｽｪ郢晢ｽｳ郢ｧ・ｰ郢ｧ繝ｻ辯戊怎・ｦ騾・・・帝勗蠕鯉ｼ樒ｸｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'RTM': 'RTM (Real Time Monitor)\n\n郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ鬨ｾ・ｲ髯ｦ蠕｡・ｸ・ｭ邵ｺ・ｫ郢晢ｽｪ郢ｧ・｢郢晢ｽｫ郢ｧ・ｿ郢ｧ・､郢晢｣ｰ邵ｺ・ｧ驍・ｽ｡隴城豪蝎ｪ邵ｺ・ｪ騾包ｽｻ陷剃ｸ槭・隶貞玄繝ｻ郢ｧ螳夲ｽ｡蠕鯉ｼ樒ｸｲ竏壹＆郢晢ｽｳ郢ｧ・ｽ郢晢ｽｼ郢晢ｽｫ郢晢ｽ｢郢昜ｹ昴■郢晢ｽｼ邵ｺ・ｫ郢晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ騾包ｽｻ陷剃ｸ奇ｽ帝勗・ｨ驕会ｽｺ邵ｺ蜷ｶ・狗ｸｺ貅假ｽ∫ｸｺ・ｮ陝・ｉ逡醍ｹ晏ｼｱ繝ｻ郢晏ｳｨ縲堤ｸｺ蜷ｶﾂ繝ｻ,
+            'IDD': 'IDD (Image Data Disk)\n\n陷閧ｴ・ｧ蛹ｺ繝ｻ郢ｧ・ｨ郢晢ｽｳ郢ｧ・ｸ郢晢ｽｳ邵ｺ・ｫ郢ｧ蛹ｻ笆ｲ邵ｺ・ｦ騾墓ｻ薙・邵ｺ霈費ｽ檎ｸｺ貊・ｽｫ蛟｡・ｲ・ｾ驍擾ｽｰ邵ｺ・ｪDICOM騾包ｽｻ陷剃ｸ翫Ι郢晢ｽｼ郢ｧ・ｿ郢ｧ蟶晢ｽｫ蛟ｬﾂ貅伉ｰ邵ｺ・､陞ｳ迚吶・邵ｺ・ｫ闖ｫ譎擾ｽｭ蛟･笘・ｹｧ荵昶螺郢ｧ竏壹・邵ｲ竏晢ｽ､・ｧ陞ｳ・ｹ鬩･荳翫○郢晏現ﾎ樒ｹ晢ｽｼ郢ｧ・ｸ郢ｧ・｢郢晢ｽｬ郢ｧ・､繝ｻ繝ｻAID隶貞玄繝ｻ繝ｻ蟲ｨ縲堤ｸｺ蜷ｶﾂ繝ｻ,
+            'RDD': 'RDD (Raw Data Disk)\n\n隶諛ｷ繝ｻ陜趣ｽｨ邵ｺ荵晢ｽ芽愾髢・ｾ蜉ｱ・邵ｺ貊捺ざ陷・ｽｦ騾・・繝ｻ郢晢ｽｭ郢晢ｽｼ郢昴・繝ｻ郢ｧ・ｿ郢ｧ蜑・ｽｸﾂ隴弱ｉ蝎ｪ邵ｺ・ｫ髣｢繝ｻ・ｩ髦ｪ笘・ｹｧ遏ｩ・ｫ蛟ｬﾂ貅倥○郢晏現ﾎ樒ｹ晢ｽｼ郢ｧ・ｸ邵ｺ・ｧ邵ｺ蜷ｶﾂ繧・○郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ陟募ｾ後・陷蟠趣ｽｨ閧ｲ・ｮ證ｦ・ｼ蛹ｻﾎ樒ｹ晏現ﾎ溽ｹｧ・ｹ郢晏｣ｹ縺醍ｹ昴・縺・ｹ晞摩繝ｻ隶貞玄繝ｻ繝ｻ蟲ｨ竊楢抄・ｿ騾包ｽｨ邵ｺ霈費ｽ檎ｸｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'SAC': 'SAC (Scan Array Controller)\n\n郢ｧ・ｬ郢晢ｽｳ郢晏現ﾎ懃ｸｺ・ｮ陜玲ｫ・ｽｻ・｢鬨ｾ貅ｷ・ｺ・ｦ繝ｻ蛹ｻﾎ溽ｹ晢ｽｼ郢ｧ・ｿ郢晢ｽｼ陋ｻ・ｶ陟包ｽ｡繝ｻ蟲ｨﾂ縲・こ螟ゑｽｮ・｡騾・・繝ｻ霎｣・ｧ陝・・縺｡郢ｧ・､郢晄ｺ佩ｦ郢ｧ・ｰ邵ｲ竏晢ｽｯ譎丞ｺ翫・蛹ｻ縺咲ｹｧ・ｦ郢昴・・ｼ蟲ｨ繝ｻ驕假ｽｻ陷肴坩ﾂ貅ｷ・ｺ・ｦ郢ｧ蛛ｵ繝ｻ郢ｧ・､郢ｧ・ｯ郢晢ｽｭ驕倩ｲ櫁・闖ｴ髦ｪ縲帝ｬｮ蛟｡・ｲ・ｾ陟趣ｽｦ邵ｺ・ｫ陷ｷ譴ｧ謔・崕・ｶ陟包ｽ｡邵ｺ蜷ｶ・狗ｹ昜ｸ翫・郢晏ｳｨ縺育ｹｧ・ｧ郢ｧ・｢郢晢ｽｦ郢昜ｹ昴Ε郢晏現縲堤ｸｺ蜷ｶﾂ繝ｻ,
+            'FullRack': 'Console BOX (Server Rack)\n\nCT郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晉ｿｫ繝ｻ鬯・ｽｭ髢ｼ・ｳ邵ｺ・ｨ邵ｺ・ｪ郢ｧ蜿･謗ｨ驕橸ｽｮ髫ｪ閧ｲ・ｮ蜉ｱ繝ｮ郢晢ｽｼ郢晏ｳｨﾂ竏晏ｮ幄包ｽ｡郢晏ｼｱ繝ｻ郢晏ｳｨﾂ竏晢ｽ､・ｧ陞ｳ・ｹ鬩･荳翫○郢晏現ﾎ樒ｹ晢ｽｼ郢ｧ・ｸ邵ｺ譴ｧ・ｰ・ｼ驍城亂・・ｹｧ蠕娯螺19郢ｧ・､郢晢ｽｳ郢昶・縺礼ｹ晢ｽｼ郢晁・繝ｻ郢晢ｽｩ郢昴・縺醍ｸｺ・ｧ邵ｺ蜷ｶﾂ繧・ｽ､蜀ｶ・｣繝ｻ・帝具ｽｽ郢晏生繝ｻ郢ｧ・ｹ邵ｺ・ｫ邵ｺ蜉ｱﾂ竏ｵ・ｸ繝ｻ・ｽ逍ｲ笏邵ｺ・ｨ髫募・・ｪ閧ｴﾂ・ｧ郢ｧ雋樣ｫ・叉鄙ｫ・・ｸｺ蟶吮ｻ邵ｺ繝ｻ竏ｪ邵ｺ蜷ｶﾂ繝ｻ,
+            'Injector': 'Injector (郢ｧ・､郢晢ｽｳ郢ｧ・ｸ郢ｧ・ｧ郢ｧ・ｯ郢ｧ・ｿ)\n\n鬨ｾ・ｰ陟厄ｽｱ陷托ｽ､邵ｺ・ｨ騾墓ｺｽ轤企ｬ滓ｺｷ・｡・ｩ雎鯉ｽｴ郢ｧ蟶昶・陋ｻ繝ｻ竊醍ｹｧ・ｿ郢ｧ・､郢晄ｺ佩ｦ郢ｧ・ｰ邵ｺ・ｨ陜ｨ・ｧ陷牙ｸ吶帝明・ｪ陷榊｢難ｽｳ・ｨ陷茨ｽ･邵ｺ蜷ｶ・矩勳繝ｻ・ｽ・ｮ邵ｺ・ｧ邵ｺ蜷ｶﾂ繧・○郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ邵ｺ・ｨ鬨ｾ・｣陷崎ｼ費ｼ邵ｺ・ｦ陷咲ｩゑｽｽ諛奇ｼ邵ｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'Gantry': 'CT Gantry (CT郢ｧ・ｬ郢晢ｽｳ郢晏現ﾎ・\n\nX驍ｱ螟ゑｽｮ・｡騾・・・・ｮ諛ｷ繝ｻ陜趣ｽｨ郢ｧ雋槭・髦｡・ｵ邵ｺ蜉ｱﾂ繝ｻ・ｫ蛟ｬﾂ貅倥定摎讚・ｽｻ・｢邵ｺ蜉ｱ竊醍ｸｺ蠕鯉ｽ臥ｹ昴・繝ｻ郢ｧ・ｿ郢ｧ雋槫ｺｶ鬮ｮ繝ｻ笘・ｹｧ豌裕邵ｺ・ｮ隴幢ｽｬ闖ｴ鬥ｴﾎ夊崕繝ｻ縲堤ｸｺ蜷ｶﾂ繧・・鬩幢ｽｨ邵ｺ・ｧ邵ｺ・ｯ1驕伜ｸ昜ｿ｣邵ｺ・ｫ隰ｨ・ｰ陜玲ｫ・ｽｻ・｢邵ｺ蜷ｶ・矩ｊ・ｾ陝・・竊題崕・ｶ陟包ｽ｡邵ｺ迹夲ｽ｡蠕鯉ｽ冗ｹｧ蠕娯ｻ邵ｺ繝ｻ竏ｪ邵ｺ蜷ｶﾂ繝ｻ,
+            'Couch': 'CT Couch (CT陝・剌蠎・\n\n隰費ｽ｣髢繝ｻ窶ｲ隶難ｽｪ邵ｺ貅假ｽ冗ｹｧ蜿･・ｯ譎丞ｺ顔ｸｺ・ｧ邵ｺ蜷ｶﾂ繧・○郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ闕ｳ・ｭ邵ｺ・ｫ郢ｧ・ｬ郢晢ｽｳ郢晏現ﾎ懆怙繝ｻ・堤ｹｧ・ｵ郢晄じﾎ醍ｹ晢ｽｪ陷雁・ｽｽ髦ｪ繝ｻ雎・ｽ｣驕抵ｽｺ邵ｺ・ｪ鬨ｾ貅ｷ・ｺ・ｦ邵ｺ・ｨ闖ｴ蜥ｲ・ｽ・ｮ邵ｺ・ｧ驕假ｽｻ陷崎ｼ費ｼ邵ｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'TouchPanel': 'CT Touch Panel (CT郢ｧ・ｿ郢昴・繝｡郢昜ｻ｣繝ｭ郢晢ｽｫ)\n\n郢ｧ・ｬ郢晢ｽｳ郢晏現ﾎ懆恆蝓ｼ謫・ｸｺ・ｫ鬩溷調・ｽ・ｮ邵ｺ霈費ｽ檎ｸｲ竏ｵ縺・蔓繝ｻ繝ｻ闖ｴ蜥ｲ・ｽ・ｮ雎趣ｽｺ郢ｧ竏夲ｽ・汞譎丞ｺ顔ｸｺ・ｮ闕ｳ雍具ｽｸ迢暦ｽｧ・ｻ陷崎ｼ板竏墅樒ｹ晢ｽｼ郢ｧ・ｶ郢晢ｽｼ郢晄亢縺・ｹ晢ｽｳ郢ｧ・ｿ郢晢ｽｼ邵ｺ・ｮ隰ｫ蝣ｺ・ｽ諛岩・邵ｺ・ｩ郢ｧ蝣､蟲ｩ隲｢貅ｽ蝎ｪ邵ｺ・ｫ髯ｦ蠕娯鴬邵ｺ貅假ｽ∫ｸｺ・ｮ郢ｧ・､郢晢ｽｳ郢ｧ・ｿ郢晢ｽｼ郢晁ｼ斐♂郢晢ｽｼ郢ｧ・ｹ邵ｺ・ｧ邵ｺ蜷ｶﾂ繝ｻ,
+            'XrayTube': 'X-ray Tube (X驍ｱ螟ゑｽｮ・｡騾・・\n\n鬯ｮ蛟ｬ蟠戊舉・ｧ郢ｧ蛛ｵﾂｰ邵ｺ莉｣窶ｻ鬮ｮ・ｻ陝・鴻・ｷ螢ｹ・堤ｹｧ・ｿ郢晢ｽｼ郢ｧ・ｲ郢昴・繝ｨ邵ｺ・ｫ髯ｦ譎会ｽｪ竏夲ｼ・ｸｺ蟶呻ｽ狗ｸｺ阮吮・邵ｺ・ｧ邵ｲ竏ｽ・ｺ・ｺ闖ｴ阮呻ｽ帝ｨｾ蝓寂с邵ｺ蜷ｶ・宜驍ｱ螢ｹ・帝具ｽｺ騾墓ｺ假ｼ・ｸｺ蟶呻ｽ玖｢繝ｻ竏ｮ鬩幢ｽｨ邵ｺ・ｧ邵ｺ蜷ｶﾂ繧区直陝ｶ・ｸ邵ｺ・ｫ鬯ｮ菫ｶ・ｸ・ｩ邵ｺ・ｫ邵ｺ・ｪ郢ｧ荵昶螺郢ｧ竏晢ｽｼ・ｷ陷牙ｸ吮・陷・ｷ陷奇ｽｴ隶匁ｻ難ｽｧ荵晢ｽ定岷蜷ｶ竏ｴ邵ｺ・ｦ邵ｺ繝ｻ竏ｪ邵ｺ蜷ｶﾂ繝ｻ,
+            'Detector': 'Detector (郢昴・縺・ｹ昴・縺醍ｹｧ・ｿ / 隶諛ｷ繝ｻ陜趣ｽｨ)\n\n闔・ｺ闖ｴ阮呻ｽ帝ｨｾ蝓寂с邵ｺ蜉ｱ笳・驍ｱ螢ｹ・定ｮ諛・｡咲ｸｺ蜉ｱﾂ竏昴・闖ｫ・｡陷ｿ・ｷ邵ｺ荵晢ｽ蛾ｫｮ・ｻ雎悟ｶｺ・ｿ・｡陷ｿ・ｷ邵ｺ・ｸ陞溽判驪､邵ｺ蜷ｶ・矩ｬｮ菫ｶ笏陟趣ｽｦ邵ｺ・ｪ郢ｧ・ｻ郢晢ｽｳ郢ｧ・ｵ郢晢ｽｼ郢ｧ・｢郢晢ｽｬ郢ｧ・､邵ｺ・ｧ邵ｺ蜷ｶﾂ繧・ｽ､螢ｼ繝ｻCT邵ｺ・ｧ邵ｺ・ｯ隰ｨ・ｰ騾具ｽｾ陋ｻ蜉ｱ・らｸｺ・ｮ郢ｧ・ｻ郢晢ｽｳ郢ｧ・ｵ郢晢ｽｼ邵ｺ蠕｡・ｸ・ｦ邵ｺ・ｳ邵ｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'ConsoleDisplay': 'Console Display (郢ｧ・ｳ郢晢ｽｳ郢ｧ・ｽ郢晢ｽｼ郢晢ｽｫ郢昴・縺・ｹｧ・ｹ郢晏干ﾎ樒ｹｧ・､)\n\n郢ｧ・ｪ郢晏｣ｹﾎ樒ｹ晢ｽｼ郢ｧ・ｿ郢晢ｽｼ邵ｺ蠕後○郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ髫ｪ閧ｲ蛻､繝ｻ蛹ｻ繝ｻ郢晢ｽｭ郢晏現縺慕ｹ晢ｽｫ髫ｪ・ｭ陞ｳ螟ｲ・ｼ蟲ｨ・帝・荵昶ｻ邵ｲ竏昴・隶貞玄繝ｻ邵ｺ霈費ｽ檎ｸｺ貅ｽ蛻､陷剃ｸ奇ｽ堤ｹ晢ｽｪ郢ｧ・｢郢晢ｽｫ郢ｧ・ｿ郢ｧ・､郢晢｣ｰ邵ｺ・ｫ驕抵ｽｺ髫ｱ髦ｪ繝ｻ髫暦ｽ｣隴ｫ闊娯・郢ｧ荵昶螺郢ｧ竏壹・隰ｫ蝣ｺ・ｽ諛莞皮ｹ昜ｹ昴■郢晢ｽｼ邵ｺ・ｧ邵ｺ蜷ｶﾂ繝ｻ,
+            'OperationSwitcher': 'Operation Switcher (隰ｫ蝣ｺ・ｽ諛翫○郢ｧ・､郢昴・繝｡郢晢ｽ｣)\n\n郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ邵ｺ・ｮ鬮｢蜿･・ｧ荵昴・陋帶㊧・ｭ・｢邵ｲ竏晢ｽｯ譎丞ｺ顔ｸｺ・ｮ驍ｱ鬆堕・･陋帶㊧・ｭ・｢邵ｺ・ｪ邵ｺ・ｩ郢ｧ蝣､鮟・・・繝ｻ郢ｧ・ｿ郢晢ｽｳ邵ｺ・ｧ陷奇ｽｳ陟趣ｽｧ邵ｺ・ｫ髯ｦ蠕娯鴬邵ｺ貅假ｽ∫ｸｺ・ｮ陝・ｉ逡醍ｹ昴・繝ｰ郢ｧ・､郢ｧ・ｹ邵ｺ・ｧ邵ｺ蜷ｶﾂ繧牙ｳｩ隲｢貅ｽ蝎ｪ邵ｺ・ｪ隰ｫ蝣ｺ・ｽ諛岩・陞ｳ迚吶・隲､・ｧ邵ｺ・ｮ邵ｺ貅假ｽ∫ｸｺ・ｫ郢昜ｸ翫・郢晏ｳｨ縺育ｹｧ・ｧ郢ｧ・｢郢ｧ・ｹ郢ｧ・､郢昴・繝｡邵ｺ譴ｧ豐ｻ騾包ｽｨ邵ｺ霈費ｽ檎ｸｺ・ｦ邵ｺ繝ｻ竏ｪ邵ｺ蜷ｶﾂ繝ｻ,
             
             // Scan Modes
-            'helical': 'Helical Scan (繝倥Μ繧ｫ繝ｫ繧ｹ繧ｭ繝｣繝ｳ)\n\n蟇晏床繧剃ｸ螳夐溷ｺｦ縺ｧ遘ｻ蜍輔＆縺帙↑縺後ｉX邱夂ｮ｡繧帝｣邯壼屓霆｢縺輔○縲√ｉ縺帙ｓ迥ｶ縺ｫ繝・・繧ｿ繧貞庶髮・☆繧九∫樟蝨ｨ縺ｮCT縺ｮ荳ｻ豬√→縺ｪ繧矩ｫ倬溘せ繧ｭ繝｣繝ｳ繝｢繝ｼ繝峨〒縺吶・,
-            'axial': 'Axial Scan (繧｢繧ｭ繧ｷ繝｣繝ｫ繧ｹ繧ｭ繝｣繝ｳ)\n\n蟇晏床繧剃ｸ螳夐俣髫斐〒蛛懈ｭ｢縺輔○縲√◎縺ｮ蝣ｴ縺ｧ1蝗櫁ｻ｢繧ｹ繧ｭ繝｣繝ｳ繧定｡後≧縲後せ繝・ャ繝励・繧｢繝ｳ繝峨・繧ｷ繝･繝ｼ繝医肴婿蠑上〒縺吶ゆｸｻ縺ｫ鬆ｭ驛ｨ鬆伜沺繧・ｫ伜・隗｣閭ｽ縺梧ｱゅａ繧峨ｌ繧矩Κ菴阪〒菴ｿ逕ｨ縺輔ｌ縺ｾ縺吶・,
-            'scano': 'Scano (繧ｹ繧ｭ繝｣繝弱げ繝ｩ繝)\n\nX邱夂ｮ｡繧・蠎ｦ・育悄荳奇ｼ峨↓蝗ｺ螳壹＠縺溽憾諷九〒蟇晏床繧堤ｧｻ蜍輔＆縺帙々邱壹・騾城℃逕ｻ蜒上ｒ謦ｮ蠖ｱ縺励∪縺吶よ悽繧ｹ繧ｭ繝｣繝ｳ縺ｮ謦ｮ蠖ｱ遽・峇繧呈ｱｺ繧√ｋ縺溘ａ縺ｮ菴咲ｽｮ豎ｺ繧∫判蜒上→縺励※菴ｿ逕ｨ縺励∪縺吶・,
-            'dual_scano': 'Dual Scano (繝・Η繧｢繝ｫ繧ｹ繧ｭ繝｣繝・\n\n豁｣髱｢縺ｨ蛛ｴ髱｢縺ｮ2譁ｹ蜷代°繧峨せ繧ｭ繝｣繝弱げ繝ｩ繝繧呈聴蠖ｱ縺励∪縺吶ゅｈ繧頑ｭ｣遒ｺ縺ｪ菴咲ｽｮ豎ｺ繧√ｄ縲∬｢ｫ縺ｰ縺丈ｽ取ｸ帙・縺溘ａ縺ｮ閾ｪ蜍暮崕豬∝､芽ｪｿ・・EC・峨・險育ｮ励↓蠖ｹ遶九■縺ｾ縺吶・,
-            '3d_landmark': '3D Landmark (3D繝ｩ繝ｳ繝峨・繝ｼ繧ｯ)\n\n菴守ｷ夐㍼縺ｧ鬮倬溘↑繝倥Μ繧ｫ繝ｫ繧ｹ繧ｭ繝｣繝ｳ繧定｡後＞縲・D縺ｮ邊励＞繝懊Μ繝･繝ｼ繝繝・・繧ｿ繧剃ｽ懈・縺励※邊ｾ邱ｻ縺ｪ菴咲ｽｮ豎ｺ繧√ｒ陦後≧繝｢繝ｼ繝峨〒縺吶・,
-            'volume': 'Volume Scan (繝懊Μ繝･繝ｼ繝繧ｹ繧ｭ繝｣繝ｳ)\n\n蠎・ｯ・峇讀懷・蝎ｨ繧堤畑縺・∝ｯ晏床繧貞虚縺九＆縺壹↓1蝗櫁ｻ｢縺ｧ閾灘勣蜈ｨ菴難ｼ亥ｿ・∮繧・┻縺ｪ縺ｩ・峨ｒ荳ｸ縺斐→謦ｮ蠖ｱ縺吶ｋ繝｢繝ｼ繝峨〒縺吶ょ虚縺阪・繧｢繝ｼ繝・ぅ繝輔ぃ繧ｯ繝医ｒ讌ｵ髯舌∪縺ｧ謚代∴繧峨ｌ縺ｾ縺吶・,
-            'dynamic': 'Dynamic Scan (繝繧､繝翫Α繝・け繧ｹ繧ｭ繝｣繝ｳ)\n\n騾蠖ｱ蜑､縺ｮ豬∝・繝ｻ豬∝・繝励Ο繧ｻ繧ｹ繧・未遽縺ｮ蜍輔″縺ｪ縺ｩ繧定ｦｳ蟇溘☆繧九◆繧√∝酔縺倅ｽ咲ｽｮ縺ｧ騾｣邯壹＠縺ｦ隍・焚蝗槭・繧ｹ繧ｭ繝｣繝ｳ繧堤ｹｰ繧願ｿ斐☆繝｢繝ｼ繝峨〒縺呻ｼ・D謦ｮ蠖ｱ・峨・,
-            'real_prep': 'Real Prep (繝ｪ繧｢繝ｫ繝励Ξ繝・・)\n\n騾蠖ｱ蜑､縺檎岼逧・・陦邂｡繧・∮蝎ｨ縺ｫ蛻ｰ驕斐＠縺溽椪髢薙ｒ謐峨∴繧九◆繧√∽ｽ守ｷ夐㍼縺ｧ繝｢繝九ち繝ｪ繝ｳ繧ｰ繧ｹ繧ｭ繝｣繝ｳ繧堤ｹｰ繧願ｿ斐＠縲，T蛟､縺碁明蛟､繧定ｶ・∴縺溘ｉ譛ｬ繧ｹ繧ｭ繝｣繝ｳ縺ｸ閾ｪ蜍慕ｧｻ陦後☆繧区ｩ溯・縺ｧ縺吶・
+            'helical': 'Helical Scan (郢晏･ﾎ懃ｹｧ・ｫ郢晢ｽｫ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ)\n\n陝・剌蠎顔ｹｧ蜑・ｽｸﾂ陞ｳ螟青貅ｷ・ｺ・ｦ邵ｺ・ｧ驕假ｽｻ陷崎ｼ費ｼ・ｸｺ蟶吮・邵ｺ蠕鯉ｽ厩驍ｱ螟ゑｽｮ・｡郢ｧ蟶敖・｣驍ｯ螢ｼ螻馴怕・｢邵ｺ霈披雷邵ｲ竏夲ｽ臥ｸｺ蟶呻ｽ楢ｿ･・ｶ邵ｺ・ｫ郢昴・繝ｻ郢ｧ・ｿ郢ｧ雋槫ｺｶ鬮ｮ繝ｻ笘・ｹｧ荵敖竏ｫ讓溯舉・ｨ邵ｺ・ｮCT邵ｺ・ｮ闕ｳ・ｻ雎ｬ竏壺・邵ｺ・ｪ郢ｧ遏ｩ・ｫ蛟ｬﾂ貅倥○郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢晢ｽ｢郢晢ｽｼ郢晏ｳｨ縲堤ｸｺ蜷ｶﾂ繝ｻ,
+            'axial': 'Axial Scan (郢ｧ・｢郢ｧ・ｭ郢ｧ・ｷ郢晢ｽ｣郢晢ｽｫ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ)\n\n陝・剌蠎顔ｹｧ蜑・ｽｸﾂ陞ｳ螟蝉ｿ｣鬮ｫ譁舌定屁諛茨ｽｭ・｢邵ｺ霈披雷邵ｲ竏壺落邵ｺ・ｮ陜｣・ｴ邵ｺ・ｧ1陜玲ｫ・ｽｻ・｢郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢ｧ螳夲ｽ｡蠕娯鴬邵ｲ蠕後○郢昴・繝｣郢晏干繝ｻ郢ｧ・｢郢晢ｽｳ郢晏ｳｨ繝ｻ郢ｧ・ｷ郢晢ｽ･郢晢ｽｼ郢晏現ﾂ閧ｴ蟀ｿ陟台ｸ翫堤ｸｺ蜷ｶﾂ繧・ｽｸ・ｻ邵ｺ・ｫ鬯・ｽｭ鬩幢ｽｨ鬯・ｼ懈ｲｺ郢ｧ繝ｻ・ｫ莨懊・髫暦ｽ｣髢ｭ・ｽ邵ｺ譴ｧ・ｱ繧・ｽ∫ｹｧ蟲ｨ・檎ｹｧ遏ｩﾎ夊抄髦ｪ縲定抄・ｿ騾包ｽｨ邵ｺ霈費ｽ檎ｸｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'scano': 'Scano (郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晏ｼｱ縺堤ｹ晢ｽｩ郢晢｣ｰ)\n\nX驍ｱ螟ゑｽｮ・｡郢ｧ繝ｻ陟趣ｽｦ繝ｻ閧ｲ謔・叉螂・ｽｼ蟲ｨ竊楢摎・ｺ陞ｳ螢ｹ・邵ｺ貅ｽ諞ｾ隲ｷ荵昴定汞譎丞ｺ顔ｹｧ蝣､・ｧ・ｻ陷崎ｼ費ｼ・ｸｺ蟶卍縲・こ螢ｹ繝ｻ鬨ｾ蝓寂с騾包ｽｻ陷剃ｸ奇ｽ定ｬｦ・ｮ陟厄ｽｱ邵ｺ蜉ｱ竏ｪ邵ｺ蜷ｶﾂ繧域た郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ邵ｺ・ｮ隰ｦ・ｮ陟厄ｽｱ驕ｽ繝ｻ蟲・ｹｧ蜻茨ｽｱ・ｺ郢ｧ竏夲ｽ狗ｸｺ貅假ｽ∫ｸｺ・ｮ闖ｴ蜥ｲ・ｽ・ｮ雎趣ｽｺ郢ｧ竏ｫ蛻､陷剃ｸ岩・邵ｺ蜉ｱ窶ｻ闖ｴ・ｿ騾包ｽｨ邵ｺ蜉ｱ竏ｪ邵ｺ蜷ｶﾂ繝ｻ,
+            'dual_scano': 'Dual Scano (郢昴・ﾎ礼ｹｧ・｢郢晢ｽｫ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢昴・\n\n雎・ｽ｣鬮ｱ・｢邵ｺ・ｨ陋幢ｽｴ鬮ｱ・｢邵ｺ・ｮ2隴・ｽｹ陷ｷ莉｣ﾂｰ郢ｧ蟲ｨ縺帷ｹｧ・ｭ郢晢ｽ｣郢晏ｼｱ縺堤ｹ晢ｽｩ郢晢｣ｰ郢ｧ蜻郁・陟厄ｽｱ邵ｺ蜉ｱ竏ｪ邵ｺ蜷ｶﾂ繧・ｽ育ｹｧ鬆托ｽｭ・｣驕抵ｽｺ邵ｺ・ｪ闖ｴ蜥ｲ・ｽ・ｮ雎趣ｽｺ郢ｧ竏夲ｽ・ｸｲ竏ｬ・｢・ｫ邵ｺ・ｰ邵ｺ荳茨ｽｽ蜿厄ｽｸ蟶吶・邵ｺ貅假ｽ∫ｸｺ・ｮ髢ｾ・ｪ陷肴坩蟠戊ｱｬ竏晢ｽ､闃ｽ・ｪ・ｿ繝ｻ繝ｻEC繝ｻ蟲ｨ繝ｻ髫ｪ閧ｲ・ｮ蜉ｱ竊楢厄ｽｹ驕ｶ荵昶蔓邵ｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            '3d_landmark': '3D Landmark (3D郢晢ｽｩ郢晢ｽｳ郢晏ｳｨ繝ｻ郢晢ｽｼ郢ｧ・ｯ)\n\n闖ｴ螳茨ｽｷ螟舌詐邵ｺ・ｧ鬯ｮ蛟ｬﾂ貅倪・郢晏･ﾎ懃ｹｧ・ｫ郢晢ｽｫ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢ｧ螳夲ｽ｡蠕鯉ｼ樒ｸｲ繝ｻD邵ｺ・ｮ驍雁干・樒ｹ晄㈱ﾎ懃ｹ晢ｽ･郢晢ｽｼ郢晢｣ｰ郢昴・繝ｻ郢ｧ・ｿ郢ｧ蜑・ｽｽ諛医・邵ｺ蜉ｱ窶ｻ驍奇ｽｾ驍ｱ・ｻ邵ｺ・ｪ闖ｴ蜥ｲ・ｽ・ｮ雎趣ｽｺ郢ｧ竏夲ｽ帝勗蠕娯鴬郢晢ｽ｢郢晢ｽｼ郢晏ｳｨ縲堤ｸｺ蜷ｶﾂ繝ｻ,
+            'volume': 'Volume Scan (郢晄㈱ﾎ懃ｹ晢ｽ･郢晢ｽｼ郢晢｣ｰ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ)\n\n陟弱・・ｯ繝ｻ蟲・ｮ諛ｷ繝ｻ陜趣ｽｨ郢ｧ蝣､逡醍ｸｺ繝ｻﾂ竏晢ｽｯ譎丞ｺ顔ｹｧ雋櫁劒邵ｺ荵晢ｼ・ｸｺ螢ｹ竊・陜玲ｫ・ｽｻ・｢邵ｺ・ｧ髢ｾ轣伜競陷茨ｽｨ闖ｴ髮｣・ｼ莠･・ｿ繝ｻ竏ｮ郢ｧ繝ｻ笏ｻ邵ｺ・ｪ邵ｺ・ｩ繝ｻ蟲ｨ・定叉・ｸ邵ｺ譁絶・隰ｦ・ｮ陟厄ｽｱ邵ｺ蜷ｶ・狗ｹ晢ｽ｢郢晢ｽｼ郢晏ｳｨ縲堤ｸｺ蜷ｶﾂ繧・劒邵ｺ髦ｪ繝ｻ郢ｧ・｢郢晢ｽｼ郢昴・縺・ｹ晁ｼ斐＜郢ｧ・ｯ郢晏現・定ｮ鯉ｽｵ鬮ｯ闊娯穐邵ｺ・ｧ隰壻ｻ｣竏ｴ郢ｧ蟲ｨ・檎ｸｺ・ｾ邵ｺ蜷ｶﾂ繝ｻ,
+            'dynamic': 'Dynamic Scan (郢敖郢ｧ・､郢晉ｿｫﾎ醍ｹ昴・縺醍ｹｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ)\n\n鬨ｾ・ｰ陟厄ｽｱ陷托ｽ､邵ｺ・ｮ雎ｬ竏昴・郢晢ｽｻ雎ｬ竏昴・郢晏干ﾎ溽ｹｧ・ｻ郢ｧ・ｹ郢ｧ繝ｻ譛ｪ驕ｽﾂ邵ｺ・ｮ陷崎ｼ披ｳ邵ｺ・ｪ邵ｺ・ｩ郢ｧ螳夲ｽｦ・ｳ陝・ｺ倪・郢ｧ荵昶螺郢ｧ竏堋竏晞・邵ｺ蛟・ｽｽ蜥ｲ・ｽ・ｮ邵ｺ・ｧ鬨ｾ・｣驍ｯ螢ｹ・邵ｺ・ｦ髫阪・辟夊摎讒ｭ繝ｻ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢ｧ蝣､・ｹ・ｰ郢ｧ鬘假ｽｿ譁絶・郢晢ｽ｢郢晢ｽｼ郢晏ｳｨ縲堤ｸｺ蜻ｻ・ｼ繝ｻD隰ｦ・ｮ陟厄ｽｱ繝ｻ蟲ｨﾂ繝ｻ,
+            'real_prep': 'Real Prep (郢晢ｽｪ郢ｧ・｢郢晢ｽｫ郢晏干ﾎ樒ｹ昴・繝ｻ)\n\n鬨ｾ・ｰ陟厄ｽｱ陷托ｽ､邵ｺ讙主ｲｼ騾ｧ繝ｻ繝ｻ髯ｦﾂ驍ゑｽ｡郢ｧ繝ｻ竏ｮ陜趣ｽｨ邵ｺ・ｫ陋ｻ・ｰ鬩墓鱒・邵ｺ貅ｽ讀ｪ鬮｢阮呻ｽ定ｬ仙ｳｨ竏ｴ郢ｧ荵昶螺郢ｧ竏堋竏ｽ・ｽ螳茨ｽｷ螟舌詐邵ｺ・ｧ郢晢ｽ｢郢昜ｹ昴■郢晢ｽｪ郢晢ｽｳ郢ｧ・ｰ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢ｧ蝣､・ｹ・ｰ郢ｧ鬘假ｽｿ譁撰ｼ邵ｲ・卦陋滂ｽ､邵ｺ遒∵・陋滂ｽ､郢ｧ螳夲ｽｶ繝ｻ竏ｴ邵ｺ貅假ｽ芽ｭ幢ｽｬ郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ邵ｺ・ｸ髢ｾ・ｪ陷肴・・ｧ・ｻ髯ｦ蠕娯・郢ｧ蛹ｺ・ｩ貅ｯ繝ｻ邵ｺ・ｧ邵ｺ蜷ｶﾂ繝ｻ
         };
 
         const UI = {};
@@ -156,7 +156,6 @@ const AppState = {
         function buildCTScanner() {
             const ctGroup = new THREE.Group();
 
-            // --- 1. 繧ｬ繝ｳ繝医Μ ---
             const gantryGroup = new THREE.Group();
             gantryGroup.position.set(0, 1.2, 0);
 
@@ -221,7 +220,6 @@ const AppState = {
             const taperDepth = 0.1;
             for (let i = 0; i <= 30; i++) {
                 const t = i / 30;
-                // 縺ｪ縺繧峨°縺ｪ譖ｲ邱壹・繝・・繝代・
                 const r = tunnelRadius + (boreRadius - tunnelRadius) * Math.sin(t * Math.PI / 2);
                 const y = taperDepth * t;
                 taperPoints.push(new THREE.Vector2(r, y));
@@ -229,18 +227,17 @@ const AppState = {
             const taperGeo = new THREE.LatheGeometry(taperPoints, 64);
 
             const frontTaper = new THREE.Mesh(taperGeo, gantryMat);
-            frontTaper.rotation.x = -Math.PI / 2; // 謇句燕縺ｸ蜷代￥
-            frontTaper.position.z = 0.15; // Z=0.15 縺九ｉ Z=0.25縺ｸ蠎・′繧・
+            frontTaper.rotation.x = -Math.PI / 2; // 隰・唱辯慕ｸｺ・ｸ陷ｷ莉｣・･
+            frontTaper.position.z = 0.15; 
             frontTaper.receiveShadow = true;
             gantryGroup.add(frontTaper);
 
             const rearTaper = new THREE.Mesh(taperGeo, gantryMat);
-            rearTaper.rotation.x = Math.PI / 2; // 螂･縺ｸ蜷代￥
-            rearTaper.position.z = -0.15; // Z=-0.15 縺九ｉ Z=-0.25縺ｸ蠎・′繧・
+            rearTaper.rotation.x = Math.PI / 2; // 陞ゑｽ･邵ｺ・ｸ陷ｷ莉｣・･
+            rearTaper.position.z = -0.15; 
             rearTaper.receiveShadow = true;
             gantryGroup.add(rearTaper);
 
-            // 繝医Φ繝阪Ν縺ｮ髟ｷ縺輔ｒ 0.45 縺九ｉ 0.3 縺ｫ遏ｭ邵ｮ・亥・驛ｨ繝代・繝・・縺ｯ縺ｿ蜃ｺ縺励ｒ髦ｲ豁｢・・
             const tunnelGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.3, 64, 1, true);
             const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
             tunnel.rotation.x = Math.PI / 2;
@@ -248,11 +245,11 @@ const AppState = {
 
             const ringGeo = new THREE.TorusGeometry(0.462, 0.008, 16, 64);
             const ringFront = new THREE.Mesh(ringGeo, blueLightMat);
-            ringFront.position.z = 0.14; // 繝医Φ繝阪Ν縺ｮ遶ｯ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ
+            ringFront.position.z = 0.14; 
             gantryGroup.add(ringFront);
 
             const ringRear = ringFront.clone();
-            ringRear.position.z = -0.14; // 繝医Φ繝阪Ν縺ｮ遶ｯ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ
+            ringRear.position.z = -0.14; 
             gantryGroup.add(ringRear);
 
             const gantryBase = createRoundedBox(2.7, 0.1, 1.0, 0.1, baseCoverMat);
@@ -335,7 +332,6 @@ const AppState = {
             ledGreen.position.set(0.6, 1.05, 0.42);
             gantryGroup.add(ledGreen);
 
-            // --- 蜀・Κ繝ｭ繝ｼ繧ｿ (X邱夂ｮ｡逅・→讀懷・蝎ｨ) ---
             const rotorGroup = new THREE.Group();
 
             const rotorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.59, 0.59, 0.25, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0x222, side: THREE.DoubleSide }));
@@ -345,7 +341,6 @@ const AppState = {
             const tubeGroup = new THREE.Group();
             tubeGroup.position.set(0, 0.52, 0);
 
-            // 縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢縺ｮ縺溘ａ縲∫ｮ｡逅・こ繝ｼ繧ｹ繧貞ｹ・ｺ・￥縲∝･･陦後″繧偵せ繝ｪ繝縺ｫ隱ｿ謨ｴ
             const caseGeo = new THREE.BoxGeometry(0.38, 0.14, 0.22);
             const caseMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6 });
             tubeGroup.add(new THREE.Mesh(caseGeo, caseMat));
@@ -426,10 +421,8 @@ const AppState = {
             Meshes.rotor = rotorGroup;
             ctGroup.add(gantryGroup);
 
-            // --- 2. 蟇晏床 (繧ｫ繧ｦ繝・ ---
             const couchGroup = new THREE.Group();
 
-            // 菫ｮ豁｣: 蛻晄悄菴咲ｽｮ繧呈焔蜑・Z:2.6)縺ｸ遘ｻ蜍輔＠繧√ｊ霎ｼ縺ｿ繧定ｧ｣豸・
             const couchBase = createRoundedBox(0.8, 0.2, 1.8, 0.15, baseCoverMat);
             couchBase.position.set(0, 0.1, 2.6);
             couchGroup.add(couchBase);
@@ -489,7 +482,6 @@ const AppState = {
 
                 model.rotation.x = -Math.PI / 2;
                 model.scale.set(0.85, 0.85, 0.85);
-                // 謔｣閠・Δ繝・Ν繧偵＆繧峨↓繧ｬ繝ｳ繝医Μ譁ｹ蜷・螂･蛛ｴ)縺ｸ繧ｹ繝ｩ繧､繝・
                 model.position.set(0, 0, 0.1);
 
                 model.traverse(function (child) {
@@ -589,7 +581,6 @@ const AppState = {
         function buildControlRoom() {
             const controlGroup = new THREE.Group();
             
-            // 菫ｮ豁｣: 譛ｺ繧偵＆繧峨↓螂･縺ｸ遘ｻ蜍包ｼ医ぎ繝ｳ繝医Μ繧・ｯ晏床縺九ｉ驕縺悶￠繧具ｼ・
             controlGroup.position.set(6.0, 0, 0);
 
             const deskTop = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 2.2), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
@@ -637,7 +628,6 @@ const AppState = {
             const kb1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.4), kbMat); kb1.position.set(-0.2, 0.775, -0.4); controlGroup.add(kb1);
             const kb2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.4), kbMat); kb2.position.set(-0.2, 0.775, 0.4); controlGroup.add(kb2);
 
-            // 謫堺ｽ懊せ繧､繝・メ繝｣ (Operation Switcher)
             const switcherGroup = new THREE.Group();
             switcherGroup.position.set(0.0, 0.78, 0.0);
             switcherGroup.rotation.y = -Math.PI / 16;
@@ -648,13 +638,10 @@ const AppState = {
             const swBase = new THREE.Mesh(swBaseGeo, swBaseMat);
             switcherGroup.add(swBase);
 
-            // 6縺､縺ｮ繝懊ち繝ｳ繧呈ｨｪ荳蛻励↓ (邱・ 襍､, 鮟・ 髱・ 逋ｽ, 逋ｽ)
             const btnColors = [0x22cc22, 0xcc2222, 0xddcc22, 0x2288dd, 0xcccccc, 0xcccccc];
             
             for (let i = 0; i < 6; i++) {
                 const isStartBtn = (i === 0);
-                // 髢句ｧ九・繧ｿ繝ｳ縺ｮ縺ｿ螟ｧ縺阪￥縺吶ｋ
-                const rTop = isStartBtn ? 0.018 : 0.012;
                 const rBot = isStartBtn ? 0.022 : 0.015;
                 const h = isStartBtn ? 0.025 : 0.015;
                 
@@ -674,17 +661,14 @@ const AppState = {
         function buildServerRack() {
             const rackGroup = new THREE.Group();
             
-            // 菫ｮ豁｣: 譛ｺ縺ｮ髫｣・・霆ｸ縺ｧ繝槭う繝翫せ譁ｹ蜷代∈・峨↓驟咲ｽｮ
             const rackX = 6.0;
             const rackZ = -2.2;
             rackGroup.position.set(rackX, 0, rackZ);
 
-            // 螟匁棧 (蟷・0cm x 鬮倥＆160cm x 螂･陦・0cm 縺ｫ蠕ｮ隱ｿ謨ｴ)
             const rackWidth = 0.6;
             const rackHeight = 1.6;
             const rackDepth = 0.8;
 
-            // 菫ｮ豁｣: 繝ｩ繝・け縺ｮ螟冶｣・ｒ逋ｽ繝吶・繧ｹ縺ｫ螟画峩
             const frameMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.2, roughness: 0.8 });
             const frameGeo = new THREE.BoxGeometry(rackWidth, rackHeight, rackDepth);
             const frame = new THREE.Mesh(frameGeo, frameMat);
@@ -692,7 +676,6 @@ const AppState = {
             frame.castShadow = true; frame.receiveShadow = true;
             rackGroup.add(frame);
 
-            // 蜀・Κ縺ｮ鮟偵＞閭梧勹・医し繝ｼ繝舌・繝ｦ繝九ャ繝医ｒ縺ｯ繧∬ｾｼ繧驛ｨ蛻・ｼ・
             const innerMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
             const innerPanel = new THREE.Mesh(new THREE.BoxGeometry(rackWidth - 0.04, rackHeight - 0.1, rackDepth + 0.01), innerMat);
             innerPanel.position.y = rackHeight / 2;
@@ -701,12 +684,10 @@ const AppState = {
             Meshes.serverBlades = {};
             Meshes.serverLeds = [];
 
-            // 繧ｵ繝ｼ繝舌・蜷阪ｒ螳夂ｾｩ (蜈ｨ6蜿ｰ)
             const serverNames = ['SCON', 'DCON', 'RTM', 'IDD', 'RDD', 'SAC'];
             const bladeCount = serverNames.length;
             const bladeHeight = 0.2;
             const bladeMargin = 0.04;
-            // 繝ｩ繝・け荳矩Κ縺九ｉ縺ｮ繧ｪ繝輔そ繝・ヨ
             const startY = 0.1; 
 
             for(let i=0; i<bladeCount; i++) {
@@ -714,23 +695,20 @@ const AppState = {
                 const bladeGroup = new THREE.Group();
                 const yPos = startY + i * (bladeHeight + bladeMargin) + bladeHeight/2;
                 
-                // 謇句燕・域ｭ｣髱｢・峨↓驟咲ｽｮ
                 bladeGroup.position.set(0, yPos, rackDepth / 2 + 0.006);
 
-                // 繝悶Ξ繝ｼ繝牙燕髱｢繝代ロ繝ｫ
                 const bladeGeo = new THREE.BoxGeometry(rackWidth - 0.06, bladeHeight, 0.02);
                 const bladeMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 });
                 const blade = new THREE.Mesh(bladeGeo, bladeMat);
                 bladeGroup.add(blade);
 
-                // 謠帶ｰ怜哨・医Γ繝・す繝･鬚ｨ縺ｮ讓ｪ邱夲ｼ・
                 const ventGeo = new THREE.PlaneGeometry(0.3, 0.1);
                 const ventMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
                 const vent = new THREE.Mesh(ventGeo, ventMat);
                 vent.position.set(0, 0, 0.011);
                 bladeGroup.add(vent);
 
-                // 蜿匁焔 (蟾ｦ蜿ｳ)
+                // 陷ｿ蛹∫・ (陝ｾ・ｦ陷ｿ・ｳ)
                 const handleGeo = new THREE.BoxGeometry(0.015, bladeHeight - 0.04, 0.04);
                 const handleMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 });
                 const handleL = new THREE.Mesh(handleGeo, handleMat);
@@ -739,21 +717,17 @@ const AppState = {
                 handleR.position.set(rackWidth/2 - 0.06, 0, 0.02);
                 bladeGroup.add(handleL); bladeGroup.add(handleR);
 
-                // 繧ｵ繝ｼ繝舌・繝ｩ繝吶Ν逕ｨ縺ｮ蟆上＆縺・ヱ繝阪Ν
-                const lblGeo = new THREE.PlaneGeometry(0.08, 0.03);
                 const lblMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
                 const lbl = new THREE.Mesh(lblGeo, lblMat);
                 lbl.position.set(-rackWidth/2 + 0.14, 0, 0.012);
                 bladeGroup.add(lbl);
 
-                // 繧ｹ繝・・繧ｿ繧ｹLED (髮ｻ貅・
                 const ledGeo = new THREE.CircleGeometry(0.008, 16);
                 const pwrLedMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                 const pwrLed = new THREE.Mesh(ledGeo, pwrLedMat);
                 pwrLed.position.set(-rackWidth/2 + 0.20, 0.02, 0.012);
                 bladeGroup.add(pwrLed);
 
-                // 繧｢繧ｯ繧ｻ繧ｹLED (繝√き繝√き縺吶ｋ髱偵＞繝ｩ繝ｳ繝礼ｾ､)
                 for(let j=0; j<3; j++) {
                     const actLedMat = new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true });
                     const actLed = new THREE.Mesh(ledGeo, actLedMat);
@@ -764,14 +738,12 @@ const AppState = {
 
                 rackGroup.add(bladeGroup);
 
-                // 繧ｫ繝｡繝ｩ縺ｮ繧ｿ繝ｼ繧ｲ繝・ヨ諠・ｱ繧剃ｿ晏ｭ・(譛ｺ縺ｮ驟咲ｽｮ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ)
                 Meshes.serverBlades[label] = {
                     target: new THREE.Vector3(rackX, yPos, rackZ + rackDepth/2),
                     cameraPos: new THREE.Vector3(rackX - 1.0, yPos + 0.1, rackZ + rackDepth/2 + 1.2)
                 };
             }
 
-            // 繝ｩ繝・け蜈ｨ菴薙・繧ｫ繝｡繝ｩ繝薙Η繝ｼ
             Meshes.serverBlades['FullRack'] = {
                 target: new THREE.Vector3(rackX, rackHeight/2, rackZ),
                 cameraPos: new THREE.Vector3(rackX - 2.5, rackHeight/2 + 0.2, rackZ + 2.0)
@@ -797,7 +769,7 @@ const AppState = {
             UI.sliderInjectB.addEventListener('input', e => AppState.update('injector', 'b', parseFloat(e.target.value)));
             UI.selectDetectorRows.addEventListener('change', e => AppState.update('gantry', 'detectorRows', parseInt(e.target.value)));
 
-            // 蛻晏屓謠冗判
+            // 陋ｻ譎丞ｱ楢ｬ蜀怜愛
             renderBatchUI();
 
             AppState.subscribe(state => {
@@ -931,7 +903,6 @@ const AppState = {
             document.getElementById('monitor-inj-b-bar').style.width = remainB + '%';
         }
 
-        // 譁ｰ隕剰ｿｽ蜉: 繝舌ャ繝ゞI縺ｮ繝ｬ繝ｳ繝繝ｪ繝ｳ繧ｰ髢｢謨ｰ
         function renderBatchUI() {
             const container = document.getElementById('batch-container');
             const seq = AppState.gantry.scanSequence;
@@ -948,7 +919,6 @@ const AppState = {
                 const delay = batch.delay;
                 const isSyncTarget = index === syncIdx;
 
-                // 繧ｫ繝ｼ繝峨・逕滓・
                 const card = document.createElement('div');
                 let cardClasses = `relative rounded-lg p-2.5 w-36 flex flex-col items-center transition-all duration-300 `;
                 if (isActive) {
@@ -958,7 +928,6 @@ const AppState = {
                 }
                 card.className = cardClasses;
 
-                // 繧ｪ繝ｼ繝舌・繝ｬ繧､繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ
                 if (isActive && countdown > 0) {
                     const overlay = document.createElement('div');
                     overlay.className = 'absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]';
@@ -966,7 +935,6 @@ const AppState = {
                     card.appendChild(overlay);
                 }
                 
-                // 繝倥ャ繝繝ｼ (繝ｩ繝吶Ν縺ｨ蜑企勁繝懊ち繝ｳ)
                 const header = document.createElement('div');
                 header.className = 'text-[10px] text-gray-400 mb-1.5 w-full flex justify-between items-center';
                 
@@ -984,7 +952,6 @@ const AppState = {
                 header.appendChild(label);
                 header.appendChild(delBtn);
                 
-                // 繝｢繝ｼ繝蛾∈謚槭・繝ｫ繝繧ｦ繝ｳ
                 const select = document.createElement('select');
                 select.className = 'w-full bg-gray-900 text-white text-[11px] p-1.5 rounded border border-gray-700 outline-none hover:border-blue-500 transition-colors cursor-pointer';
                 select.disabled = isRunning;
@@ -1010,7 +977,7 @@ const AppState = {
                     select.appendChild(option);
                 });
                 
-                // Delay蜈･蜉・
+                // Delay陷茨ｽ･陷峨・
                 const delayWrapper = document.createElement('div');
                 delayWrapper.className = 'w-full flex items-center justify-between mt-2 text-[10px] text-gray-400';
                 delayWrapper.innerHTML = '<span>Delay (s)</span>';
@@ -1026,7 +993,6 @@ const AppState = {
                 
                 delayWrapper.appendChild(delayInput);
 
-                // 繧､繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ蜷梧悄險ｭ螳壹・繧ｿ繝ｳ
                 const syncBtn = document.createElement('button');
                 syncBtn.innerText = isSyncTarget ? 'INJ SYNC: ON' : 'INJ SYNC: OFF';
                 syncBtn.className = `w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors ${isSyncTarget ? 'bg-purple-600/80 text-white border border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'bg-gray-900 text-gray-500 border border-gray-700 hover:bg-gray-700'}`;
@@ -1042,7 +1008,6 @@ const AppState = {
                 card.appendChild(delayWrapper);
                 card.appendChild(syncBtn);
                 
-                // 谺｡縺ｮ繧ｫ繝ｼ繝峨∈縺､縺ｪ縺千泙蜊ｰ繧｢繧､繧ｳ繝ｳ
                 if (index < seq.length - 1) {
                     const arrowWrap = document.createElement('div');
                     arrowWrap.className = 'flex items-center justify-center text-gray-500';
@@ -1056,7 +1021,6 @@ const AppState = {
 
             const isRunning = AppState.gantry.isScanning || activeIdx >= 0;
 
-            // 霑ｽ蜉繝懊ち繝ｳ縺ｮ迥ｶ諷区峩譁ｰ
             const addBtn = document.getElementById('btn-add-batch');
             addBtn.disabled = seq.length >= 5 || isRunning;
             if(addBtn.disabled) {
@@ -1067,12 +1031,10 @@ const AppState = {
                 addBtn.classList.add('hover:bg-gray-700', 'hover:text-white');
             }
             
-            // RUN繝懊ち繝ｳ縺ｮ迥ｶ諷区峩譁ｰ
             const runBtn = document.getElementById('btn-run-sequence');
             if (isRunning) {
                 runBtn.disabled = false;
-                runBtn.onclick = stopAutoSequence; // 螳溯｡御ｸｭ縺ｯ繧ｹ繝医ャ繝励・繧ｿ繝ｳ縺ｫ縺吶ｋ
-                
+                runBtn.onclick = stopAutoSequence; 
                 if (AppState.gantry.cancelRequested) {
                     runBtn.className = 'h-16 px-6 bg-gray-700 text-gray-400 text-xs font-bold rounded-lg border border-gray-600 flex items-center gap-2 transition-all cursor-not-allowed';
                     runBtn.innerHTML = '<div class="w-4 h-4 rounded-full border-2 border-t-red-400 animate-spin"></div> <span class="tracking-widest">STOPPING...</span>';
@@ -1092,20 +1054,17 @@ const AppState = {
             }
         }
 
-        // 驕ｸ謚槭＠縺溘ヰ繝・メ縺縺代う繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ蜷梧悄繧丹N縺ｫ縺吶ｋ (莉悶・OFF)
         function setInjectorSync(index) {
             const current = AppState.gantry.injectorSyncIndex;
             AppState.update('gantry', 'injectorSyncIndex', current === index ? -1 : index);
         }
 
-        // 繝舌ャ繝√・霑ｽ蜉
         function addScanBatch() {
             if (AppState.gantry.scanSequence.length >= 5) return;
             const newSeq = [...AppState.gantry.scanSequence, {mode: 'helical', delay: 0}];
             AppState.update('gantry', 'scanSequence', newSeq);
         }
 
-        // 繝舌ャ繝√・蜑企勁
         function removeScanBatch(index) {
             if (AppState.gantry.scanSequence.length <= 1) return;
             const newSeq = [...AppState.gantry.scanSequence];
@@ -1113,7 +1072,6 @@ const AppState = {
             AppState.update('gantry', 'scanSequence', newSeq);
         }
 
-        // 繝舌ャ繝√・繝・・繧ｿ螟画峩 (繝｢繝ｼ繝峨ｄDelay)
         function updateBatchData(index, key, value) {
             const newSeq = [...AppState.gantry.scanSequence];
             newSeq[index] = { ...newSeq[index], [key]: value };
@@ -1127,7 +1085,6 @@ const AppState = {
             }
         }
 
-        // 繝輔か繝ｼ繧ｫ繧ｹ・・せ繧ｭ繝｣繝ｳ繝｢繝ｼ繝牙・騾壹・繝繧､繧｢繝ｭ繧ｰ陦ｨ遉ｺ髢｢謨ｰ
         function showInfoDialog(key) {
             if (!key || key === 'none') return;
 
@@ -1138,8 +1095,8 @@ const AppState = {
             const text = Descriptions[key] || 'Description not found.';
             const lines = text.split('\n\n');
             
-            titleElem.innerText = lines[0]; // 1陦檎岼繧偵ち繧､繝医Ν縺ｫ
-            descElem.innerText = lines[1] || ''; // 2陦檎岼莉･髯阪ｒ隱ｬ譏取枚縺ｫ
+            titleElem.innerText = lines[0]; 
+            descElem.innerText = lines[1] || ''; 
 
             dialog.classList.remove('hidden');
             dialog.classList.remove('opacity-0');
@@ -1148,14 +1105,12 @@ const AppState = {
         function hideInfoDialog() {
             const dialog = document.getElementById('info-dialog');
             dialog.classList.add('hidden');
-            // 繧ｻ繝ｬ繧ｯ繝医・繝・け繧ｹ縺ｮ驕ｸ謚樒憾諷九ｒ隗｣髯､ (Focus縺ｮ縺ｿ)
             document.getElementById('select-focus').value = "";
         }
 
         function handleFocusChange(value) {
             if (!value) return;
 
-            // X邱夂ｮ｡逅・・繝・ぅ繝・け繧ｿ縺ｮ譎ゅ・荳ｭ霄ｫ繧定ｦ九○繧九◆繧√ぎ繝ｳ繝医Μ繧貞濠騾乗・蛹・
             if (value === 'XrayTube' || value === 'Detector') {
                 setGantryOpacity(true);
             } else if (value === 'Gantry' || value === 'TouchPanel') {
@@ -1182,7 +1137,6 @@ const AppState = {
         }
 
         function setCameraView(viewType) {
-            // 繝輔か繝ｼ繧ｫ繧ｹ莉･螟悶・繧ｫ繝｡繝ｩ繝薙Η繝ｼ縺ｫ蛻・ｊ譖ｿ繧上▲縺溷ｴ蜷医・繝繧､繧｢繝ｭ繧ｰ繧帝國縺・
             if (!viewType.startsWith('focus_')) {
                 hideInfoDialog();
             }
@@ -1199,18 +1153,14 @@ const AppState = {
         }
 
         function getCameraTarget(type) {
-            // 邨ｱ蜷医ヵ繧ｩ繝ｼ繧ｫ繧ｹ逕ｨ縺ｮ繧ｫ繝｡繝ｩ蜃ｦ逅・
             if (type.startsWith('focus_')) {
                 const label = type.replace('focus_', '');
                 
-                // 1. 繧ｵ繝ｼ繝舌・繝ｩ繝・け蜀・・讀懃ｴ｢
                 if (Meshes.serverBlades && Meshes.serverBlades[label]) {
                     return { pos: Meshes.serverBlades[label].cameraPos, lookAt: Meshes.serverBlades[label].target };
                 }
                 
-                // 2. 縺昴・莉悶・繧ｳ繝ｳ繝昴・繝阪Φ繝医・讀懃ｴ｢
                 const focusTargets = {
-                    // 菫ｮ豁｣: 譛ｺ縺ｮ菴咲ｽｮ繧貞・菴鍋噪縺ｫ +2 縺ｻ縺ｩ縺壹ｉ縺励◆縺溘ａ繧ｫ繝｡繝ｩ繧る｣蜍・
                     'Injector': { cameraPos: new THREE.Vector3(-2.8, 1.6, 2.8), target: new THREE.Vector3(-1.5, 1.3, 1.8) },
                     'Gantry': { cameraPos: new THREE.Vector3(0, 2.0, 4.0), target: new THREE.Vector3(0, 1.2, 0) },
                     'Couch': { cameraPos: new THREE.Vector3(2.5, 1.8, 3.5), target: new THREE.Vector3(0, 0.8, 2.0) },
@@ -1296,7 +1246,6 @@ const AppState = {
             }
         }
 
-        // 繧ｭ繝｣繝ｳ繧ｻ繝ｫ蜿ｯ閭ｽ縺ｪ Wait 髢｢謨ｰ
         function wait(ms) {
             return new Promise(resolve => {
                 const interval = 100;
@@ -1320,7 +1269,7 @@ const AppState = {
                         AppState.notify();
                         if (AppState.gantry.cancelRequested) {
                             tween.stop();
-                            resolve(); // 繧ｭ繝｣繝ｳ繧ｻ繝ｫ譎ゅ・蜊ｳ蠎ｧ縺ｫ隗｣豎ｺ縺励※谺｡縺ｸ・医お繝ｩ繝ｼ蜃ｦ逅・畑・・
+                            resolve(); 
                         }
                     })
                     .onComplete(resolve)
@@ -1330,7 +1279,6 @@ const AppState = {
 
         let isSequenceRunning = false;
 
-        // 繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ縺ｮ荳ｭ譁ｭ隕∵ｱ・
         function stopAutoSequence() {
             if (!isSequenceRunning) return;
             AppState.update('gantry', 'cancelRequested', true);
@@ -1341,19 +1289,17 @@ const AppState = {
             isSequenceRunning = true;
             AppState.update('gantry', 'cancelRequested', false);
 
-            // 迥ｶ諷九・繝ｪ繧ｻ繝・ヨ
             AppState.update('couch', 'y', 0);
             AppState.update('couch', 'z', 0);
             AppState.update('injector', 'a', 0);
             if (AppState.gantry.xrayVisible) toggleXRay();
             if (AppState.gantry.isScanning) toggleScan();
 
-            // 1. 蟇晏床縺ｮ荳頑・
+            // 1. 陝・剌蠎顔ｸｺ・ｮ闕ｳ鬆代・
             await tweenPromise(AppState.couch, { y: 80 }, 2000);
 
             const seq = AppState.gantry.scanSequence;
 
-            // 繝舌ャ繝∝・逅・Ν繝ｼ繝・
             for (let i = 0; i < seq.length; i++) {
                 if (AppState.gantry.cancelRequested) break;
 
@@ -1362,11 +1308,9 @@ const AppState = {
                 const delay = batch.delay || 0;
                 const isSyncTarget = (AppState.gantry.injectorSyncIndex === i);
                 
-                // 迴ｾ蝨ｨ螳溯｡御ｸｭ縺ｮ繝舌ャ繝√う繝ｳ繝・ャ繧ｯ繧ｹ繧呈峩譁ｰ
                 AppState.update('gantry', 'activeBatchIndex', i);
                 AppState.update('gantry', 'currentScanMode', mode);
 
-                // --- Delay蜃ｦ逅・(繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ) ---
                 if (delay > 0) {
                     for(let d = delay; d > 0; d--) {
                         if (AppState.gantry.cancelRequested) break;
@@ -1378,7 +1322,6 @@ const AppState = {
 
                 if (AppState.gantry.cancelRequested) break;
 
-                // 蜷梧悄險ｭ螳壹＆繧後※縺・ｌ縺ｰ縲√せ繧ｭ繝｣繝ｳ髢句ｧ九→蜷梧凾縺ｫ騾蠖ｱ蜑､豕ｨ蜈･
                 if (isSyncTarget) {
                     tweenPromise(AppState.injector, { a: 100 }, 4000);
                 }
@@ -1388,7 +1331,6 @@ const AppState = {
                 const isHelicalLike = mode === 'helical' || mode === '3d_landmark';
 
                 if (isScano) {
-                    // --- 繧ｹ繧ｭ繝｣繝弱げ繝ｩ繝 (蝗櫁ｻ｢蛛懈ｭ｢ ・・騾｣邯夂ｧｻ蜍・ ---
                     new TWEEN.Tween(Meshes.rotor.rotation).to({ z: 0 }, 1000).start();
                     await wait(1000);
                     if (AppState.gantry.cancelRequested) break;
@@ -1401,7 +1343,6 @@ const AppState = {
                     if (AppState.gantry.xrayVisible) toggleXRay();
 
                 } else {
-                    // 蝗櫁ｻ｢繧剃ｼｴ縺・せ繧ｭ繝｣繝ｳ
                     if (!AppState.gantry.isScanning) {
                         toggleScan();
                         await wait(2000);
@@ -1409,7 +1350,6 @@ const AppState = {
                     if (AppState.gantry.cancelRequested) break;
 
                     if (isHelicalLike) {
-                        // --- 繝倥Μ繧ｫ繝ｫ / 3D Landmark ---
                         await tweenPromise(AppState.couch, { z: 80 }, 1500);
                         if (AppState.gantry.cancelRequested) break;
 
@@ -1418,8 +1358,6 @@ const AppState = {
                         if (AppState.gantry.xrayVisible) toggleXRay();
 
                     } else if (isVolume) {
-                        // --- 繝懊Μ繝･繝ｼ繝邉ｻ (縺昴・蝣ｴ縺ｧ蛛懈ｭ｢) ---
-                        // 菫ｮ豁｣: Z=70% (莠ｺ菴楢・驛ｨ) 縺ｫ遘ｻ蜍輔☆繧・
                         await tweenPromise(AppState.couch, { z: 70 }, 1500);
                         if (AppState.gantry.cancelRequested) break;
 
@@ -1428,7 +1366,6 @@ const AppState = {
                         if (AppState.gantry.xrayVisible) toggleXRay();
 
                     } else if (mode === 'axial') {
-                        // --- 繧｢繧ｭ繧ｷ繝｣繝ｫ (繧ｹ繝・ャ繝・ ---
                         await tweenPromise(AppState.couch, { z: 80 }, 1500);
                         if (AppState.gantry.cancelRequested) break;
 
@@ -1455,32 +1392,28 @@ const AppState = {
                 await wait(1000);
             }
 
-            // --- 繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝・・縺ｨ騾蜃ｺ蜃ｦ逅・---
             
-            // X邱壹′荳・′荳ON縺ｪ繧画ｶ医☆
-            if (AppState.gantry.xrayVisible) {
                 toggleXRay();
             }
 
             AppState.update('gantry', 'activeBatchIndex', -1);
             AppState.update('gantry', 'countdown', 0);
 
-            // 繝ｭ繝ｼ繧ｿ繝ｼ縺悟屓縺｣縺ｦ縺・ｌ縺ｰ蛛懈ｭ｢
             if (AppState.gantry.isScanning) {
                 toggleScan();
                 await wait(2000);
             }
 
-            // 蟇晏床騾蜃ｺ
+            // 陝・剌蠎企ｨｾﾂ陷・ｽｺ
             await tweenPromise(AppState.couch, { z: 0 }, 2000);
             await tweenPromise(AppState.couch, { y: 0 }, 2000);
 
-            // 迥ｶ諷九・蠕ｩ蜈・
+            // 霑･・ｶ隲ｷ荵昴・陟包ｽｩ陷医・
             AppState.update('gantry', 'currentScanMode', AppState.gantry.scanSequence[0].mode);
             AppState.update('gantry', 'cancelRequested', false);
 
             isSequenceRunning = false;
-            renderBatchUI(); // 繝懊ち繝ｳ縺ｮ陦ｨ遉ｺ繧帝壼ｸｸ縺ｫ謌ｻ縺・
+            renderBatchUI(); 
         }
 
         function onWindowResize() {
@@ -1504,7 +1437,6 @@ const AppState = {
                 mixer.update(delta);
             }
 
-            // 繧ｵ繝ｼ繝舌・縺ｮ繧｢繧ｯ繧ｻ繧ｹ繝ｩ繝ｳ繝励ｒ繝ｩ繝ｳ繝繝縺ｫ轤ｹ貊・＆縺帙ｋ貍泌・
             if (Meshes.serverLeds) {
                 Meshes.serverLeds.forEach(mat => {
                     if (Math.random() > 0.85) {

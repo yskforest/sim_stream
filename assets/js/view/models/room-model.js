@@ -34,4 +34,3 @@ function createRoundedBox(width, height, depth, radius, material) {
             mesh.receiveShadow = true;
             return mesh;
         }
-

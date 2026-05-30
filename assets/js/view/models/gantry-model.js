@@ -1,7 +1,6 @@
 function buildCTScanner() {
             const ctGroup = new THREE.Group();
 
-            // --- 1. 繧ｬ繝ｳ繝医Μ ---
             const gantryGroup = new THREE.Group();
             gantryGroup.position.set(0, 1.2, 0);
 
@@ -176,7 +175,6 @@ function buildCTScanner() {
             ledGreen.position.set(0.62, 0.99, 0.43);
             gantryGroup.add(ledGreen);
 
-            // --- 蜀・Κ繝ｭ繝ｼ繧ｿ (X邱夂ｮ｡逅・→讀懷・蝎ｨ) ---
             const rotorGroup = new THREE.Group();
 
             const rotorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.49, 0.49, 0.2, 96, 1, true), new THREE.MeshStandardMaterial({ color: 0x222, side: THREE.DoubleSide }));
@@ -186,7 +184,6 @@ function buildCTScanner() {
             const tubeGroup = new THREE.Group();
             tubeGroup.position.set(0, 0.45, 0);
 
-            // 縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢縺ｮ縺溘ａ縲∫ｮ｡逅・こ繝ｼ繧ｹ繧貞ｹ・ｺ・￥縲∝･･陦後″繧偵せ繝ｪ繝縺ｫ隱ｿ謨ｴ
             const caseGeo = new THREE.BoxGeometry(0.38, 0.14, 0.22);
             const caseMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6 });
             tubeGroup.add(new THREE.Mesh(caseGeo, caseMat));
@@ -267,7 +264,6 @@ function buildCTScanner() {
             Meshes.rotor = rotorGroup;
             ctGroup.add(gantryGroup);
 
-            // --- 2. 蟇晏床 (繧ｫ繧ｦ繝・ ---
             const couchGroup = new THREE.Group();
 
             // Base carriage: wider, cleaner skirt-like design.
@@ -330,7 +326,6 @@ function buildCTScanner() {
 
                 model.rotation.x = -Math.PI / 2;
                 model.scale.set(0.85, 0.85, 0.85);
-                // 謔｣閠・Δ繝・Ν繧偵＆繧峨↓繧ｬ繝ｳ繝医Μ譁ｹ蜷・螂･蛛ｴ)縺ｸ繧ｹ繝ｩ繧､繝・
                 model.position.set(0, 0, 0.1);
 
                 model.traverse(function (child) {
@@ -360,4 +355,3 @@ function buildCTScanner() {
             ctGroup.add(couchGroup);
             scene.add(ctGroup);
         }
-

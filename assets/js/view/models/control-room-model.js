@@ -1,7 +1,6 @@
 function buildControlRoom() {
             const controlGroup = new THREE.Group();
             
-            // 菫ｮ豁｣: 譛ｺ繧偵＆繧峨↓螂･縺ｸ遘ｻ蜍包ｼ医ぎ繝ｳ繝医Μ繧・ｯ晏床縺九ｉ驕縺悶￠繧具ｼ・
             controlGroup.position.set(6.0, 0, 0);
 
             const deskTop = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 2.2), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
@@ -49,7 +48,6 @@ function buildControlRoom() {
             const kb1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.4), kbMat); kb1.position.set(-0.2, 0.775, -0.4); controlGroup.add(kb1);
             const kb2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.4), kbMat); kb2.position.set(-0.2, 0.775, 0.4); controlGroup.add(kb2);
 
-            // 謫堺ｽ懊せ繧､繝・メ繝｣ (Operation Switcher)
             const switcherGroup = new THREE.Group();
             switcherGroup.position.set(0.0, 0.78, 0.0);
             switcherGroup.rotation.y = -Math.PI / 16;
@@ -60,13 +58,10 @@ function buildControlRoom() {
             const swBase = new THREE.Mesh(swBaseGeo, swBaseMat);
             switcherGroup.add(swBase);
 
-            // 6縺､縺ｮ繝懊ち繝ｳ繧呈ｨｪ荳蛻励↓ (邱・ 襍､, 鮟・ 髱・ 逋ｽ, 逋ｽ)
             const btnColors = [0x22cc22, 0xcc2222, 0xddcc22, 0x2288dd, 0xcccccc, 0xcccccc];
             
             for (let i = 0; i < 6; i++) {
                 const isStartBtn = (i === 0);
-                // 髢句ｧ九・繧ｿ繝ｳ縺ｮ縺ｿ螟ｧ縺阪￥縺吶ｋ
-                const rTop = isStartBtn ? 0.018 : 0.012;
                 const rBot = isStartBtn ? 0.022 : 0.015;
                 const h = isStartBtn ? 0.025 : 0.015;
                 
@@ -82,4 +77,3 @@ function buildControlRoom() {
 
             scene.add(controlGroup);
         }
-
