@@ -724,11 +724,11 @@ function init() {
             UI.selectDetectorRows = document.getElementById('select-detector-rows');
             UI.btnPatientToggle = document.getElementById('btn-patient-toggle');
 
-            UI.sliderCouchY.addEventListener('input', e => AppState.update('couch', 'y', parseFloat(e.target.value)));
-            UI.sliderCouchZ.addEventListener('input', e => AppState.update('couch', 'z', parseFloat(e.target.value)));
-            UI.sliderInjectA.addEventListener('input', e => AppState.update('injector', 'a', parseFloat(e.target.value)));
-            UI.sliderInjectB.addEventListener('input', e => AppState.update('injector', 'b', parseFloat(e.target.value)));
-            UI.selectDetectorRows.addEventListener('change', e => AppState.update('gantry', 'detectorRows', parseInt(e.target.value)));
+            UI.sliderCouchY.addEventListener('input', e => CTCommandBus.execute({ target: 'couch', action: 'moveY', params: { value: parseFloat(e.target.value) } }));
+            UI.sliderCouchZ.addEventListener('input', e => CTCommandBus.execute({ target: 'couch', action: 'moveZ', params: { value: parseFloat(e.target.value) } }));
+            UI.sliderInjectA.addEventListener('input', e => CTCommandBus.execute({ target: 'injector', action: 'setA', params: { value: parseFloat(e.target.value) } }));
+            UI.sliderInjectB.addEventListener('input', e => CTCommandBus.execute({ target: 'injector', action: 'setB', params: { value: parseFloat(e.target.value) } }));
+            UI.selectDetectorRows.addEventListener('change', e => CTCommandBus.execute({ target: 'gantry', action: 'setDetectorRows', params: { value: parseInt(e.target.value) } }));
 
             // 蛻晏屓謠冗判
             renderBatchUI();
@@ -1028,14 +1028,14 @@ function init() {
         // 驕ｸ謚槭＠縺溘ヰ繝・メ縺縺代う繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ蜷梧悄繧丹N縺ｫ縺吶ｋ (莉悶・OFF)
         function setInjectorSync(index) {
             const current = AppState.gantry.injectorSyncIndex;
-            AppState.update('gantry', 'injectorSyncIndex', current === index ? -1 : index);
+            CTCommandBus.execute({ target: 'gantry', action: 'setField', params: { key: 'injectorSyncIndex', value: current === index ? -1 : index } });
         }
 
         // 繝舌ャ繝√・霑ｽ蜉
         function addScanBatch() {
             if (AppState.gantry.scanSequence.length >= 5) return;
             const newSeq = [...AppState.gantry.scanSequence, {mode: 'helical', delay: 0}];
-            AppState.update('gantry', 'scanSequence', newSeq);
+            CTCommandBus.execute({ target: 'gantry', action: 'setField', params: { key: 'scanSequence', value: newSeq } });
         }
 
         // 繝舌ャ繝√・蜑企勁
@@ -1043,19 +1043,19 @@ function init() {
             if (AppState.gantry.scanSequence.length <= 1) return;
             const newSeq = [...AppState.gantry.scanSequence];
             newSeq.splice(index, 1);
-            AppState.update('gantry', 'scanSequence', newSeq);
+            CTCommandBus.execute({ target: 'gantry', action: 'setField', params: { key: 'scanSequence', value: newSeq } });
         }
 
         // 繝舌ャ繝√・繝・・繧ｿ螟画峩 (繝｢繝ｼ繝峨ｄDelay)
         function updateBatchData(index, key, value) {
             const newSeq = [...AppState.gantry.scanSequence];
             newSeq[index] = { ...newSeq[index], [key]: value };
-            AppState.update('gantry', 'scanSequence', newSeq);
+            CTCommandBus.execute({ target: 'gantry', action: 'setField', params: { key: 'scanSequence', value: newSeq } });
             
             if (key === 'mode') {
                 showInfoDialog(value);
                 if (index === 0) {
-                    AppState.update('gantry', 'currentScanMode', value);
+                    CTCommandBus.execute({ target: 'gantry', action: 'setField', params: { key: 'currentScanMode', value: value } });
                 }
             }
         }
@@ -1101,7 +1101,7 @@ function init() {
 
         function toggleScan() {
             const isScan = !AppState.gantry.isScanning;
-            AppState.update('gantry', 'isScanning', isScan);
+            CTCommandBus.execute({ target: 'gantry', action: 'setScanning', params: { value: isScan } });
 
             new TWEEN.Tween(AppState.gantry)
                 .to({ rotorSpeed: isScan ? 100 : 0 }, 2000)
@@ -1111,7 +1111,7 @@ function init() {
         }
 
         function setScanMode(mode) {
-            AppState.update('gantry', 'scanMode', mode);
+            CTCommandBus.execute({ target: 'gantry', action: 'setField', params: { key: 'scanMode', value: mode } });
         }
 
         function setCameraView(viewType) {
@@ -1177,14 +1177,12 @@ function init() {
         }
 
         function togglePatient() {
-            AppState.update('root', 'patientVisible', !AppState.patientVisible);
-            AppState.patientVisible = !AppState.patientVisible;
-            AppState.notify();
+            CTCommandBus.execute({ target: 'simulator', action: 'setPatientVisible', params: { value: !AppState.patientVisible } });
         }
 
         function toggleXRay() {
             const isVisible = !AppState.gantry.xrayVisible;
-            AppState.update('gantry', 'xrayVisible', isVisible);
+            CTCommandBus.execute({ target: 'gantry', action: 'setXrayVisible', params: { value: isVisible } });
 
             if (isVisible) setGantryOpacity(true);
         }
@@ -1266,18 +1264,16 @@ function init() {
         // 繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ縺ｮ荳ｭ譁ｭ隕∵ｱ・
         function stopAutoSequence() {
             if (!isSequenceRunning) return;
-            AppState.update('gantry', 'cancelRequested', true);
+            CTSequenceService.setCancelRequested(true);
         }
 
         async function runAutoSequence() {
             if (isSequenceRunning) return;
             isSequenceRunning = true;
-            AppState.update('gantry', 'cancelRequested', false);
+            CTSequenceService.setCancelRequested(false);
 
             // 迥ｶ諷九・繝ｪ繧ｻ繝・ヨ
-            AppState.update('couch', 'y', 0);
-            AppState.update('couch', 'z', 0);
-            AppState.update('injector', 'a', 0);
+            CTSequenceService.resetInitialHardwareState();
             if (AppState.gantry.xrayVisible) toggleXRay();
             if (AppState.gantry.isScanning) toggleScan();
 
@@ -1296,17 +1292,17 @@ function init() {
                 const isSyncTarget = (AppState.gantry.injectorSyncIndex === i);
                 
                 // 迴ｾ蝨ｨ螳溯｡御ｸｭ縺ｮ繝舌ャ繝√う繝ｳ繝・ャ繧ｯ繧ｹ繧呈峩譁ｰ
-                AppState.update('gantry', 'activeBatchIndex', i);
-                AppState.update('gantry', 'currentScanMode', mode);
+                CTSequenceService.setActiveBatchIndex(i);
+                CTSequenceService.setCurrentScanMode(mode);
 
                 // --- Delay蜃ｦ逅・(繧ｫ繧ｦ繝ｳ繝医ム繧ｦ繝ｳ) ---
                 if (delay > 0) {
                     for(let d = delay; d > 0; d--) {
                         if (AppState.gantry.cancelRequested) break;
-                        AppState.update('gantry', 'countdown', d);
+                        CTSequenceService.setCountdown(d);
                         await wait(1000);
                     }
-                    AppState.update('gantry', 'countdown', 0);
+                    CTSequenceService.setCountdown(0);
                 }
 
                 if (AppState.gantry.cancelRequested) break;
@@ -1395,8 +1391,8 @@ function init() {
                 toggleXRay();
             }
 
-            AppState.update('gantry', 'activeBatchIndex', -1);
-            AppState.update('gantry', 'countdown', 0);
+            CTSequenceService.setActiveBatchIndex(-1);
+            CTSequenceService.setCountdown(0);
 
             // 繝ｭ繝ｼ繧ｿ繝ｼ縺悟屓縺｣縺ｦ縺・ｌ縺ｰ蛛懈ｭ｢
             if (AppState.gantry.isScanning) {
@@ -1409,8 +1405,8 @@ function init() {
             await tweenPromise(AppState.couch, { y: 0 }, 2000);
 
             // 迥ｶ諷九・蠕ｩ蜈・
-            AppState.update('gantry', 'currentScanMode', AppState.gantry.scanSequence[0].mode);
-            AppState.update('gantry', 'cancelRequested', false);
+            CTSequenceService.setCurrentScanMode(AppState.gantry.scanSequence[0].mode);
+            CTSequenceService.setCancelRequested(false);
 
             isSequenceRunning = false;
             renderBatchUI(); // 繝懊ち繝ｳ縺ｮ陦ｨ遉ｺ繧帝壼ｸｸ縺ｫ謌ｻ縺・

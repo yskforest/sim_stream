@@ -17,7 +17,12 @@
             patientVisible: true,
 
             listeners: [],
-            subscribe(callback) { this.listeners.push(callback); },
+            subscribe(callback) {
+                this.listeners.push(callback);
+                return () => {
+                    this.listeners = this.listeners.filter(cb => cb !== callback);
+                };
+            },
             update(key, subKey, value) {
                 if (this[key] && this[key][subKey] !== undefined) {
                     this[key][subKey] = value;
@@ -60,4 +65,8 @@ const UI = {};
         const Meshes = {};
         let scene, camera, renderer, controls, mixer;
         const clock = new THREE.Clock();
+
+if (window.CTStore) {
+    window.CTStore.bindState(AppState);
+}
 
