@@ -20,22 +20,22 @@
         <!-- Header -->
         <div class="flex justify-between items-start w-full relative h-full">
             
-            <!-- 謫堺ｽ懊ヱ繝阪Ν (謚倥ｊ縺溘◆縺ｿ&繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ蟇ｾ蠢・ -->
+            <!-- 隰ｫ蝣ｺ・ｽ諛翫Τ郢晞亂ﾎ・(隰壼･・顔ｸｺ貅倪螺邵ｺ・ｿ&郢ｧ・ｹ郢ｧ・ｯ郢晢ｽｭ郢晢ｽｼ郢晢ｽｫ陝・ｽｾ陟｢繝ｻ -->
             <div class="bg-gray-900/80 backdrop-blur-md p-4 rounded-xl border border-gray-700 shadow-xl w-80 pointer-events-auto flex flex-col max-h-[calc(100vh-2rem)]">
                 
-                <!-- 繧ｿ繧､繝医Ν繧ｨ繝ｪ繧｢ (蝗ｺ螳・ -->
+                <!-- 郢ｧ・ｿ郢ｧ・､郢晏現ﾎ晉ｹｧ・ｨ郢晢ｽｪ郢ｧ・｢ (陜暦ｽｺ陞ｳ繝ｻ -->
                 <div class="shrink-0">
                     <h1 class="text-xl font-bold text-blue-400 mb-1">CT Simulator</h1>
-                    <p class="text-xs text-gray-400 mb-4">State Manager & 3D Visualization</p>
+                    <p class="text-xs text-gray-400 mb-4">HW Simulator Control & 3D Visualization</p>
                 </div>
 
-                <!-- 繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ蜿ｯ閭ｽ縺ｪ險ｭ螳壹お繝ｪ繧｢ -->
+                <!-- 郢ｧ・ｹ郢ｧ・ｯ郢晢ｽｭ郢晢ｽｼ郢晢ｽｫ陷ｿ・ｯ髢ｭ・ｽ邵ｺ・ｪ髫ｪ・ｭ陞ｳ螢ｹ縺顔ｹ晢ｽｪ郢ｧ・｢ -->
                 <div class="space-y-3 overflow-y-auto pr-2 flex-grow">
                     
-                    <!-- 1. 繧ｫ繝｡繝ｩ蛻ｶ蠕｡ -->
+                    <!-- 1. 郢ｧ・ｫ郢晢ｽ｡郢晢ｽｩ陋ｻ・ｶ陟包ｽ｡ -->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Camera View</span>
+                            <span>視点切替 (Camera View)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
@@ -50,12 +50,29 @@
                         </div>
                     </details>
 
-                    <hr class="border-gray-700">
+                                        <hr class="border-gray-700">
 
-                    <!-- 2. 陦ｨ遉ｺ險ｭ螳・-->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Display Settings</span>
+                            <span>クイック操作 (Quick Actions)</span>
+                            <span class="transition group-open:rotate-180">
+                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
+                            </span>
+                        </summary>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Home View</button>
+                            <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Operator View</button>
+                            <button onclick="togglePatient()" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Patient ON/OFF</button>
+                            <button onclick="toggleXRay()" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">X-Ray ON/OFF</button>
+                        </div>
+                    </details>
+
+                    <hr class="border-gray-700">
+
+                    <!-- 2. 髯ｦ・ｨ驕会ｽｺ髫ｪ・ｭ陞ｳ繝ｻ-->
+                    <details class="group">
+                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
+                            <span>表示設定 (Display)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
@@ -78,10 +95,10 @@
 
                     <hr class="border-gray-700">
 
-                    <!-- 3. 繧ｹ繧ｭ繝｣繝ｳ繝代Λ繝｡繝ｼ繧ｿ -->
+                    <!-- 3. 郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢昜ｻ｣ﾎ帷ｹ晢ｽ｡郢晢ｽｼ郢ｧ・ｿ -->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Scan Parameters</span>
+                            <span>スキャン条件 (Scan Parameters)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
@@ -103,10 +120,10 @@
 
                     <hr class="border-gray-700">
 
-                    <!-- 4. 蟇晏床・医き繧ｦ繝・ｼ牙宛蠕｡ -->
+                    <!-- 4. 陝・剌蠎翫・蛹ｻ縺咲ｹｧ・ｦ郢昴・・ｼ迚吝ｮ幄包ｽ｡ -->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Couch Control</span>
+                            <span>寝台操作 (Couch)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
@@ -131,10 +148,10 @@
 
                     <hr class="border-gray-700">
 
-                    <!-- 5. 繧ｹ繧ｭ繝｣繝ｳ蛻ｶ蠕｡ -->
+                    <!-- 5. 郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ陋ｻ・ｶ陟包ｽ｡ -->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Scan Control</span>
+                            <span>スキャン実行 (Scan Control)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
@@ -153,10 +170,10 @@
 
                     <hr class="border-gray-700">
 
-                    <!-- 6. 繧､繝ｳ繧ｸ繧ｧ繧ｯ繧ｿ蛻ｶ蠕｡ -->
+                    <!-- 6. 郢ｧ・､郢晢ｽｳ郢ｧ・ｸ郢ｧ・ｧ郢ｧ・ｯ郢ｧ・ｿ陋ｻ・ｶ陟包ｽ｡ -->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Injector Control</span>
+                            <span>インジェクタ操作 (Injector)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
@@ -181,18 +198,18 @@
 
                     <hr class="border-gray-700">
 
-                    <!-- 7. 繝輔か繝ｼ繧ｫ繧ｹ (Focus) -->
+                    <!-- 7. 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ (Focus) -->
                     <details class="group">
                         <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>Focus Targets</span>
+                            <span>フォーカス対象 (Focus)</span>
                             <span class="transition group-open:rotate-180">
                                 <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
                         </summary>
                         <div class="mt-3">
                             <select id="select-focus" onchange="handleFocusChange(this.value)" class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600 outline-none hover:border-blue-500 transition-colors">
-                                <option value="" disabled selected>Select a target to focus...</option>
-                                <optgroup label="CT Room Components">
+                                <option value="" disabled selected>フォーカス対象を選択...</option>
+                                <optgroup label="CT Room Components / 検査室">
                                     <option value="Injector">Injector</option>
                                     <option value="Gantry">CT Gantry</option>
                                     <option value="Couch">CT Couch</option>
@@ -202,7 +219,7 @@
                                     <option value="ConsoleDisplay">Console Display</option>
                                     <option value="OperationSwitcher">Operation Switcher</option>
                                 </optgroup>
-                                <optgroup label="Server Rack (Console BOX)">
+                                <optgroup label="Server Rack (Console BOX) / 制御ラック">
                                     <option value="SCON">Server: SCON (System Control Node)</option>
                                     <option value="DCON">Server: DCON (Data Control Node)</option>
                                     <option value="RTM">Server: RTM (Real Time Monitor)</option>
@@ -217,16 +234,16 @@
                 </div>
             </div>
 
-            <!-- 繧ｹ繝・・繧ｿ繧ｹ繝｢繝九ち繝ｼ -->
+            <!-- 郢ｧ・ｹ郢昴・繝ｻ郢ｧ・ｿ郢ｧ・ｹ郢晢ｽ｢郢昜ｹ昴■郢晢ｽｼ -->
             <div class="bg-gray-900/90 backdrop-blur-md border border-gray-700 p-4 rounded-xl shadow-2xl w-72 pointer-events-auto flex flex-col gap-4 transition-all h-fit">
 
-                <!-- 繝倥ャ繝繝ｼ & 繧ｹ繝・・繧ｿ繧ｹ繝舌ャ繧ｸ -->
+                <!-- 郢晏･繝｣郢敖郢晢ｽｼ & 郢ｧ・ｹ郢昴・繝ｻ郢ｧ・ｿ郢ｧ・ｹ郢晁・繝｣郢ｧ・ｸ -->
                 <div class="flex items-center justify-between border-b border-gray-700 pb-2">
-                    <h3 class="text-xs font-bold text-gray-300 tracking-wider">SYSTEM STATUS</h3>
+                    <h3 class="text-xs font-bold text-gray-300 tracking-wider">SYSTEM MONITOR</h3>
                     <span id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300">STANDBY</span>
                 </div>
 
-                <!-- Gantry (蝗櫁ｻ｢謨ｰ縺ｨ繝｢繝ｼ繝・ -->
+                <!-- Gantry (陜玲ｫ・ｽｻ・｢隰ｨ・ｰ邵ｺ・ｨ郢晢ｽ｢郢晢ｽｼ郢昴・ -->
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-end">
                         <span class="text-xs text-gray-400 font-semibold">Gantry / Rotor</span>
@@ -241,7 +258,7 @@
                     </div>
                 </div>
 
-                <!-- Couch (蟇晏床菴咲ｽｮ) -->
+                <!-- Couch (陝・剌蠎願抄蜥ｲ・ｽ・ｮ) -->
                 <div class="space-y-2">
                     <span class="text-xs text-gray-400 font-semibold">Patient Couch</span>
                     <div class="grid grid-cols-2 gap-3">
@@ -256,7 +273,7 @@
                     </div>
                 </div>
 
-                <!-- Injector (騾蠖ｱ蜑､谿矩㍼) -->
+                <!-- Injector (鬨ｾ・ｰ陟厄ｽｱ陷托ｽ､隹ｿ遏ｩ纃ｼ) -->
                 <div class="space-y-1.5">
                     <span class="text-xs text-gray-400 font-semibold">Injector Volume</span>
                     <!-- Contrast (A) -->
@@ -278,7 +295,7 @@
                 </div>
             </div>
 
-            <!-- 繝輔か繝ｼ繧ｫ繧ｹ・・ュ蝣ｱ繝繧､繧｢繝ｭ繧ｰ (菴咲ｽｮ繧剃ｿｮ豁｣) -->
+            <!-- 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ繝ｻ繝ｻ繝･陜｣・ｱ郢敖郢ｧ・､郢ｧ・｢郢晢ｽｭ郢ｧ・ｰ (闖ｴ蜥ｲ・ｽ・ｮ郢ｧ蜑・ｽｿ・ｮ雎・ｽ｣) -->
             <div id="info-dialog" class="hidden absolute top-4 left-[340px] bg-gray-900/95 border border-blue-500/50 p-5 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] w-80 pointer-events-auto transition-opacity duration-300 z-50">
                 <div class="flex justify-between items-start mb-3 border-b border-gray-700 pb-2">
                     <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
@@ -287,7 +304,7 @@
                 <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">Description goes here...</p>
             </div>
 
-            <!-- 繝舌ャ繝∝・逅・ン繝ｫ繝繝ｼUI (逕ｻ髱｢荳矩Κ荳ｭ螟ｮ) -->
+            <!-- 郢晁・繝｣郢昶・繝ｻ騾・・繝ｳ郢晢ｽｫ郢敖郢晢ｽｼUI (騾包ｽｻ鬮ｱ・｢闕ｳ遏ｩﾎ夊叉・ｭ陞滂ｽｮ) -->
             <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-lg border border-gray-700 p-3 rounded-xl shadow-2xl pointer-events-auto flex items-center gap-3 transition-all z-40">
                 
                 <div class="text-[10px] font-bold text-gray-500 mr-1 flex flex-col items-center tracking-widest">
@@ -297,9 +314,9 @@
 
                 <div class="w-px h-12 bg-gray-700 mx-1"></div>
                 
-                <!-- 繝舌ャ繝√き繝ｼ繝峨′荳ｦ縺ｶ繧ｳ繝ｳ繝・リ -->
+                <!-- 郢晁・繝｣郢昶・縺咲ｹ晢ｽｼ郢晏ｳｨ窶ｲ闕ｳ・ｦ邵ｺ・ｶ郢ｧ・ｳ郢晢ｽｳ郢昴・繝ｪ -->
                 <div id="batch-container" class="flex gap-2 items-center">
-                    <!-- JavaScript縺ｧ蜍慕噪逕滓・縺輔ｌ縺ｾ縺・-->
+                    <!-- JavaScript邵ｺ・ｧ陷肴・蝎ｪ騾墓ｻ薙・邵ｺ霈費ｽ檎ｸｺ・ｾ邵ｺ繝ｻ-->
                 </div>
 
                 <button id="btn-add-batch" onclick="addScanBatch()" class="h-16 w-8 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition" title="Add Batch (Max 5)">
@@ -310,7 +327,7 @@
 
                 <button id="btn-run-sequence" onclick="runAutoSequence()" class="h-16 px-6 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg border border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 tracking-wider">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                    RUN SEQUENCE
+                    RUN SEQUENCE / 一括実行
                 </button>
             </div>
 
@@ -346,5 +363,8 @@
 </body>
 
 </html>
+
+
+
 
 
