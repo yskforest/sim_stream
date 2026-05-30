@@ -36,86 +36,82 @@
                 ]
             };
 
-            const shape = new THREE.Shape();
-            const w = 1.35;
-            const b = -1.15;
+            // Non-perfect-donut outer shell: rounded top with flatter lower section.
+            const shellW = 1.34;
+            const shellBottom = -1.10;
+            const shellDepth = 0.58;
+            const boreRadius = 0.68;
+            const shellShape = new THREE.Shape();
+            shellShape.moveTo(shellW, shellBottom);
+            shellShape.lineTo(shellW, -0.05);
+            shellShape.absarc(0, -0.05, shellW, 0, Math.PI, false);
+            shellShape.lineTo(-shellW, shellBottom);
+            shellShape.quadraticCurveTo(0, shellBottom - 0.10, shellW, shellBottom);
 
-            shape.moveTo(w, b);
-            shape.lineTo(w, 0);
-            shape.absarc(0, 0, w, 0, Math.PI, false);
-            shape.lineTo(-w, b);
-            shape.lineTo(w, b);
+            const shellHole = new THREE.Path();
+            shellHole.absarc(0, 0, boreRadius, 0, Math.PI * 2, true);
+            shellShape.holes.push(shellHole);
 
-            const boreRadius = 0.65;
-            const hole = new THREE.Path();
-            hole.absarc(0, 0, boreRadius, 0, Math.PI * 2, true);
-            shape.holes.push(hole);
-
-            const extrudeSettings = {
-                depth: 0.5, curveSegments: 64,
-                bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.15, bevelSegments: 32
-            };
-            const bodyGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            bodyGeo.translate(0, 0, -0.25);
-            const mainBody = new THREE.Mesh(bodyGeo, gantryMat);
-            mainBody.castShadow = true; mainBody.receiveShadow = true;
+            const shellGeo = new THREE.ExtrudeGeometry(shellShape, {
+                depth: shellDepth,
+                curveSegments: 96,
+                bevelEnabled: true,
+                bevelThickness: 0.06,
+                bevelSize: 0.08,
+                bevelSegments: 10
+            });
+            shellGeo.translate(0, 0, -shellDepth / 2);
+            const mainBody = new THREE.Mesh(shellGeo, gantryMat);
+            mainBody.castShadow = true;
+            mainBody.receiveShadow = true;
             gantryGroup.add(mainBody);
 
-            const taperPoints = [];
-            const tunnelRadius = 0.46;
-            const taperDepth = 0.1;
-            for (let i = 0; i <= 30; i++) {
-                const t = i / 30;
-                // 縺ｪ縺繧峨°縺ｪ譖ｲ邱壹・繝・・繝代・
-                const r = tunnelRadius + (boreRadius - tunnelRadius) * Math.sin(t * Math.PI / 2);
-                const y = taperDepth * t;
-                taperPoints.push(new THREE.Vector2(r, y));
-            }
-            const taperGeo = new THREE.LatheGeometry(taperPoints, 64);
+            // Base and feet closer to medical gantry stance.
+            const gantryBase = createRoundedBox(2.72, 0.18, 1.08, 0.16, baseCoverMat);
+            gantryBase.position.set(0, -1.16, 0);
+            gantryGroup.add(gantryBase);
 
-            const frontTaper = new THREE.Mesh(taperGeo, gantryMat);
-            frontTaper.rotation.x = -Math.PI / 2; // 謇句燕縺ｸ蜷代￥
-            frontTaper.position.z = 0.15; // Z=0.15 縺九ｉ Z=0.25縺ｸ蠎・′繧・
-            frontTaper.receiveShadow = true;
-            gantryGroup.add(frontTaper);
+            const footL = createRoundedBox(0.42, 0.32, 0.88, 0.12, baseCoverMat);
+            footL.position.set(-0.95, -0.98, 0);
+            gantryGroup.add(footL);
+            const footR = footL.clone();
+            footR.position.x = 0.95;
+            gantryGroup.add(footR);
 
-            const rearTaper = new THREE.Mesh(taperGeo, gantryMat);
-            rearTaper.rotation.x = Math.PI / 2; // 螂･縺ｸ蜷代￥
-            rearTaper.position.z = -0.15; // Z=-0.15 縺九ｉ Z=-0.25縺ｸ蠎・′繧・
-            rearTaper.receiveShadow = true;
-            gantryGroup.add(rearTaper);
-
-            // 繝医Φ繝阪Ν縺ｮ髟ｷ縺輔ｒ 0.45 縺九ｉ 0.3 縺ｫ遏ｭ邵ｮ・亥・驛ｨ繝代・繝・・縺ｯ縺ｿ蜃ｺ縺励ｒ髦ｲ豁｢・・
-            const tunnelGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.3, 64, 1, true);
+            const tunnelDepth = 0.40;
+            const tunnelRadius = 0.47;
+            const tunnelGeo = new THREE.CylinderGeometry(tunnelRadius, tunnelRadius, tunnelDepth, 96, 1, true);
             const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
             tunnel.rotation.x = Math.PI / 2;
             gantryGroup.add(tunnel);
 
-            const ringGeo = new THREE.TorusGeometry(0.462, 0.008, 16, 64);
-            const ringFront = new THREE.Mesh(ringGeo, blueLightMat);
-            ringFront.position.z = 0.14; // 繝医Φ繝阪Ν縺ｮ遶ｯ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ
-            gantryGroup.add(ringFront);
+            // Inner matte shroud to keep rotor visually inside the housing.
+            const shroudMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0.05, side: THREE.DoubleSide });
+            const innerShroud = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.62, 0.62, 0.56, 96, 1, true),
+                shroudMat
+            );
+            innerShroud.rotation.x = Math.PI / 2;
+            gantryGroup.add(innerShroud);
 
+            const flareMat = new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.25, metalness: 0.06 });
+            const frontFlare = new THREE.Mesh(new THREE.TorusGeometry(tunnelRadius + 0.05, 0.040, 22, 120), flareMat);
+            frontFlare.position.z = shellDepth * 0.36;
+            gantryGroup.add(frontFlare);
+            const rearFlare = frontFlare.clone();
+            rearFlare.position.z = -shellDepth * 0.36;
+            gantryGroup.add(rearFlare);
+
+            const ringGeo = new THREE.TorusGeometry(tunnelRadius + 0.002, 0.006, 16, 96);
+            const ringFront = new THREE.Mesh(ringGeo, blueLightMat);
+            ringFront.position.z = tunnelDepth / 2 - 0.01;
+            gantryGroup.add(ringFront);
             const ringRear = ringFront.clone();
-            ringRear.position.z = -0.14; // 繝医Φ繝阪Ν縺ｮ遶ｯ縺ｫ蜷医ｏ縺帙※隱ｿ謨ｴ
+            ringRear.position.z = -tunnelDepth / 2 + 0.01;
             gantryGroup.add(ringRear);
 
-            const gantryBase = createRoundedBox(2.7, 0.1, 1.0, 0.1, baseCoverMat);
-            gantryBase.position.set(0, -1.15, 0);
-            gantryGroup.add(gantryBase);
-
-            const slitPlaneGeo = new THREE.PlaneGeometry(0.35, 0.02);
-            for (let i = 0; i < 4; i++) {
-                const slitR = new THREE.Mesh(slitPlaneGeo, darkMat);
-                slitR.position.set(1.31, -0.3 - i * 0.12, 0.35);
-                gantryGroup.add(slitR);
-
-                const slitL = new THREE.Mesh(slitPlaneGeo, darkMat);
-                slitL.position.set(-1.31, -0.3 - i * 0.12, 0.35);
-                gantryGroup.add(slitL);
-            }
-
-            const frontZ = 0.395;
+            // Front device mounts / panels.
+            const frontZ = 0.405;
 
             function createCamera(x, y) {
                 const camGroup = new THREE.Group();
@@ -168,27 +164,27 @@
             gantryGroup.add(createControlPanel(0.8, 0.35));
             gantryGroup.add(createControlPanel(-0.8, 0.35));
 
-            const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.04), logoMat);
-            logo.position.set(0, 1.15, 0.42);
+            const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.045), logoMat);
+            logo.position.set(0, 1.08, 0.43);
             gantryGroup.add(logo);
 
             const ledRed = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), ledRedMat);
-            ledRed.position.set(-0.6, 1.05, 0.42);
+            ledRed.position.set(-0.62, 0.99, 0.43);
             gantryGroup.add(ledRed);
 
             const ledGreen = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), ledGreenMat);
-            ledGreen.position.set(0.6, 1.05, 0.42);
+            ledGreen.position.set(0.62, 0.99, 0.43);
             gantryGroup.add(ledGreen);
 
             // --- 蜀・Κ繝ｭ繝ｼ繧ｿ (X邱夂ｮ｡逅・→讀懷・蝎ｨ) ---
             const rotorGroup = new THREE.Group();
 
-            const rotorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.59, 0.59, 0.25, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0x222, side: THREE.DoubleSide }));
+            const rotorRing = new THREE.Mesh(new THREE.CylinderGeometry(0.49, 0.49, 0.2, 96, 1, true), new THREE.MeshStandardMaterial({ color: 0x222, side: THREE.DoubleSide }));
             rotorRing.rotation.x = Math.PI / 2;
             rotorGroup.add(rotorRing);
 
             const tubeGroup = new THREE.Group();
-            tubeGroup.position.set(0, 0.52, 0);
+            tubeGroup.position.set(0, 0.45, 0);
 
             // 縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢縺ｮ縺溘ａ縲∫ｮ｡逅・こ繝ｼ繧ｹ繧貞ｹ・ｺ・￥縲∝･･陦後″繧偵せ繝ｪ繝縺ｫ隱ｿ謨ｴ
             const caseGeo = new THREE.BoxGeometry(0.38, 0.14, 0.22);
@@ -211,9 +207,9 @@
             rotorGroup.add(tubeGroup);
 
             const detectorGroup = new THREE.Group();
-            const detectorAngle = Math.PI / 2.2;
-            const rIn = 0.52;
-            const rOut = 0.56;
+            const detectorAngle = Math.PI / 2.25;
+            const rIn = 0.46;
+            const rOut = 0.49;
             const startAngle = -Math.PI / 2 - detectorAngle / 2;
             const endAngle = -Math.PI / 2 + detectorAngle / 2;
 
@@ -231,8 +227,8 @@
             detectorGroup.add(new THREE.Mesh(detGeo, detMat));
 
             const senShape = new THREE.Shape();
-            const sIn = 0.518;
-            const sOut = 0.521;
+            const sIn = 0.458;
+            const sOut = 0.462;
             senShape.moveTo(sIn * Math.cos(startAngle), sIn * Math.sin(startAngle));
             senShape.absarc(0, 0, sOut, startAngle, endAngle, false);
             senShape.lineTo(sIn * Math.cos(endAngle), sIn * Math.sin(endAngle));
@@ -250,7 +246,7 @@
             rotorGroup.add(detectorGroup);
             Meshes.detectorGroup = detectorGroup;
 
-            const beamHeight = 1.04;
+            const beamHeight = 0.92;
             const beamGeo = new THREE.ConeGeometry(0.6, beamHeight, 4, 1, true);
             beamGeo.rotateY(Math.PI / 4);
             beamGeo.translate(0, -beamHeight / 2, 0);
@@ -260,7 +256,7 @@
                 blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
             });
             const xrayBeam = new THREE.Mesh(beamGeo, beamMat);
-            xrayBeam.position.set(0, 0.5, 0);
+            xrayBeam.position.set(0, 0.44, 0);
 
             xrayBeam.scale.set(1.6, 1.0, 0.16);
 
@@ -274,20 +270,20 @@
             // --- 2. 蟇晏床 (繧ｫ繧ｦ繝・ ---
             const couchGroup = new THREE.Group();
 
-            // 菫ｮ豁｣: 蛻晄悄菴咲ｽｮ繧呈焔蜑・Z:2.6)縺ｸ遘ｻ蜍輔＠繧√ｊ霎ｼ縺ｿ繧定ｧ｣豸・
-            const couchBase = createRoundedBox(0.8, 0.2, 1.8, 0.15, baseCoverMat);
-            couchBase.position.set(0, 0.1, 2.6);
+            // Base carriage: wider, cleaner skirt-like design.
+            const couchBase = createRoundedBox(0.9, 0.18, 1.95, 0.14, baseCoverMat);
+            couchBase.position.set(0, 0.09, 2.6);
             couchGroup.add(couchBase);
 
             const bellowsGroup = new THREE.Group();
             bellowsGroup.position.set(0, 0.2, 2.6);
-            const bellowsCount = 6;
+            const bellowsCount = 5;
             const bellowsParts = [];
-            const bellowsMat = new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.9 });
+            const bellowsMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.85 });
             for (let i = 0; i < bellowsCount; i++) {
-                const width = 0.75 - (i * 0.025);
-                const depth = 1.75 - (i * 0.04);
-                const bMesh = createRoundedBox(width, 0.1, depth, 0.1, bellowsMat);
+                const width = 0.78 - (i * 0.03);
+                const depth = 1.82 - (i * 0.06);
+                const bMesh = createRoundedBox(width, 0.085, depth, 0.09, bellowsMat);
                 bellowsParts.push(bMesh);
                 bellowsGroup.add(bMesh);
             }
@@ -297,30 +293,30 @@
             const tabletopGroup = new THREE.Group();
             tabletopGroup.position.set(0, 0.8, 2.6);
 
-            const supportMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.4 });
-            const supportBase = createRoundedBox(0.72, 0.18, 2.2, 0.1, supportMat);
-            supportBase.position.y = -0.09;
+            const supportMat = new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.35 });
+            const supportBase = createRoundedBox(0.74, 0.20, 2.35, 0.11, supportMat);
+            supportBase.position.y = -0.10;
             tabletopGroup.add(supportBase);
 
-            const footCover = createRoundedBox(0.75, 0.22, 0.5, 0.15, supportMat);
-            footCover.position.set(0, -0.07, 0.9);
+            const footCover = createRoundedBox(0.80, 0.22, 0.58, 0.16, supportMat);
+            footCover.position.set(0, -0.07, 0.96);
             tabletopGroup.add(footCover);
 
-            const handle = createRoundedBox(0.4, 0.05, 0.1, 0.02, darkMat);
-            handle.position.set(0, -0.05, 1.15);
+            const handle = createRoundedBox(0.42, 0.045, 0.11, 0.02, darkMat);
+            handle.position.set(0, -0.05, 1.2);
             tabletopGroup.add(handle);
 
-            const tableGeo = new THREE.BoxGeometry(0.55, 0.03, 3.4);
-            const tableMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.7 });
+            const tableGeo = new THREE.BoxGeometry(0.56, 0.028, 3.5);
+            const tableMat = new THREE.MeshStandardMaterial({ color: 0x2b2f35, roughness: 0.65 });
             const tabletop = new THREE.Mesh(tableGeo, tableMat);
-            tabletop.position.set(0, 0.015, -0.2);
+            tabletop.position.set(0, 0.016, -0.22);
             tabletop.castShadow = true; tabletop.receiveShadow = true;
             tabletopGroup.add(tabletop);
 
-            const matGeo = new THREE.BoxGeometry(0.53, 0.025, 3.3);
-            const matMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9 });
+            const matGeo = new THREE.BoxGeometry(0.54, 0.022, 3.35);
+            const matMat = new THREE.MeshStandardMaterial({ color: 0xb3bbc5, roughness: 0.85 });
             const mattress = new THREE.Mesh(matGeo, matMat);
-            mattress.position.set(0, 0.04, -0.2);
+            mattress.position.set(0, 0.038, -0.22);
             tabletopGroup.add(mattress);
 
             const patientGroup = new THREE.Group();
