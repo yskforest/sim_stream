@@ -1,370 +1,174 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CT 3D Simulator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="stylesheet" href="./assets/css/ct-simulator.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CT 3D Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./assets/css/ct-simulator.css">
 </head>
-
 <body class="text-white">
+  <div id="canvas-container"></div>
 
-    <!-- 3D Viewport -->
-    <div id="canvas-container"></div>
-
-    <!-- UI Overlay -->
-    <div id="ui-layer" class="flex flex-col justify-between p-4">
-        <!-- Header -->
-        <div class="flex justify-between items-start w-full relative h-full">
-            
-            <!-- 隰ｫ蝣ｺ・ｽ諛翫Τ郢晞亂ﾎ・(隰壼･・顔ｸｺ貅倪螺邵ｺ・ｿ&郢ｧ・ｹ郢ｧ・ｯ郢晢ｽｭ郢晢ｽｼ郢晢ｽｫ陝・ｽｾ陟｢繝ｻ -->
-            <div class="bg-gray-900/80 backdrop-blur-md p-4 rounded-xl border border-gray-700 shadow-xl w-80 pointer-events-auto flex flex-col max-h-[calc(100vh-2rem)]">
-                
-                <!-- 郢ｧ・ｿ郢ｧ・､郢晏現ﾎ晉ｹｧ・ｨ郢晢ｽｪ郢ｧ・｢ (陜暦ｽｺ陞ｳ繝ｻ -->
-                <div class="shrink-0">
-                    <h1 class="text-xl font-bold text-blue-400 mb-1">CT Simulator</h1>
-                    <p class="text-xs text-gray-400 mb-4">HW Simulator Control & 3D Visualization</p>
-                </div>
-
-                <!-- 郢ｧ・ｹ郢ｧ・ｯ郢晢ｽｭ郢晢ｽｼ郢晢ｽｫ陷ｿ・ｯ髢ｭ・ｽ邵ｺ・ｪ髫ｪ・ｭ陞ｳ螢ｹ縺顔ｹ晢ｽｪ郢ｧ・｢ -->
-                <div class="space-y-3 overflow-y-auto pr-2 flex-grow">
-                    
-                    <!-- 1. 郢ｧ・ｫ郢晢ｽ｡郢晢ｽｩ陋ｻ・ｶ陟包ｽ｡ -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>視点切替 (Camera View)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Free</button>
-                            <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Operator</button>
-                            <button onclick="setCameraView('patient')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Patient</button>
-                            <button onclick="setCameraView('injector')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Injector</button>
-                            <button onclick="setCameraView('gantryTop')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Gantry Cam (Top)</button>
-                            <button onclick="setCameraView('gantrySide')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Gantry Cam (Side)</button>
-                        </div>
-                    </details>
-
-                                        <hr class="border-gray-700">
-
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>クイック操作 (Quick Actions)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Home View</button>
-                            <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Operator View</button>
-                            <button onclick="togglePatient()" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Patient ON/OFF</button>
-                            <button onclick="toggleXRay()" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">X-Ray ON/OFF</button>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 2. 髯ｦ・ｨ驕会ｽｺ髫ｪ・ｭ陞ｳ繝ｻ-->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>表示設定 (Display)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-3">
-                            <div>
-                                <div class="text-[10px] text-gray-400 mb-1">Gantry Shell & X-Ray</div>
-                                <div class="flex gap-2 mb-2">
-                                    <button id="btn-gantry-opaque" onclick="setGantryOpacity(false)" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold">Opaque</button>
-                                    <button id="btn-gantry-trans" onclick="setGantryOpacity(true)" class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Translucent</button>
-                                </div>
-                                <button id="btn-xray-toggle" onclick="toggleXRay()" class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition">Show X-Ray Beam</button>
-                            </div>
-                            <div>
-                                <div class="text-[10px] text-gray-400 mb-1">Patient Model</div>
-                                <button id="btn-patient-toggle" onclick="togglePatient()" class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold">Hide Patient</button>
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 3. 郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢昜ｻ｣ﾎ帷ｹ晢ｽ｡郢晢ｽｼ郢ｧ・ｿ -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>スキャン条件 (Scan Parameters)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-3">
-                            <div>
-                                <div class="text-[10px] text-gray-400 mb-1">Detector Rows (Slices)</div>
-                                <select id="select-detector-rows" class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600 outline-none">
-                                    <option value="16">16 Rows</option>
-                                    <option value="32">32 Rows</option>
-                                    <option value="64">64 Rows</option>
-                                    <option value="80">80 Rows</option>
-                                    <option value="160">160 Rows</option>
-                                    <option value="320" selected>320 Rows (Aquilion ONE)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 4. 陝・剌蠎翫・蛹ｻ縺咲ｹｧ・ｦ郢昴・・ｼ迚吝ｮ幄包ｽ｡ -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>寝台操作 (Couch)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-2">
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Height (Y)</span>
-                                    <span id="couch-y-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-couch-y" min="0" max="100" value="0" class="w-full accent-blue-500">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Position (Z)</span>
-                                    <span id="couch-z-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-couch-z" min="0" max="100" value="0" class="w-full accent-blue-500">
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 5. 郢ｧ・ｹ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ陋ｻ・ｶ陟包ｽ｡ -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>スキャン実行 (Scan Control)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3">
-                            <div class="flex gap-2 mb-2">
-                                <button id="btn-scan-toggle" onclick="toggleScan()" class="flex-1 bg-green-600 hover:bg-green-500 text-sm py-2 rounded font-bold transition">Start Scan</button>
-                            </div>
-                            <label class="text-xs text-gray-400 flex justify-between">
-                                <span>Rotor Speed</span>
-                                <span id="rotor-speed-val">0 rpm</span>
-                            </label>
-                            <input type="range" id="slider-rotor-speed" min="0" max="100" value="0" class="w-full accent-green-500" disabled>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 6. 郢ｧ・､郢晢ｽｳ郢ｧ・ｸ郢ｧ・ｧ郢ｧ・ｯ郢ｧ・ｿ陋ｻ・ｶ陟包ｽ｡ -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>インジェクタ操作 (Injector)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3 space-y-2">
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Contrast (A)</span>
-                                    <span id="inject-a-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-inject-a" min="0" max="100" value="0" class="w-full accent-purple-500">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400 flex justify-between">
-                                    <span>Saline (B)</span>
-                                    <span id="inject-b-val">0%</span>
-                                </label>
-                                <input type="range" id="slider-inject-b" min="0" max="100" value="0" class="w-full accent-blue-300">
-                            </div>
-                        </div>
-                    </details>
-
-                    <hr class="border-gray-700">
-
-                    <!-- 7. 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ (Focus) -->
-                    <details class="group">
-                        <summary class="flex justify-between items-center font-semibold cursor-pointer list-none text-gray-300 text-sm [&::-webkit-details-marker]:hidden">
-                            <span>フォーカス対象 (Focus)</span>
-                            <span class="transition group-open:rotate-180">
-                                <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div class="mt-3">
-                            <select id="select-focus" onchange="handleFocusChange(this.value)" class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600 outline-none hover:border-blue-500 transition-colors">
-                                <option value="" disabled selected>フォーカス対象を選択...</option>
-                                <optgroup label="CT Room Components / 検査室">
-                                    <option value="Injector">Injector</option>
-                                    <option value="Gantry">CT Gantry</option>
-                                    <option value="Couch">CT Couch</option>
-                                    <option value="TouchPanel">CT Touch Panel</option>
-                                    <option value="XrayTube">X-ray Tube</option>
-                                    <option value="Detector">Detector</option>
-                                    <option value="ConsoleDisplay">Console Display</option>
-                                    <option value="OperationSwitcher">Operation Switcher</option>
-                                </optgroup>
-                                <optgroup label="Server Rack (Console BOX) / 制御ラック">
-                                    <option value="SCON">Server: SCON (System Control Node)</option>
-                                    <option value="DCON">Server: DCON (Data Control Node)</option>
-                                    <option value="RTM">Server: RTM (Real Time Monitor)</option>
-                                    <option value="IDD">Server: IDD (Image Data Disk)</option>
-                                    <option value="RDD">Server: RDD (Raw Data Disk)</option>
-                                    <option value="SAC">Server: SAC (Scan Array Controller)</option>
-                                    <option value="FullRack">Console BOX (Full Rack)</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                    </details>
-                </div>
-            </div>
-
-            <!-- 郢ｧ・ｹ郢昴・繝ｻ郢ｧ・ｿ郢ｧ・ｹ郢晢ｽ｢郢昜ｹ昴■郢晢ｽｼ -->
-            <div class="bg-gray-900/90 backdrop-blur-md border border-gray-700 p-4 rounded-xl shadow-2xl w-72 pointer-events-auto flex flex-col gap-4 transition-all h-fit">
-
-                <!-- 郢晏･繝｣郢敖郢晢ｽｼ & 郢ｧ・ｹ郢昴・繝ｻ郢ｧ・ｿ郢ｧ・ｹ郢晁・繝｣郢ｧ・ｸ -->
-                <div class="flex items-center justify-between border-b border-gray-700 pb-2">
-                    <h3 class="text-xs font-bold text-gray-300 tracking-wider">SYSTEM MONITOR</h3>
-                    <span id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300">STANDBY</span>
-                </div>
-
-                <!-- Gantry (陜玲ｫ・ｽｻ・｢隰ｨ・ｰ邵ｺ・ｨ郢晢ｽ｢郢晢ｽｼ郢昴・ -->
-                <div class="space-y-1.5">
-                    <div class="flex justify-between items-end">
-                        <span class="text-xs text-gray-400 font-semibold">Gantry / Rotor</span>
-                        <span id="monitor-rpm" class="text-sm font-mono text-green-400">0 rpm</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden shadow-inner">
-                        <div id="monitor-rpm-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-1.5 rounded-full transition-all duration-200" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-                        <span>Mode: <span id="monitor-mode" class="text-gray-300 font-bold">HELICAL</span></span>
-                        <span>Detector: <span id="monitor-rows" class="text-gray-300 font-bold">320</span> slices</span>
-                    </div>
-                </div>
-
-                <!-- Couch (陝・剌蠎願抄蜥ｲ・ｽ・ｮ) -->
-                <div class="space-y-2">
-                    <span class="text-xs text-gray-400 font-semibold">Patient Couch</span>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 shadow-inner text-center">
-                            <div class="text-[10px] text-gray-500 mb-0.5">Height (Y)</div>
-                            <div id="monitor-couch-y" class="text-sm font-mono text-blue-400 font-bold">0%</div>
-                        </div>
-                        <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 shadow-inner text-center">
-                            <div class="text-[10px] text-gray-500 mb-0.5">Position (Z)</div>
-                            <div id="monitor-couch-z" class="text-sm font-mono text-blue-400 font-bold">0%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Injector (鬨ｾ・ｰ陟厄ｽｱ陷托ｽ､隹ｿ遏ｩ纃ｼ) -->
-                <div class="space-y-1.5">
-                    <span class="text-xs text-gray-400 font-semibold">Injector Volume</span>
-                    <!-- Contrast (A) -->
-                    <div class="flex items-center gap-2">
-                        <div class="text-[10px] text-gray-500 font-bold w-12">Contrast</div>
-                        <div class="w-full bg-gray-800 rounded-full h-2 relative overflow-hidden border border-gray-700 shadow-inner">
-                            <div id="monitor-inj-a-bar" class="bg-gradient-to-l from-purple-500 to-purple-700 h-full transition-all duration-200 absolute left-0 rounded-r-full" style="width: 100%"></div>
-                        </div>
-                        <div id="monitor-inj-a" class="text-xs font-mono text-purple-400 w-8 text-right">100%</div>
-                    </div>
-                    <!-- Saline (B) -->
-                    <div class="flex items-center gap-2">
-                        <div class="text-[10px] text-gray-500 font-bold w-12">Saline</div>
-                        <div class="w-full bg-gray-800 rounded-full h-2 relative overflow-hidden border border-gray-700 shadow-inner">
-                            <div id="monitor-inj-b-bar" class="bg-gradient-to-l from-blue-300 to-blue-500 h-full transition-all duration-200 absolute left-0 rounded-r-full" style="width: 100%"></div>
-                        </div>
-                        <div id="monitor-inj-b" class="text-xs font-mono text-blue-300 w-8 text-right">100%</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ繝ｻ繝ｻ繝･陜｣・ｱ郢敖郢ｧ・､郢ｧ・｢郢晢ｽｭ郢ｧ・ｰ (闖ｴ蜥ｲ・ｽ・ｮ郢ｧ蜑・ｽｿ・ｮ雎・ｽ｣) -->
-            <div id="info-dialog" class="hidden absolute top-4 left-[340px] bg-gray-900/95 border border-blue-500/50 p-5 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] w-80 pointer-events-auto transition-opacity duration-300 z-50">
-                <div class="flex justify-between items-start mb-3 border-b border-gray-700 pb-2">
-                    <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
-                    <button onclick="hideInfoDialog()" class="text-gray-400 hover:text-white transition text-2xl leading-none">&times;</button>
-                </div>
-                <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">Description goes here...</p>
-            </div>
-
-            <!-- 郢晁・繝｣郢昶・繝ｻ騾・・繝ｳ郢晢ｽｫ郢敖郢晢ｽｼUI (騾包ｽｻ鬮ｱ・｢闕ｳ遏ｩﾎ夊叉・ｭ陞滂ｽｮ) -->
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-lg border border-gray-700 p-3 rounded-xl shadow-2xl pointer-events-auto flex items-center gap-3 transition-all z-40">
-                
-                <div class="text-[10px] font-bold text-gray-500 mr-1 flex flex-col items-center tracking-widest">
-                    <span>SCAN</span>
-                    <span>QUEUE</span>
-                </div>
-
-                <div class="w-px h-12 bg-gray-700 mx-1"></div>
-                
-                <!-- 郢晁・繝｣郢昶・縺咲ｹ晢ｽｼ郢晏ｳｨ窶ｲ闕ｳ・ｦ邵ｺ・ｶ郢ｧ・ｳ郢晢ｽｳ郢昴・繝ｪ -->
-                <div id="batch-container" class="flex gap-2 items-center">
-                    <!-- JavaScript邵ｺ・ｧ陷肴・蝎ｪ騾墓ｻ薙・邵ｺ霈費ｽ檎ｸｺ・ｾ邵ｺ繝ｻ-->
-                </div>
-
-                <button id="btn-add-batch" onclick="addScanBatch()" class="h-16 w-8 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition" title="Add Batch (Max 5)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
-                </button>
-
-                <div class="w-px h-12 bg-gray-700 mx-1"></div>
-
-                <button id="btn-run-sequence" onclick="runAutoSequence()" class="h-16 px-6 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg border border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 tracking-wider">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                    RUN SEQUENCE / 一括実行
-                </button>
-            </div>
-
-        </div>
+  <div id="ui-layer">
+    <div id="ui-toolbar" class="pointer-events-auto">
+      <button class="toolbar-btn" data-panel-target="panel-console">Console</button>
+      <button class="toolbar-btn" data-panel-target="panel-monitor">Monitor</button>
+      <button class="toolbar-btn" data-panel-target="panel-hw-config">HW</button>
+      <button class="toolbar-btn" data-panel-target="panel-3d-config">3D</button>
+      <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
     </div>
 
-    <!-- Three.js & Controls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <div id="ui-panels">
+      <section id="panel-console" class="ui-panel panel-left panel-top pointer-events-auto">
+        <header class="ui-panel-header">
+          <div>
+            <h1 class="text-sm font-bold text-blue-300">CT Console Mock</h1>
+            <p class="text-[10px] text-gray-400">Command Driven</p>
+          </div>
+          <div class="panel-actions">
+            <button class="panel-action" data-panel-action="collapse">_</button>
+            <button class="panel-action" data-panel-action="hide">×</button>
+          </div>
+        </header>
+        <div class="ui-panel-body">
+          <div class="space-y-2">
+            <button id="btn-scan-toggle" onclick="toggleScan()" class="w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded font-bold">Start Scan</button>
+            <label class="text-xs text-gray-400 flex justify-between"><span>Rotor Speed</span><span id="rotor-speed-val">0 rpm</span></label>
+            <input type="range" id="slider-rotor-speed" min="0" max="100" value="0" class="w-full accent-green-500" disabled>
+          </div>
 
-    <script src="./assets/js/core/store.js"></script>
-    <script src="./assets/js/core/state.js"></script>
-    <script src="./assets/js/core/profile/default-profile.js"></script>
-    <script src="./assets/js/core/profile/profile-service.js"></script>
-    <script src="./assets/js/core/hw/gantry-sim.js"></script>
-    <script src="./assets/js/core/hw/couch-sim.js"></script>
-    <script src="./assets/js/core/hw/injector-sim.js"></script>
-    <script src="./assets/js/core/services/command-log-service.js"></script>
-    <script src="./assets/js/core/commands/command-bus.js"></script>
-    <script src="./assets/js/core/services/sequence-service.js"></script>
-    <script src="./assets/js/adapters/external/protocol-v1.js"></script>
-    <script src="./assets/js/adapters/external/external-gateway.js"></script>
-    <script src="./assets/js/adapters/ui/ui-controller.js"></script>
-    <script src="./assets/js/view/models/room-model.js"></script>
-    <script src="./assets/js/view/models/gantry-model.js"></script>
-    <script src="./assets/js/view/models/injector-model.js"></script>
-    <script src="./assets/js/view/models/control-room-model.js"></script>
-    <script src="./assets/js/view/models/server-rack-model.js"></script>
-    <script src="./assets/js/core/main.js"></script>
+          <hr class="border-gray-700 my-3">
 
+          <div class="space-y-2">
+            <div id="batch-container" class="flex flex-wrap gap-2"></div>
+            <div class="flex gap-2">
+              <button id="btn-add-batch" onclick="addScanBatch()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded py-1.5 text-xs">+ Batch</button>
+              <button id="btn-run-sequence" onclick="runAutoSequence()" class="flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold">RUN</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="panel-monitor" class="ui-panel panel-right panel-top pointer-events-auto">
+        <header class="ui-panel-header">
+          <h3 class="text-xs font-bold text-gray-300">HW STATE MONITOR</h3>
+          <div class="panel-actions"><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div>
+        </header>
+        <div class="ui-panel-body">
+          <div class="flex items-center justify-between mb-2"><span id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600">STANDBY</span></div>
+          <div class="text-xs">Gantry <span id="monitor-rpm" class="font-mono text-green-400">0 rpm</span></div>
+          <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1 mb-2"><div id="monitor-rpm-bar" class="bg-green-500 h-1.5 rounded-full" style="width:0%"></div></div>
+          <div class="text-[10px] text-gray-400">Mode: <span id="monitor-mode">SCANO</span> / Rows: <span id="monitor-rows">320</span></div>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <div class="bg-gray-800 p-2 rounded text-center"><div class="text-[10px] text-gray-500">Couch Y</div><div id="monitor-couch-y" class="text-sm font-mono">0%</div></div>
+            <div class="bg-gray-800 p-2 rounded text-center"><div class="text-[10px] text-gray-500">Couch Z</div><div id="monitor-couch-z" class="text-sm font-mono">0%</div></div>
+          </div>
+          <div class="mt-2 text-[10px] space-y-1">
+            <div class="flex items-center gap-2"><span class="w-12">A</span><div class="flex-1 bg-gray-800 rounded h-2"><div id="monitor-inj-a-bar" class="bg-purple-500 h-2 rounded" style="width:100%"></div></div><span id="monitor-inj-a" class="w-8 text-right">100%</span></div>
+            <div class="flex items-center gap-2"><span class="w-12">B</span><div class="flex-1 bg-gray-800 rounded h-2"><div id="monitor-inj-b-bar" class="bg-blue-400 h-2 rounded" style="width:100%"></div></div><span id="monitor-inj-b" class="w-8 text-right">100%</span></div>
+          </div>
+          <div class="border-t border-gray-700 mt-2 pt-2 text-[10px] text-gray-400">
+            <div>Last Source: <span id="monitor-last-source">-</span></div>
+            <div>Last Result: <span id="monitor-last-result">-</span></div>
+            <div>Error: <span id="monitor-last-error" class="text-red-300">-</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-hw-config" class="ui-panel panel-right panel-mid pointer-events-auto">
+        <header class="ui-panel-header"><h3 class="text-xs font-bold text-gray-300">HW設定</h3><div class="panel-actions"><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div></header>
+        <div class="ui-panel-body space-y-2">
+          <div><label class="text-[11px] text-gray-400">Detector Rows</label><select id="select-detector-rows" class="w-full mt-1 bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"></select></div>
+          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Couch Y</span><span id="couch-y-val">0%</span></label><input type="range" id="slider-couch-y" min="0" max="100" value="0" class="w-full accent-blue-500"></div>
+          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Couch Z</span><span id="couch-z-val">0%</span></label><input type="range" id="slider-couch-z" min="0" max="100" value="0" class="w-full accent-blue-500"></div>
+          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Contrast A</span><span id="inject-a-val">0%</span></label><input type="range" id="slider-inject-a" min="0" max="100" value="0" class="w-full accent-purple-500"></div>
+          <div><label class="text-[11px] text-gray-400 flex justify-between"><span>Saline B</span><span id="inject-b-val">0%</span></label><input type="range" id="slider-inject-b" min="0" max="100" value="0" class="w-full accent-cyan-400"></div>
+        </div>
+      </section>
+
+      <section id="panel-3d-config" class="ui-panel panel-right panel-bottom pointer-events-auto">
+        <header class="ui-panel-header"><h3 class="text-xs font-bold text-gray-300">3D表示/操作</h3><div class="panel-actions"><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div></header>
+        <div class="ui-panel-body space-y-2">
+          <select id="select-focus" onchange="handleFocusChange(this.value)" class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600">
+            <option value="" disabled selected>フォーカス対象を選択...</option>
+            <optgroup label="CT Room Components">
+              <option value="Injector">Injector</option>
+              <option value="Gantry">CT Gantry</option>
+              <option value="Couch">CT Couch</option>
+              <option value="TouchPanel">CT Touch Panel</option>
+              <option value="XrayTube">X-ray Tube</option>
+              <option value="Detector">Detector</option>
+              <option value="ConsoleDisplay">Console Display</option>
+              <option value="OperationSwitcher">Operation Switcher</option>
+            </optgroup>
+            <optgroup label="Server Rack (Console BOX)">
+              <option value="SCON">Server: SCON</option>
+              <option value="DCON">Server: DCON</option>
+              <option value="RTM">Server: RTM</option>
+              <option value="IDD">Server: IDD</option>
+              <option value="RDD">Server: RDD</option>
+              <option value="SAC">Server: SAC</option>
+              <option value="FullRack">Console BOX (Full Rack)</option>
+            </optgroup>
+          </select>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Free</button>
+            <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Operator</button>
+            <button onclick="setCameraView('patient')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Patient</button>
+            <button onclick="setCameraView('injector')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Injector</button>
+            <button onclick="setCameraView('gantryTop')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Gantry Top</button>
+            <button onclick="setCameraView('gantrySide')" class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Gantry Side</button>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-gantry-opaque" onclick="setGantryOpacity(false)" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold">Opaque</button>
+            <button id="btn-gantry-trans" onclick="setGantryOpacity(true)" class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Translucent</button>
+          </div>
+          <button id="btn-xray-toggle" onclick="toggleXRay()" class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600">Show X-Ray Beam</button>
+          <button id="btn-patient-toggle" onclick="togglePatient()" class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold">Hide Patient</button>
+        </div>
+      </section>
+
+      <section id="panel-command-log" class="ui-panel panel-left panel-bottom pointer-events-auto">
+        <header class="ui-panel-header"><h3 class="text-xs font-bold text-gray-300">Command Log</h3><div class="panel-actions"><button id="btn-clear-command-log" class="panel-action">C</button><button class="panel-action" data-panel-action="collapse">_</button><button class="panel-action" data-panel-action="hide">×</button></div></header>
+        <div class="ui-panel-body"><div id="command-log-list" class="h-40 overflow-y-auto text-[10px] font-mono bg-gray-950/70 border border-gray-800 rounded p-2 space-y-1"></div></div>
+      </section>
+
+      <div id="info-dialog" class="hidden ui-info pointer-events-auto">
+        <div class="flex justify-between items-start mb-2 border-b border-gray-700 pb-2">
+          <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
+          <button onclick="hideInfoDialog()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+        </div>
+        <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">Description goes here...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+  <script src="./assets/js/core/store.js"></script>
+  <script src="./assets/js/core/state.js"></script>
+  <script src="./assets/js/core/profile/default-profile.js"></script>
+  <script src="./assets/js/core/profile/profile-service.js"></script>
+  <script src="./assets/js/core/hw/gantry-sim.js"></script>
+  <script src="./assets/js/core/hw/couch-sim.js"></script>
+  <script src="./assets/js/core/hw/injector-sim.js"></script>
+  <script src="./assets/js/core/services/command-log-service.js"></script>
+  <script src="./assets/js/core/commands/command-bus.js"></script>
+  <script src="./assets/js/core/services/sequence-service.js"></script>
+  <script src="./assets/js/adapters/external/protocol-v1.js"></script>
+  <script src="./assets/js/adapters/external/external-gateway.js"></script>
+  <script src="./assets/js/adapters/ui/ui-controller.js"></script>
+  <script src="./assets/js/view/models/room-model.js"></script>
+  <script src="./assets/js/view/models/gantry-model.js"></script>
+  <script src="./assets/js/view/models/injector-model.js"></script>
+  <script src="./assets/js/view/models/control-room-model.js"></script>
+  <script src="./assets/js/view/models/server-rack-model.js"></script>
+  <script src="./assets/js/core/main.js"></script>
 </body>
-
 </html>
-
-
-
-
-

@@ -1,6 +1,7 @@
 (function attachUIController(global) {
     var isSetup = false;
     var unsubscribers = [];
+    var mobileMedia = null;
 
     function byId(id) {
         return document.getElementById(id);
@@ -34,13 +35,21 @@
         });
     }
 
-    function executeCommand(target, action, value) {
+    function executeCommand(source, target, action, valueOrParams) {
+        var params = (typeof valueOrParams === 'object' && valueOrParams !== null)
+            ? valueOrParams
+            : { value: valueOrParams };
+
         return CTCommandBus.execute({
-            source: 'ui',
+            source: source,
             target: target,
             action: action,
-            params: { value: value }
+            params: params
         });
+    }
+
+    function executeConsoleCommand(target, action, valueOrParams) {
+        return executeCommand('ui-console', target, action, valueOrParams);
     }
 
     function syncInteractiveState(state) {
@@ -56,6 +65,9 @@
         UI.sliderInjectA.value = state.injector.a;
         UI.sliderInjectB.value = state.injector.b;
         UI.selectDetectorRows.value = state.gantry.detectorRows;
+
+        var isRunning = state.gantry.isScanning || state.gantry.activeBatchIndex >= 0;
+        UI.selectDetectorRows.disabled = isRunning;
 
         if (state.gantry.isScanning) {
             UI.btnScanToggle.innerText = 'Stop Scan';
@@ -94,6 +106,28 @@
         applyStateToMeshes(state);
     }
 
+    function updateLastCommandMonitor() {
+        if (!global.CTCommandLogService) return;
+        var logs = global.CTCommandLogService.list();
+        var last = logs.length > 0 ? logs[logs.length - 1] : null;
+        var src = byId('monitor-last-source');
+        var res = byId('monitor-last-result');
+        var err = byId('monitor-last-error');
+        if (!src || !res || !err) return;
+
+        if (!last) {
+            src.innerText = '-';
+            res.innerText = '-';
+            err.innerText = '-';
+            return;
+        }
+
+        src.innerText = last.source || '-';
+        var ok = last.result && last.result.success === true;
+        res.innerText = ok ? 'success' : 'fail';
+        err.innerText = ok ? '-' : (last.result && last.result.error ? last.result.error : 'UNKNOWN_ERROR');
+    }
+
     function updateStateMonitor() {
         var rpm = Math.round(AppState.gantry.rotorSpeed);
         byId('monitor-rpm').innerText = rpm + ' rpm';
@@ -125,6 +159,28 @@
         byId('monitor-inj-b').innerText = remainB + '%';
         byId('monitor-inj-a-bar').style.width = remainA + '%';
         byId('monitor-inj-b-bar').style.width = remainB + '%';
+
+        updateLastCommandMonitor();
+    }
+
+    function renderCommandLog() {
+        if (!global.CTCommandLogService || !UI.commandLogList) return;
+        var entries = global.CTCommandLogService.list();
+        var latest = entries.slice(-40);
+
+        UI.commandLogList.innerHTML = '';
+        latest.forEach(function (entry) {
+            var row = document.createElement('div');
+            var ok = entry.result && entry.result.success === true;
+            var action = entry.command ? (entry.command.target + '.' + entry.command.action) : 'n/a';
+            var stamp = entry.timestamp ? entry.timestamp.split('T')[1].replace('Z', '') : '--:--:--';
+            var err = ok ? '' : (' ' + (entry.result && entry.result.error ? entry.result.error : 'ERROR'));
+            row.className = ok ? 'text-green-300' : 'text-red-300';
+            row.innerText = '[' + stamp + '] ' + (entry.source || '-') + ' ' + action + ' -> ' + (ok ? 'OK' : 'FAIL') + err;
+            UI.commandLogList.appendChild(row);
+        });
+
+        UI.commandLogList.scrollTop = UI.commandLogList.scrollHeight;
     }
 
     function renderBatchUI() {
@@ -146,14 +202,14 @@
             var card = document.createElement('div');
             var cardClasses = 'relative rounded-lg p-2.5 w-36 flex flex-col items-center transition-all duration-300 ';
             cardClasses += isActive
-                ? 'bg-blue-900/80 border-2 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-110 z-10'
+                ? 'bg-blue-900/80 border-2 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-105 z-10'
                 : 'bg-gray-800 border border-gray-600';
             card.className = cardClasses;
 
             if (isActive && countdown > 0) {
                 var overlay = document.createElement('div');
                 overlay.className = 'absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]';
-                overlay.innerHTML = '<span class="text-[10px] text-yellow-400 font-bold mb-1 tracking-widest">DELAY</span><span class="text-4xl font-mono text-white font-bold leading-none">' + countdown + '</span>';
+                overlay.innerHTML = '<span class="text-[10px] text-yellow-400 font-bold mb-1 tracking-widest">DELAY</span><span class="text-2xl font-mono text-white font-bold leading-none">' + countdown + '</span>';
                 card.appendChild(overlay);
             }
 
@@ -180,7 +236,7 @@
             if (select.disabled) select.className += ' opacity-70 cursor-not-allowed';
             select.onchange = function (e) { updateBatchData(index, 'mode', e.target.value); };
 
-            var options = [
+            [
                 { val: 'scano', text: 'Scano' },
                 { val: 'dual_scano', text: 'Dual Scano' },
                 { val: '3d_landmark', text: '3D Landmark' },
@@ -189,9 +245,7 @@
                 { val: 'volume', text: 'Volume' },
                 { val: 'dynamic', text: 'Dynamic' },
                 { val: 'real_prep', text: 'Real Prep' }
-            ];
-
-            options.forEach(function (opt) {
+            ].forEach(function (opt) {
                 var option = document.createElement('option');
                 option.value = opt.val;
                 option.innerText = opt.text;
@@ -216,7 +270,7 @@
             var syncBtn = document.createElement('button');
             syncBtn.innerText = isSyncTarget ? 'INJ SYNC: ON' : 'INJ SYNC: OFF';
             syncBtn.className = isSyncTarget
-                ? 'w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors bg-purple-600/80 text-white border border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]'
+                ? 'w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors bg-purple-600/80 text-white border border-purple-400'
                 : 'w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors bg-gray-900 text-gray-500 border border-gray-700 hover:bg-gray-700';
             syncBtn.disabled = isRunning;
             if (syncBtn.disabled) {
@@ -229,52 +283,86 @@
             card.appendChild(select);
             card.appendChild(delayWrapper);
             card.appendChild(syncBtn);
-
-            if (index < seq.length - 1) {
-                var arrowWrap = document.createElement('div');
-                arrowWrap.className = 'flex items-center justify-center text-gray-500';
-                arrowWrap.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>';
-                container.appendChild(card);
-                container.appendChild(arrowWrap);
-            } else {
-                container.appendChild(card);
-            }
+            container.appendChild(card);
         });
 
         var isRunning = AppState.gantry.isScanning || activeIdx >= 0;
 
         var addBtn = byId('btn-add-batch');
         addBtn.disabled = seq.length >= 5 || isRunning;
-        if (addBtn.disabled) {
-            addBtn.classList.add('opacity-30', 'cursor-not-allowed');
-            addBtn.classList.remove('hover:bg-gray-700', 'hover:text-white');
-        } else {
-            addBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-            addBtn.classList.add('hover:bg-gray-700', 'hover:text-white');
-        }
+        addBtn.classList.toggle('opacity-30', addBtn.disabled);
+        addBtn.classList.toggle('cursor-not-allowed', addBtn.disabled);
 
         var runBtn = byId('btn-run-sequence');
         if (isRunning) {
             runBtn.disabled = false;
             runBtn.onclick = stopAutoSequence;
-
+            runBtn.className = 'flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 rounded py-1.5 text-xs font-bold';
+            runBtn.innerText = AppState.gantry.cancelRequested ? 'STOPPING...' : 'STOP SEQUENCE';
             if (AppState.gantry.cancelRequested) {
-                runBtn.className = 'h-16 px-6 bg-gray-700 text-gray-400 text-xs font-bold rounded-lg border border-gray-600 flex items-center gap-2 transition-all cursor-not-allowed';
-                runBtn.innerHTML = '<div class="w-4 h-4 rounded-full border-2 border-t-red-400 animate-spin"></div> <span class="tracking-widest">STOPPING...</span>';
                 runBtn.disabled = true;
-            } else if (countdown > 0) {
-                runBtn.className = 'h-16 px-6 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg border border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all flex items-center gap-2 tracking-wider';
-                runBtn.innerHTML = '<div class="w-4 h-4 rounded-full border-2 border-t-yellow-400 animate-spin"></div> <span class="tracking-widest">DELAY ' + countdown + 's (STOP)</span>';
-            } else {
-                runBtn.className = 'h-16 px-6 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg border border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all flex items-center gap-2 tracking-wider';
-                runBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg> STOP SEQUENCE';
+                runBtn.classList.add('opacity-60', 'cursor-not-allowed');
             }
         } else {
             runBtn.disabled = false;
             runBtn.onclick = runAutoSequence;
-            runBtn.className = 'h-16 px-6 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg border border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 tracking-wider';
-            runBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg> RUN SEQUENCE';
+            runBtn.className = 'flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold';
+            runBtn.innerText = 'RUN SEQUENCE';
         }
+    }
+
+    function setPanelVisibilityForViewport() {
+        var mobile = mobileMedia && mobileMedia.matches;
+        var panels = document.querySelectorAll('.ui-panel');
+        if (!mobile) {
+            panels.forEach(function (p) {
+                if (!p.classList.contains('is-hidden')) p.style.display = 'block';
+            });
+            return;
+        }
+        panels.forEach(function (p) {
+            if (p.classList.contains('is-hidden')) {
+                p.style.display = 'none';
+                return;
+            }
+            p.style.display = 'block';
+        });
+    }
+
+    function bindPanelControls() {
+        mobileMedia = window.matchMedia('(max-width: 1279px)');
+
+        document.querySelectorAll('.toolbar-btn[data-panel-target]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-panel-target');
+                var target = byId(id);
+                if (!target) return;
+                target.classList.toggle('is-hidden');
+                setPanelVisibilityForViewport();
+            });
+        });
+
+        document.querySelectorAll('.ui-panel').forEach(function (panel) {
+            var collapseBtn = panel.querySelector('[data-panel-action="collapse"]');
+            var hideBtn = panel.querySelector('[data-panel-action="hide"]');
+
+            if (collapseBtn) {
+                collapseBtn.addEventListener('click', function () {
+                    panel.classList.toggle('is-collapsed');
+                });
+            }
+            if (hideBtn) {
+                hideBtn.addEventListener('click', function () {
+                    panel.classList.add('is-hidden');
+                    setPanelVisibilityForViewport();
+                });
+            }
+        });
+
+        if (mobileMedia && typeof mobileMedia.addEventListener === 'function') {
+            mobileMedia.addEventListener('change', setPanelVisibilityForViewport);
+        }
+        setPanelVisibilityForViewport();
     }
 
     function setupUI() {
@@ -289,17 +377,37 @@
         UI.btnXrayToggle = byId('btn-xray-toggle');
         UI.selectDetectorRows = byId('select-detector-rows');
         UI.btnPatientToggle = byId('btn-patient-toggle');
+        UI.commandLogList = byId('command-log-list');
+        UI.btnClearCommandLog = byId('btn-clear-command-log');
 
         applyProfileUIConfig();
+        bindPanelControls();
 
-        UI.sliderCouchY.addEventListener('input', function (e) { executeCommand('couch', 'moveY', parseFloat(e.target.value)); });
-        UI.sliderCouchZ.addEventListener('input', function (e) { executeCommand('couch', 'moveZ', parseFloat(e.target.value)); });
-        UI.sliderInjectA.addEventListener('input', function (e) { executeCommand('injector', 'setA', parseFloat(e.target.value)); });
-        UI.sliderInjectB.addEventListener('input', function (e) { executeCommand('injector', 'setB', parseFloat(e.target.value)); });
-        UI.selectDetectorRows.addEventListener('change', function (e) { executeCommand('gantry', 'setDetectorRows', parseInt(e.target.value, 10)); });
+        UI.sliderCouchY.addEventListener('input', function (e) { executeConsoleCommand('couch', 'moveY', parseFloat(e.target.value)); });
+        UI.sliderCouchZ.addEventListener('input', function (e) { executeConsoleCommand('couch', 'moveZ', parseFloat(e.target.value)); });
+        UI.sliderInjectA.addEventListener('input', function (e) { executeConsoleCommand('injector', 'setA', parseFloat(e.target.value)); });
+        UI.sliderInjectB.addEventListener('input', function (e) { executeConsoleCommand('injector', 'setB', parseFloat(e.target.value)); });
+        UI.selectDetectorRows.addEventListener('change', function (e) { executeConsoleCommand('gantry', 'setDetectorRows', parseInt(e.target.value, 10)); });
+
+        if (UI.btnClearCommandLog && global.CTCommandLogService) {
+            UI.btnClearCommandLog.addEventListener('click', function () {
+                global.CTCommandLogService.clear();
+                renderCommandLog();
+                updateLastCommandMonitor();
+            });
+        }
 
         renderBatchUI();
+        renderCommandLog();
         unsubscribers.push(AppState.subscribe(syncInteractiveState));
+
+        if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === 'function') {
+            unsubscribers.push(global.CTCommandLogService.subscribe(function () {
+                renderCommandLog();
+                updateLastCommandMonitor();
+            }));
+        }
+
         isSetup = true;
     }
 
@@ -315,7 +423,8 @@
         setup: setupUI,
         teardown: teardownUI,
         renderBatchQueue: renderBatchUI,
-        renderMonitor: updateStateMonitor
+        renderMonitor: updateStateMonitor,
+        renderCommandLog: renderCommandLog
     };
 
     global.updateStateMonitor = updateStateMonitor;
