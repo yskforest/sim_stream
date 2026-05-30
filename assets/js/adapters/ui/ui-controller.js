@@ -1,4 +1,4 @@
-﻿(function attachUIController(global) {
+(function attachUIController(global) {
 function applyProfileUIConfig() {
             if (!window.CTProfileService) return;
 

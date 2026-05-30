@@ -1,4 +1,4 @@
-﻿function buildRoom() {
+function buildRoom() {
             const floorGeo = new THREE.PlaneGeometry(30, 30);
             const floorMat = new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.8 });
             const floor = new THREE.Mesh(floorGeo, floorMat);

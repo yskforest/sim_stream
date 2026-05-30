@@ -1,4 +1,4 @@
-﻿function buildControlRoom() {
+function buildControlRoom() {
             const controlGroup = new THREE.Group();
             
             // 菫ｮ豁｣: 譛ｺ繧偵＆繧峨↓螂･縺ｸ遘ｻ蜍包ｼ医ぎ繝ｳ繝医Μ繧・ｯ晏床縺九ｉ驕縺悶￠繧具ｼ・

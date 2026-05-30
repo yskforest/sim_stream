@@ -1,4 +1,4 @@
-﻿function buildCTScanner() {
+function buildCTScanner() {
             const ctGroup = new THREE.Group();
 
             // --- 1. 繧ｬ繝ｳ繝医Μ ---

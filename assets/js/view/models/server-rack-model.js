@@ -1,4 +1,4 @@
-﻿function buildServerRack() {
+function buildServerRack() {
             const rackGroup = new THREE.Group();
             
             // 菫ｮ豁｣: 譛ｺ縺ｮ髫｣・・霆ｸ縺ｧ繝槭う繝翫せ譁ｹ蜷代∈・峨↓驟咲ｽｮ

@@ -1,4 +1,4 @@
-﻿# CT Simulator External Command Interface v1
+# CT Simulator External Command Interface v1
 
 - Spec ID: CTSIM-IF-001
 - Version: 1.0

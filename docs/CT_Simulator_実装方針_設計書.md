@@ -1,4 +1,4 @@
-﻿# CT 3D Simulator 実装方針・設計書
+# CT 3D Simulator 実装方針・設計書
 
 - 文書ID: CTSIM-DESIGN-001
 - 作成日: 2026-05-30

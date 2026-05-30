@@ -1,4 +1,4 @@
-﻿const AppState = {
+const AppState = {
             couch: { y: 0, z: 0 },
             gantry: { 
                 isScanning: false, 

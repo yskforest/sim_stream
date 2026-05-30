@@ -1,4 +1,4 @@
-﻿function buildInjector() {
+function buildInjector() {
             const injectorGroup = new THREE.Group();
             injectorGroup.position.set(-1.8, 0, 1.8);
 
