@@ -130,22 +130,12 @@ body {
 
 @media (max-width: 1279px) {
     .ui-panel {
-        width: min(92vw, 360px);
-        max-height: 55vh;
-        top: 52px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-    }
-
-    .panel-mid,
-    .panel-bottom {
-        top: 52px;
-        bottom: auto;
+        width: min(46vw, 340px);
+        max-height: 44vh;
     }
 
     .ui-panel-body {
-        max-height: calc(55vh - 44px);
+        max-height: calc(44vh - 44px);
     }
 
     #panel-console,
