@@ -1,4 +1,4 @@
-﻿(function attachUIController(global) {
+(function attachUIController(global) {
     var isSetup = false;
     var unsubscribers = [];
 
