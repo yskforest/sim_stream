@@ -1,6 +1,5 @@
 init();
 animate();
-
 function init() {
     if (window.CTProfileService && window.CTDefaultProfile) {
         window.CTProfileService.init(window.CTDefaultProfile);
@@ -515,7 +514,9 @@ function onWindowResize() {
 
 function animate(time) {
     requestAnimationFrame(animate);
-    TWEEN.update(time);
+    const currentTime = time !== undefined ? time : performance.now();
+    TWEEN.update(currentTime);
+    clock.update(currentTime);
     const delta = clock.getDelta();
 
     if (Meshes.rotor && AppState.gantry.rotorSpeed > 0) {

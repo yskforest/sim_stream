@@ -4,72 +4,59 @@ function buildCTScanner() {
     const gantryGroup = new THREE.Group();
     gantryGroup.position.set(0, 1.2, 0);
 
-    const gantryMat = new THREE.MeshStandardMaterial({ color: 0xfcfcfc, roughness: 0.3, metalness: 0.1 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-    const baseCoverMat = new THREE.MeshStandardMaterial({ color: 0xd0d0d0, roughness: 0.6 });
-    const blueLightMat = new THREE.MeshBasicMaterial({ color: 0x66bbff });
+    // High-end medical materials
+    const gantryMat = new THREE.MeshStandardMaterial({ color: 0xfcfcfc, roughness: 0.15, metalness: 0.1 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+    const baseCoverMat = new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.5 });
+    const tunnelMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.2, side: THREE.DoubleSide });
 
-    const tunnelMat = new THREE.MeshPhysicalMaterial({
-        color: 0xeeeeee,
-        transparent: false,
-        opacity: 1.0,
-        roughness: 0.2,
-        transmission: 0.0,
-        side: THREE.DoubleSide,
-    });
+    // Helper for Logos
+    function createLogoTexture(text, fontStr, color, width, height) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.font = fontStr;
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, width / 2, height / 2);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        return texture;
+    }
 
-    const camFrameMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb });
-    const camLensMat = new THREE.MeshStandardMaterial({ color: 0x111, roughness: 0.1, metalness: 0.8 });
-    const panelBaseMat = new THREE.MeshStandardMaterial({ color: 0xeaeaea });
-    const screenMat = new THREE.MeshBasicMaterial({ color: 0xe0f0ff });
-    const silhouetteMat = new THREE.MeshBasicMaterial({ color: 0x88bbdd });
-    const btnMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-    const logoMat = new THREE.MeshBasicMaterial({ color: 0x444444 });
-    const ledRedMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-    const ledGreenMat = new THREE.MeshBasicMaterial({ color: 0x33ff33 });
+    // --- 1. Gantry Silhouette (Matching reference image exactly) ---
+    const shellW = 1.18;      // Half-width
+    const shellBottom = -1.16; // Reaches the floor
+    const shellDepth = 0.65;
+    const boreRadius = 0.40;   // 80cm diameter bore
+    const bevelT = 0.04;
+    const frontZ = shellDepth / 2 + bevelT + 0.002;
 
-    Meshes.materials = {
-        gantry: gantryMat,
-        base: baseCoverMat,
-        tunnel: tunnelMat,
-        accessories: [
-            darkMat,
-            blueLightMat,
-            camFrameMat,
-            camLensMat,
-            panelBaseMat,
-            screenMat,
-            silhouetteMat,
-            btnMat,
-            logoMat,
-            ledRedMat,
-            ledGreenMat,
-        ],
-    };
-
-    // Non-perfect-donut outer shell: rounded top with flatter lower section.
-    const shellW = 1.34;
-    const shellBottom = -1.1;
-    const shellDepth = 0.58;
-    const boreRadius = 0.68;
     const shellShape = new THREE.Shape();
-    shellShape.moveTo(shellW, shellBottom);
-    shellShape.lineTo(shellW, -0.05);
-    shellShape.absarc(0, -0.05, shellW, 0, Math.PI, false);
-    shellShape.lineTo(-shellW, shellBottom);
-    shellShape.quadraticCurveTo(0, shellBottom - 0.1, shellW, shellBottom);
+    const shoulderY = 0.1; // Where the vertical side meets the top semi-circle
 
+    // Draw outer arch shape (straight sides, semi-circle top)
+    shellShape.moveTo(shellW, shellBottom);
+    shellShape.lineTo(shellW, shoulderY);
+    // Semicircle over the top
+    shellShape.absarc(0, shoulderY, shellW, 0, Math.PI, false);
+    shellShape.lineTo(-shellW, shellBottom);
+    shellShape.lineTo(shellW, shellBottom);
+
+    // Add 80cm Bore Hole
     const shellHole = new THREE.Path();
     shellHole.absarc(0, 0, boreRadius, 0, Math.PI * 2, true);
     shellShape.holes.push(shellHole);
 
     const shellGeo = new THREE.ExtrudeGeometry(shellShape, {
         depth: shellDepth,
-        curveSegments: 96,
+        curveSegments: 128,
         bevelEnabled: true,
-        bevelThickness: 0.06,
-        bevelSize: 0.08,
-        bevelSegments: 10,
+        bevelThickness: bevelT,
+        bevelSize: 0.05,
+        bevelSegments: 16,
     });
     shellGeo.translate(0, 0, -shellDepth / 2);
     const mainBody = new THREE.Mesh(shellGeo, gantryMat);
@@ -77,155 +64,145 @@ function buildCTScanner() {
     mainBody.receiveShadow = true;
     gantryGroup.add(mainBody);
 
-    // Base and feet closer to medical gantry stance.
-    const gantryBase = createRoundedBox(2.72, 0.18, 1.08, 0.16, baseCoverMat);
-    gantryBase.position.set(0, -1.16, 0);
-    gantryGroup.add(gantryBase);
-
-    const footL = createRoundedBox(0.42, 0.32, 0.88, 0.12, baseCoverMat);
-    footL.position.set(-0.95, -0.98, 0);
-    gantryGroup.add(footL);
-    const footR = footL.clone();
-    footR.position.x = 0.95;
-    gantryGroup.add(footR);
-
-    const tunnelDepth = 0.4;
-    const tunnelRadius = 0.47;
-    const tunnelGeo = new THREE.CylinderGeometry(tunnelRadius, tunnelRadius, tunnelDepth, 96, 1, true);
+    // Bore Tunnel
+    const tunnelGeo = new THREE.CylinderGeometry(boreRadius - 0.005, boreRadius - 0.005, shellDepth, 128, 1, true);
     const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
     tunnel.rotation.x = Math.PI / 2;
     gantryGroup.add(tunnel);
 
-    // Inner matte shroud to keep rotor visually inside the housing.
-    const shroudMat = new THREE.MeshStandardMaterial({
-        color: 0x1a1a1a,
-        roughness: 0.9,
-        metalness: 0.05,
-        side: THREE.DoubleSide,
-    });
-    const innerShroud = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.56, 96, 1, true), shroudMat);
-    innerShroud.rotation.x = Math.PI / 2;
-    gantryGroup.add(innerShroud);
-
-    const flareMat = new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.25, metalness: 0.06 });
-    const frontFlare = new THREE.Mesh(new THREE.TorusGeometry(tunnelRadius + 0.05, 0.04, 22, 120), flareMat);
-    frontFlare.position.z = shellDepth * 0.36;
+    const flareDepth = bevelT + 0.02;
+    const flareGeo = new THREE.CylinderGeometry(boreRadius - 0.005, boreRadius + 0.08, flareDepth, 128, 1, true);
+    const frontFlare = new THREE.Mesh(flareGeo, gantryMat);
+    frontFlare.rotation.x = Math.PI / 2;
+    frontFlare.position.z = shellDepth / 2 + flareDepth / 2;
     gantryGroup.add(frontFlare);
-    const rearFlare = frontFlare.clone();
-    rearFlare.position.z = -shellDepth * 0.36;
-    gantryGroup.add(rearFlare);
 
-    const ringGeo = new THREE.TorusGeometry(tunnelRadius + 0.002, 0.006, 16, 96);
-    const ringFront = new THREE.Mesh(ringGeo, blueLightMat);
-    ringFront.position.z = tunnelDepth / 2 - 0.01;
-    gantryGroup.add(ringFront);
-    const ringRear = ringFront.clone();
-    ringRear.position.z = -tunnelDepth / 2 + 0.01;
-    gantryGroup.add(ringRear);
+    const backFlare = frontFlare.clone();
+    backFlare.rotation.x = -Math.PI / 2;
+    backFlare.position.z = -(shellDepth / 2 + flareDepth / 2);
+    gantryGroup.add(backFlare);
 
-    // Front device mounts / panels.
-    const frontZ = 0.405;
+    // Distinctive glowing blue ring (Aquilion style)
+    const glowGeo = new THREE.TorusGeometry(boreRadius + 0.015, 0.015, 32, 128);
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0x5599ff, transparent: true, opacity: 0.6 });
+    const glowRing = new THREE.Mesh(glowGeo, glowMat);
+    glowRing.position.z = shellDepth / 2 + flareDepth / 2 - 0.01;
+    gantryGroup.add(glowRing);
 
-    function createCamera(x, y) {
+    // --- 2. High-Contrast Emphasized Control Panels ---
+    function createControlPanel(x, y) {
+        const group = new THREE.Group();
+        group.position.set(x, y, frontZ);
+
+        // Emphasized Bezel / Frame
+        const bezel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.28, 0.42, 0.015),
+            new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.6 })
+        );
+        bezel.position.z = 0.0075;
+        bezel.castShadow = true;
+        group.add(bezel);
+
+        // Dark-themed LCD Screen (Blackish/Dark Grey)
+        const screenMat = new THREE.MeshBasicMaterial({ color: 0x181a1f });
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.24), screenMat);
+        screen.position.set(0, 0.07, 0.016);
+        group.add(screen);
+
+        // Light UI on Dark Screen (Human Figure)
+        const uiMat = new THREE.MeshBasicMaterial({ color: 0xddeeff });
+        const head = new THREE.Mesh(new THREE.CircleGeometry(0.025, 16), uiMat);
+        head.position.set(0, 0.11, 0.017);
+        group.add(head);
+        const body = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.10), uiMat);
+        body.position.set(0, 0.03, 0.017);
+        group.add(body);
+
+        // Emphasized D-Pad Buttons
+        const dpadGroup = new THREE.Group();
+        dpadGroup.position.set(0, -0.11, 0.016);
+
+        const btnGeo = new THREE.CylinderGeometry(0.014, 0.016, 0.005, 24);
+        btnGeo.rotateX(Math.PI / 2);
+        const btnMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+
+        const positions = [[0, 0.04], [0, -0.04], [-0.04, 0], [0.04, 0], [0, 0]];
+        positions.forEach(pos => {
+            const btn = new THREE.Mesh(btnGeo, btnMat);
+            btn.position.set(pos[0], pos[1], 0);
+            btn.castShadow = true;
+            dpadGroup.add(btn);
+        });
+        group.add(dpadGroup);
+
+        return group;
+    }
+
+    // Positioned exactly like the reference image
+    gantryGroup.add(createControlPanel(0.75, 0.35));
+    gantryGroup.add(createControlPanel(-0.75, 0.35));
+
+    // Status LEDs
+    const ledRedMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+    const ledGreenMat = new THREE.MeshBasicMaterial({ color: 0x33ff33 });
+
+    Meshes.ledRed = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16), ledRedMat);
+    Meshes.ledRed.position.set(-0.75, 0.65, frontZ);
+    gantryGroup.add(Meshes.ledRed);
+
+    Meshes.ledGreen = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16), ledGreenMat);
+    Meshes.ledGreen.position.set(0.75, 0.65, frontZ);
+    gantryGroup.add(Meshes.ledGreen);
+
+    // --- 3. Accurate Pill-shaped Gantry Cameras ---
+    function createCameraModule(x, y, isVertical) {
         const camGroup = new THREE.Group();
         camGroup.position.set(x, y, frontZ);
 
-        camGroup.lookAt(new THREE.Vector3(0, -0.2, 2.0));
+        // Black lens capsule
+        const lensGeo = new THREE.SphereGeometry(0.025, 24, 24);
+        const lens = new THREE.Mesh(lensGeo, new THREE.MeshBasicMaterial({ color: 0x111111 }));
 
-        const frame = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 32), camFrameMat);
-        frame.rotation.x = Math.PI / 2;
+        if (isVertical) {
+            lens.scale.set(0.6, 1.4, 0.2);
+        } else {
+            lens.scale.set(1.4, 0.6, 0.2);
+        }
 
-        const lens = new THREE.Mesh(new THREE.SphereGeometry(0.025, 16, 16), camLensMat);
-        lens.scale.z = 0.5;
-        lens.position.z = 0.01;
-
-        camGroup.add(frame);
+        lens.position.z = 0.005;
         camGroup.add(lens);
         return camGroup;
     }
 
-    gantryGroup.add(createCamera(0, 0.82));
-    gantryGroup.add(createCamera(-0.82, 0));
-
-    function createControlPanel(x, y) {
-        const panelGroup = new THREE.Group();
-        panelGroup.position.set(x, y, frontZ);
-        panelGroup.rotation.y = 0;
-
-        const baseGeo = new THREE.BoxGeometry(0.26, 0.45, 0.02);
-        const base = new THREE.Mesh(baseGeo, panelBaseMat);
-        panelGroup.add(base);
-
-        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.26), screenMat);
-        screen.position.set(0, 0.08, 0.011);
-        const head = new THREE.Mesh(new THREE.CircleGeometry(0.02, 16), silhouetteMat);
-        head.position.set(0, 0.07, 0.001);
-        const body = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.09), silhouetteMat);
-        body.position.set(0, -0.01, 0.001);
-        screen.add(head);
-        screen.add(body);
-        panelGroup.add(screen);
-
-        for (let i = 0; i < 2; i++) {
-            for (let j = 0; j < 3; j++) {
-                const btn = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16), btnMat);
-                btn.position.set(-0.06 + j * 0.06, -0.12 - i * 0.06, 0.011);
-                panelGroup.add(btn);
-            }
-        }
-        return panelGroup;
-    }
-
-    gantryGroup.add(createControlPanel(0.8, 0.35));
-    gantryGroup.add(createControlPanel(-0.8, 0.35));
-
-    const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.045), logoMat);
-    logo.position.set(0, 1.08, 0.43);
-    gantryGroup.add(logo);
-
-    const ledRed = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), ledRedMat);
-    ledRed.position.set(-0.62, 0.99, 0.43);
-    gantryGroup.add(ledRed);
-
-    const ledGreen = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), ledGreenMat);
-    ledGreen.position.set(0.62, 0.99, 0.43);
-    gantryGroup.add(ledGreen);
+    // Top Center Camera (Vertical) - Directly above the bore
+    gantryGroup.add(createCameraModule(0, 0.52, true));
+    // Left Side Camera (Horizontal) - Directly beside the bore
+    gantryGroup.add(createCameraModule(-0.52, 0, false));
 
     const rotorGroup = new THREE.Group();
-
     const rotorRing = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.49, 0.49, 0.2, 96, 1, true),
+        new THREE.CylinderGeometry(0.55, 0.55, 0.2, 96, 1, true),
         new THREE.MeshStandardMaterial({ color: 0x222, side: THREE.DoubleSide }),
     );
     rotorRing.rotation.x = Math.PI / 2;
     rotorGroup.add(rotorRing);
 
     const tubeGroup = new THREE.Group();
-    tubeGroup.position.set(0, 0.45, 0);
+    tubeGroup.position.set(0, 0.52, 0); // Safely behind 0.40 bore radius
 
     const caseGeo = new THREE.BoxGeometry(0.38, 0.14, 0.22);
-    const caseMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6 });
-    tubeGroup.add(new THREE.Mesh(caseGeo, caseMat));
+    tubeGroup.add(new THREE.Mesh(caseGeo, new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6 })));
 
-    const anodeGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.34, 32);
-    const anodeMat = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8 });
-    const anode = new THREE.Mesh(anodeGeo, anodeMat);
+    const anode = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.34, 32), new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8 }));
     anode.rotation.z = Math.PI / 2;
     anode.position.y = 0.02;
     tubeGroup.add(anode);
-
-    const collimatorGeo = new THREE.BoxGeometry(0.08, 0.05, 0.12);
-    const collimatorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    const collimator = new THREE.Mesh(collimatorGeo, collimatorMat);
-    collimator.position.y = -0.07;
-    tubeGroup.add(collimator);
-
     rotorGroup.add(tubeGroup);
 
     const detectorGroup = new THREE.Group();
     const detectorAngle = Math.PI / 2.25;
-    const rIn = 0.46;
-    const rOut = 0.49;
+    const rIn = 0.52;
+    const rOut = 0.55;
     const startAngle = -Math.PI / 2 - detectorAngle / 2;
     const endAngle = -Math.PI / 2 + detectorAngle / 2;
 
@@ -235,37 +212,9 @@ function buildCTScanner() {
     detShape.lineTo(rIn * Math.cos(endAngle), rIn * Math.sin(endAngle));
     detShape.absarc(0, 0, rIn, endAngle, startAngle, true);
 
-    const baseDepth = 0.16;
-    const detExtrude = {
-        depth: baseDepth,
-        bevelEnabled: true,
-        bevelThickness: 0.005,
-        bevelSize: 0.005,
-        bevelSegments: 2,
-        curveSegments: 64,
-    };
-    const detGeo = new THREE.ExtrudeGeometry(detShape, detExtrude);
-    detGeo.translate(0, 0, -baseDepth / 2);
-    const detMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.3, roughness: 0.6 });
-    detectorGroup.add(new THREE.Mesh(detGeo, detMat));
-
-    const senShape = new THREE.Shape();
-    const sIn = 0.458;
-    const sOut = 0.462;
-    senShape.moveTo(sIn * Math.cos(startAngle), sIn * Math.sin(startAngle));
-    senShape.absarc(0, 0, sOut, startAngle, endAngle, false);
-    senShape.lineTo(sIn * Math.cos(endAngle), sIn * Math.sin(endAngle));
-    senShape.absarc(0, 0, sIn, endAngle, startAngle, true);
-
-    const senDepth = 0.15;
-    const senGeo = new THREE.ExtrudeGeometry(senShape, { depth: senDepth, bevelEnabled: false, curveSegments: 64 });
-    senGeo.translate(0, 0, -senDepth / 2);
-    const senMat = new THREE.MeshStandardMaterial({ color: 0x0088cc, metalness: 0.7, roughness: 0.2 });
-    detectorGroup.add(new THREE.Mesh(senGeo, senMat));
-
-    const wireMat = new THREE.MeshBasicMaterial({ color: 0x88ddff, wireframe: true, transparent: true, opacity: 0.3 });
-    detectorGroup.add(new THREE.Mesh(senGeo, wireMat));
-
+    const detGeo = new THREE.ExtrudeGeometry(detShape, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005, curveSegments: 64 });
+    detGeo.translate(0, 0, -0.08);
+    detectorGroup.add(new THREE.Mesh(detGeo, new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.3, roughness: 0.6 })));
     rotorGroup.add(detectorGroup);
     Meshes.detectorGroup = detectorGroup;
 
@@ -274,109 +223,109 @@ function buildCTScanner() {
     beamGeo.rotateY(Math.PI / 4);
     beamGeo.translate(0, -beamHeight / 2, 0);
 
-    const beamMat = new THREE.MeshBasicMaterial({
-        color: 0xffff00,
-        transparent: true,
-        opacity: 0.0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-    });
+    const beamMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const xrayBeam = new THREE.Mesh(beamGeo, beamMat);
-    xrayBeam.position.set(0, 0.44, 0);
-
-    xrayBeam.scale.set(1.6, 1.0, 0.16);
-
+    xrayBeam.position.set(0, 0.52, 0);
+    xrayBeam.scale.set(1.2, 1.0, 0.16);
     rotorGroup.add(xrayBeam);
     Meshes.xrayBeam = xrayBeam;
+    Meshes.beamMat = beamMat;
 
     gantryGroup.add(rotorGroup);
     Meshes.rotor = rotorGroup;
     ctGroup.add(gantryGroup);
 
+    // --- 4. Patient Couch (Detailed front, handles, structural tiers) ---
     const couchGroup = new THREE.Group();
 
-    // Base carriage: wider, cleaner skirt-like design.
-    const couchBase = createRoundedBox(0.9, 0.18, 1.95, 0.14, baseCoverMat);
-    couchBase.position.set(0, 0.09, 2.6);
-    couchGroup.add(couchBase);
+    // Bottom wide structural base
+    const couchFloorBase = createRoundedBox(0.85, 0.15, 2.0, 0.06, baseCoverMat);
+    couchFloorBase.position.set(0, -0.07, 2.6);
+    couchGroup.add(couchFloorBase);
 
+    // Middle sliding mechanism cover
+    const couchMidBase = createRoundedBox(0.65, 0.15, 1.95, 0.05, new THREE.MeshStandardMaterial({ color: 0xf0f0f0 }));
+    couchMidBase.position.set(0, 0.08, 2.6);
+    couchGroup.add(couchMidBase);
+
+    // Expanding Bellows
     const bellowsGroup = new THREE.Group();
-    bellowsGroup.position.set(0, 0.2, 2.6);
-    const bellowsCount = 5;
+    bellowsGroup.position.set(0, 0.25, 2.6);
+    const bellowsCount = 6;
     const bellowsParts = [];
-    const bellowsMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.85 });
     for (let i = 0; i < bellowsCount; i++) {
-        const width = 0.78 - i * 0.03;
-        const depth = 1.82 - i * 0.06;
-        const bMesh = createRoundedBox(width, 0.085, depth, 0.09, bellowsMat);
+        const width = 0.58 - i * 0.02;
+        const depth = 1.82 - i * 0.04;
+        const bMesh = createRoundedBox(width, 0.10, depth, 0.04, new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.85 }));
         bellowsParts.push(bMesh);
         bellowsGroup.add(bMesh);
     }
     couchGroup.add(bellowsGroup);
+    Meshes.bellowsGroup = bellowsGroup;
     Meshes.bellows = bellowsParts;
 
     const tabletopGroup = new THREE.Group();
-    tabletopGroup.position.set(0, 0.8, 2.6);
+    tabletopGroup.position.set(0, 0.88, 2.6);
 
-    const supportMat = new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.35 });
-    const supportBase = createRoundedBox(0.74, 0.2, 2.35, 0.11, supportMat);
-    supportBase.position.y = -0.1;
+    // Under-table support structure
+    const supportBase = createRoundedBox(0.55, 0.15, 2.45, 0.05, new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.35 }));
+    supportBase.position.y = -0.12;
     tabletopGroup.add(supportBase);
 
-    const footCover = createRoundedBox(0.8, 0.22, 0.58, 0.16, supportMat);
-    footCover.position.set(0, -0.07, 0.96);
-    tabletopGroup.add(footCover);
-
-    const handle = createRoundedBox(0.42, 0.045, 0.11, 0.02, darkMat);
-    handle.position.set(0, -0.05, 1.2);
+    // New U-Shaped Front Handle (Matches reference)
+    const handleGeo = new THREE.TorusGeometry(0.18, 0.015, 16, 32, Math.PI);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4 });
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.rotation.x = -Math.PI / 2;
+    handle.position.set(0, -0.01, 1.70); // Placed at the very front tip
     tabletopGroup.add(handle);
 
-    const tableGeo = new THREE.BoxGeometry(0.56, 0.028, 3.5);
-    const tableMat = new THREE.MeshStandardMaterial({ color: 0x2b2f35, roughness: 0.65 });
-    const tabletop = new THREE.Mesh(tableGeo, tableMat);
-    tabletop.position.set(0, 0.016, -0.22);
+    // Tabletop carbon-fiber/grey material
+    const tabletop = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.025, 3.5), new THREE.MeshStandardMaterial({ color: 0x99aacc, roughness: 0.5 }));
+    tabletop.position.set(0, 0.012, -0.15);
     tabletop.castShadow = true;
     tabletop.receiveShadow = true;
     tabletopGroup.add(tabletop);
 
-    const matGeo = new THREE.BoxGeometry(0.54, 0.022, 3.35);
-    const matMat = new THREE.MeshStandardMaterial({ color: 0xb3bbc5, roughness: 0.85 });
-    const mattress = new THREE.Mesh(matGeo, matMat);
-    mattress.position.set(0, 0.038, -0.22);
+    // Thick Mattress with light grey cover
+    const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.035, 3.35), new THREE.MeshStandardMaterial({ color: 0xe5ebf2, roughness: 0.9 }));
+    mattress.position.set(0, 0.042, -0.15);
     tabletopGroup.add(mattress);
 
     const patientGroup = new THREE.Group();
-    patientGroup.position.set(0, 0.08, -0.2);
+    patientGroup.position.set(0, 0.060, -0.2);
     tabletopGroup.add(patientGroup);
     Meshes.patientGroup = patientGroup;
 
     const loader = new THREE.GLTFLoader();
     loader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/Xbot.glb", function (gltf) {
         const model = gltf.scene;
-
         model.rotation.x = -Math.PI / 2;
-        model.scale.set(0.85, 0.85, 0.85);
-        model.position.set(0, 0, 0.1);
+        model.scale.set(0.45, 0.45, 0.45); // Appropriately scaled down to fit 80cm bore
+        model.position.set(0, 0.1, 0.1);
 
         model.traverse(function (child) {
             if (child.isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
-                child.frustumCulled = false;
             }
         });
 
         if (gltf.animations && gltf.animations.length > 0) {
             mixer = new THREE.AnimationMixer(model);
             const idleAnim = gltf.animations.find((a) => a.name === "idle") || gltf.animations[0];
-            if (idleAnim) {
-                const action = mixer.clipAction(idleAnim);
-                action.play();
-            }
+            if (idleAnim) mixer.clipAction(idleAnim).play();
         }
 
         patientGroup.add(model);
+        patientGroup.visible = AppState.patientVisible;
+    }, undefined, function (error) {
+        const dummy = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.7, 0.25), new THREE.MeshStandardMaterial({ color: 0x5599cc, roughness: 0.8 }));
+        dummy.scale.set(0.45, 0.45, 0.45);
+        dummy.position.set(0, 0.1, 0.1);
+        dummy.rotation.x = -Math.PI / 2;
+        dummy.castShadow = true;
+        patientGroup.add(dummy);
         patientGroup.visible = AppState.patientVisible;
     });
 
