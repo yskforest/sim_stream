@@ -66,8 +66,7 @@ const Descriptions = {
 };
 const UI = {};
 const Meshes = {};
-let scene, camera, renderer, controls, mixer;
-const clock = new THREE.Timer();
+let scene, camera, renderer, controls, mixer, clock;
 
 if (window.CTStore) {
     window.CTStore.bindState(AppState);

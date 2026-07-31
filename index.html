@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>CT 3D Simulator</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+        <script defer src="./assets/vendor/tailwindcss/tailwindcss.js"></script>
         <link rel="stylesheet" href="./assets/css/ct-simulator.css" />
     </head>
     <body class="text-white">
@@ -394,33 +394,45 @@
             </div>
         </div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+        <script type="importmap">
+        {
+            "imports": {
+                "three": "./assets/vendor/three/three.module.js",
+                "three/addons/": "./assets/vendor/three/"
+            }
+        }
+        </script>
+        <script type="module">
+            import * as THREE from "three";
+            import { OrbitControls } from "three/addons/OrbitControls.js";
+            import { GLTFLoader } from "three/addons/GLTFLoader.js";
 
-        <script src="./assets/js/core/store.js"></script>
-        <script src="./assets/js/core/state.js"></script>
-        <script src="./assets/js/core/profile/default-profile.js"></script>
-        <script src="./assets/js/core/profile/profile-service.js"></script>
-        <script src="./assets/js/core/hw/gantry-sim.js"></script>
-        <script src="./assets/js/core/hw/couch-sim.js"></script>
-        <script src="./assets/js/core/hw/injector-sim.js"></script>
-        <script src="./assets/js/core/hw/camera-sim.js"></script>
-        <script src="./assets/js/core/services/command-log-service.js"></script>
-        <script src="./assets/js/core/services/video-stream-service.js"></script>
-        <script src="./assets/js/core/commands/command-bus.js"></script>
-        <script src="./assets/js/core/services/sequence-service.js"></script>
-        <script src="./assets/js/adapters/external/protocol-v1.js"></script>
-        <script src="./assets/js/adapters/external/external-gateway.js"></script>
-        <script src="./assets/js/adapters/video/canvas-capturer.js"></script>
-        <script src="./assets/js/adapters/video/stream-gateway.js"></script>
-        <script src="./assets/js/adapters/ui/ui-controller.js"></script>
-        <script src="./assets/js/view/models/room-model.js"></script>
-        <script src="./assets/js/view/models/gantry-model.js"></script>
-        <script src="./assets/js/view/models/injector-model.js"></script>
-        <script src="./assets/js/view/models/control-room-model.js"></script>
-        <script src="./assets/js/view/models/server-rack-model.js"></script>
-        <script src="./assets/js/core/main.js"></script>
+            window.THREE = Object.assign({}, THREE, { OrbitControls, GLTFLoader });
+        </script>
+        <script defer src="./assets/vendor/tween/tween.umd.js"></script>
+
+        <script defer src="./assets/js/core/store.js"></script>
+        <script defer src="./assets/js/core/state.js"></script>
+        <script defer src="./assets/js/core/profile/default-profile.js"></script>
+        <script defer src="./assets/js/core/profile/profile-service.js"></script>
+        <script defer src="./assets/js/core/hw/gantry-sim.js"></script>
+        <script defer src="./assets/js/core/hw/couch-sim.js"></script>
+        <script defer src="./assets/js/core/hw/injector-sim.js"></script>
+        <script defer src="./assets/js/core/hw/camera-sim.js"></script>
+        <script defer src="./assets/js/core/services/command-log-service.js"></script>
+        <script defer src="./assets/js/core/services/video-stream-service.js"></script>
+        <script defer src="./assets/js/core/commands/command-bus.js"></script>
+        <script defer src="./assets/js/core/services/sequence-service.js"></script>
+        <script defer src="./assets/js/adapters/external/protocol-v1.js"></script>
+        <script defer src="./assets/js/adapters/external/external-gateway.js"></script>
+        <script defer src="./assets/js/adapters/video/canvas-capturer.js"></script>
+        <script defer src="./assets/js/adapters/video/stream-gateway.js"></script>
+        <script defer src="./assets/js/adapters/ui/ui-controller.js"></script>
+        <script defer src="./assets/js/view/models/room-model.js"></script>
+        <script defer src="./assets/js/view/models/gantry-model.js"></script>
+        <script defer src="./assets/js/view/models/injector-model.js"></script>
+        <script defer src="./assets/js/view/models/control-room-model.js"></script>
+        <script defer src="./assets/js/view/models/server-rack-model.js"></script>
+        <script defer src="./assets/js/core/main.js"></script>
     </body>
 </html>

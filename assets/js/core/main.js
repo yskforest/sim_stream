@@ -1,6 +1,16 @@
-init();
-animate();
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+        init();
+        animate();
+    });
+} else {
+    init();
+    animate();
+}
+
 function init() {
+    clock = typeof THREE.Timer === "function" ? new THREE.Timer() : new THREE.Clock();
+
     if (window.CTProfileService && window.CTDefaultProfile) {
         window.CTProfileService.init(window.CTDefaultProfile);
     }
@@ -514,10 +524,16 @@ function onWindowResize() {
 
 function animate(time) {
     requestAnimationFrame(animate);
+    if (!clock || !renderer || !scene || !camera) return;
+
     const currentTime = time !== undefined ? time : performance.now();
-    TWEEN.update(currentTime);
-    clock.update(currentTime);
-    const delta = clock.getDelta();
+    if (typeof TWEEN !== "undefined" && typeof TWEEN.update === "function") {
+        TWEEN.update(currentTime);
+    }
+    if (typeof clock.update === "function") {
+        clock.update(currentTime);
+    }
+    const delta = typeof clock.getDelta === "function" ? clock.getDelta() : 0.016;
 
     if (Meshes.rotor && AppState.gantry.rotorSpeed > 0) {
         const radPerSec = (AppState.gantry.rotorSpeed * Math.PI * 2) / 60;

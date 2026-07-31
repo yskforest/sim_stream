@@ -26,6 +26,12 @@ const sandbox = {
                 return 0.016;
             };
         },
+        Timer: function () {
+            this.getDelta = function () {
+                return 0.016;
+            };
+            this.update = function () {};
+        },
     },
 };
 sandbox.window = sandbox;
