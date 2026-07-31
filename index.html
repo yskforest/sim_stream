@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
     <head>
         <meta charset="UTF-8" />
@@ -316,6 +316,34 @@
                         >
                             Hide Patient
                         </button>
+                        <div class="border-t border-gray-700 pt-2 space-y-1">
+                            <div class="text-[10px] font-bold text-gray-400">Virtual Camera Stream</div>
+                            <div class="flex gap-1 text-[10px]">
+                                <select id="select-stream-codec" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                    <option value="mjpeg">MJPEG</option>
+                                    <option value="h264">H.264</option>
+                                </select>
+                                <select id="select-stream-proto" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                    <option value="http">HTTP</option>
+                                    <option value="rtsp">RTSP</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-1 text-[10px] items-center">
+                                <span class="text-gray-400">Res:</span>
+                                <input type="number" id="input-stream-width" value="640" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-14" title="Width (px, must be multiple of 8)" />
+                                <span class="text-gray-400">x</span>
+                                <input type="number" id="input-stream-height" value="480" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-14" title="Height (px, must be multiple of 8)" />
+                            </div>
+                            <button id="btn-camera-stream-toggle" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold">Start Stream</button>
+                            <div id="stream-url-display" class="text-[9px] font-mono text-indigo-300 truncate hidden"></div>
+                            <div id="camera-preview-container" class="mt-2 hidden border border-gray-700 rounded overflow-hidden bg-black">
+                                <div class="text-[9px] bg-gray-800 text-gray-300 px-1 py-0.5 font-mono flex justify-between">
+                                    <span>LIVE CAMERA PREVIEW</span>
+                                    <span class="text-green-400 font-bold">REC ●</span>
+                                </div>
+                                <img id="camera-live-preview" class="w-full h-28 object-cover bg-black" src="" alt="Virtual Camera Preview" />
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -362,11 +390,15 @@
         <script src="./assets/js/core/hw/gantry-sim.js"></script>
         <script src="./assets/js/core/hw/couch-sim.js"></script>
         <script src="./assets/js/core/hw/injector-sim.js"></script>
+        <script src="./assets/js/core/hw/camera-sim.js"></script>
         <script src="./assets/js/core/services/command-log-service.js"></script>
+        <script src="./assets/js/core/services/video-stream-service.js"></script>
         <script src="./assets/js/core/commands/command-bus.js"></script>
         <script src="./assets/js/core/services/sequence-service.js"></script>
         <script src="./assets/js/adapters/external/protocol-v1.js"></script>
         <script src="./assets/js/adapters/external/external-gateway.js"></script>
+        <script src="./assets/js/adapters/video/canvas-capturer.js"></script>
+        <script src="./assets/js/adapters/video/stream-gateway.js"></script>
         <script src="./assets/js/adapters/ui/ui-controller.js"></script>
         <script src="./assets/js/view/models/room-model.js"></script>
         <script src="./assets/js/view/models/gantry-model.js"></script>

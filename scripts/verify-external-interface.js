@@ -18,6 +18,15 @@ const sandbox = {
     window: {},
     console,
     Date,
+    setInterval,
+    clearInterval,
+    THREE: {
+        Clock: function () {
+            this.getDelta = function () {
+                return 0.016;
+            };
+        },
+    },
 };
 sandbox.window = sandbox;
 const ctx = vm.createContext(sandbox);
@@ -53,4 +62,44 @@ const invalidParam = proto.validateCommand({
 assert(invalidParam.valid === false, "Expected invalid param");
 assert(invalidParam.error.code === "VALIDATION_ERROR", "Expected VALIDATION_ERROR");
 
+// Camera stream command verification
+const validCameraStream = proto.validateCommand({
+    requestId: "req-cam-1",
+    target: "camera",
+    action: "startStream",
+    params: { codec: "h264", protocol: "rtsp", fps: 30 },
+});
+assert(validCameraStream.valid === true, "Expected valid camera startStream command");
+
+const invalidCameraCodec = proto.validateCommand({
+    requestId: "req-cam-2",
+    target: "camera",
+    action: "startStream",
+    params: { codec: "invalid_codec" },
+});
+assert(invalidCameraCodec.valid === false, "Expected invalid camera codec");
+assert(invalidCameraCodec.error.code === "VALIDATION_ERROR", "Expected VALIDATION_ERROR for codec");
+
+// Full integration mock test
+loadScript(ctx, "assets/js/core/store.js");
+loadScript(ctx, "assets/js/core/state.js");
+loadScript(ctx, "assets/js/core/hw/camera-sim.js");
+loadScript(ctx, "assets/js/core/services/video-stream-service.js");
+loadScript(ctx, "assets/js/core/commands/command-bus.js");
+loadScript(ctx, "assets/js/adapters/external/external-gateway.js");
+
+ctx.CTStore.bindState(ctx.AppState);
+
+const gatewayRes = ctx.CTExternalGateway.send({
+    requestId: "req-cam-3",
+    target: "camera",
+    action: "startStream",
+    params: { codec: "mjpeg", protocol: "http", fps: 30 },
+});
+
+assert(gatewayRes.success === true, "Expected gateway.send success for camera startStream");
+assert(typeof gatewayRes.payload.streamUrl === "string", "Expected streamUrl string in payload");
+assert(gatewayRes.payload.streamUrl.includes("http://"), "Expected http stream URL");
+
 console.log("External interface protocol validation: OK");
+process.exit(0);

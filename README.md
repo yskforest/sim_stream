@@ -28,6 +28,12 @@ npx serve .
 node scripts/verify-external-interface.js
 ```
 
+### 2.3 リアルタイム動画配信サーバーの起動 (HTTP MJPEG / RTSP)
+`http://127.0.0.1:8080/live/ct-camera.mjpg` で外部ブラウザやVLCプレイヤーから閲覧する場合は、ストリーミングサーバーを起動します。
+```bash
+node scripts/stream-server.js
+```
+
 ### 2.3 外部APIでの操作例
 ブラウザのコンソールや外部アプリケーションから直接操作が可能です。
 ```javascript

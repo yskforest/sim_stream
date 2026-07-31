@@ -16,25 +16,28 @@
 flowchart TB
     subgraph Presentation["Presentation Layer (表示層)"]
         UIPanels["UI Panels (HTML/CSS)"]
-        View3D["Three.js 3D View"]
+        View3D["Three.js 3D View / WebGL Canvas"]
     end
 
     subgraph Adapter["Adapter Layer (接続層)"]
         UIAdapter["UIController"]
         ExtGateway["CTExternalGateway"]
         Protocol["CTProtocolV1"]
+        StreamGateway["StreamGateway (HTTP/RTSP Adapter)"]
     end
 
     subgraph Application["Application Layer (応用層)"]
         CommandBus["CTCommandBus"]
         LogService["CTCommandLogService"]
         SeqService["CTSequenceService"]
+        VideoStreamService["VideoStreamService"]
     end
 
     subgraph Domain["Domain & State Layer (ドメイン・状態層)"]
         Gantry["GantrySim"]
         Couch["CouchSim"]
         Injector["InjectorSim"]
+        Camera["CameraSim (Virtual Camera)"]
         Store["CTStore"]
         State["AppState"]
         Profile["CTProfileService"]
@@ -50,12 +53,18 @@ flowchart TB
     CommandBus -->|Control| Gantry
     CommandBus -->|Control| Couch
     CommandBus -->|Control| Injector
+    CommandBus -->|Control stream/params| Camera
+    CommandBus -->|Control stream| VideoStreamService
     CommandBus -->|dispatch| Store
     CommandBus -->|add log| LogService
 
+    VideoStreamService -->|Frame capture| View3D
+    VideoStreamService -->|Encode & Stream| StreamGateway
+    StreamGateway -->|RTSP / HTTP Stream| ExtClient["External Monitor / Player"]
+
     Store -->|Manages| State
     State -.->|Notify change| UIPanels
-    State -.->|Update models| View3D
+    State -.->|Update models/camera| View3D
 ```
 
 ---
@@ -106,6 +115,26 @@ classDiagram
         +setSalineB(value) Object
     }
 
+    class CameraSim {
+        +setTransform(position, lookAt)
+        +setFov(fov)
+        +getState() Object
+    }
+
+    class VideoStreamService {
+        +startStream(config) Object
+        +stopStream() Object
+        +getStreamUrl() String
+        +captureFrame() Blob
+    }
+
+    class StreamGateway {
+        +publishMJPEG(frameData)
+        +publishH264(videoChunk)
+        +getRtspEndpoint() String
+        +getHttpEndpoint() String
+    }
+
     class CTStore {
         +bindState(state)
         +getState() AppState
@@ -117,6 +146,7 @@ classDiagram
         +gantry Object
         +couch Object
         +injector Object
+        +camera Object
         +patientVisible boolean
         +update(scope, key, value)
         +subscribe(listener)
@@ -135,6 +165,9 @@ classDiagram
     CTCommandBus --> GantrySim : invokes
     CTCommandBus --> CouchSim : invokes
     CTCommandBus --> InjectorSim : invokes
+    CTCommandBus --> CameraSim : invokes
+    CTCommandBus --> VideoStreamService : invokes
+    VideoStreamService --> StreamGateway : delegates
     CTCommandBus --> CTStore : dispatches
     CTCommandBus --> CTCommandLogService : logs
     CTStore --> AppState : manages
@@ -209,6 +242,37 @@ sequenceDiagram
     Bus-->>UIController: { success: true }
 ```
 
+### 4.3 仮想カメラ映像配信シーケンス (カメラストリーミング)
+
+`target: "camera"`, `action: "startStream"` が実行されてから動画ストリームが送出されるまでのシーケンスです。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as 外部プレイヤー / RTSP Client
+    participant Gateway as CTExternalGateway
+    participant Bus as CTCommandBus
+    participant StreamSvc as VideoStreamService
+    participant Canvas as Three.js WebGL Canvas
+    participant StreamGw as StreamGateway (RTSP/HTTP)
+
+    Client->>Gateway: send({ target: "camera", action: "startStream", params: { codec: "h264", protocol: "rtsp" } })
+    Gateway->>Bus: execute(command)
+    Bus->>StreamSvc: startStream(config)
+    StreamSvc->>StreamGw: initStream(codec, protocol)
+    StreamGw-->>StreamSvc: { streamUrl: "rtsp://localhost:8554/live/ct-cam" }
+    StreamSvc-->>Bus: { success: true, streamUrl }
+    Bus-->>Gateway: Response Envelope (streamUrl)
+    Gateway-->>Client: Response Envelope
+
+    loop フレームキャプチャ＆配信ループ (例: 30 FPS)
+        StreamSvc->>Canvas: captureFrame() / MediaRecorder Chunk
+        Canvas-->>StreamSvc: Raw Frame / Encoded Chunk
+        StreamSvc->>StreamGw: publish(chunk)
+        StreamGw-->>Client: RTSP / HTTP Stream Data
+    end
+```
+
 ---
 
 ## 5. 状態管理と状態遷移 (ステートマシン図)
@@ -238,6 +302,26 @@ stateDiagram-v2
     Scanning --> Idle : setScanning(false)
 ```
 
+### 5.2 仮想カメラ映像配信のステートマシン
+
+```mermaid
+stateDiagram-v2
+    [*] --> Stopped : 初期化
+
+    Stopped --> Streaming : startStream({ codec, protocol })
+    
+    state Streaming {
+        [*] --> Capturing
+        Capturing --> Encoding : Frame captured
+        Encoding --> Transmitting : Chunk encoded
+        Transmitting --> Capturing : Loop (FPS)
+    }
+
+    Streaming --> Stopped : stopStream()
+    Streaming --> Error : Capture/Network failure
+    Error --> Stopped : Reset
+```
+
 ---
 
 ## 6. 実装ディレクトリとモジュール構成
@@ -253,21 +337,26 @@ assets/js/
   │   ├── hw/                         # 仮想HWドメインシミュレータ
   │   │   ├── gantry-sim.js           # ガントリ制御ロジック
   │   │   ├── couch-sim.js            # 寝台制御ロジック
-  │   │   └── injector-sim.js         # インジェクタ制御ロジック
+  │   │   ├── injector-sim.js         # インジェクタ制御ロジック
+  │   │   └── camera-sim.js           # 仮想カメラ制御ロジック [NEW]
   │   ├── commands/
   │   │   └── command-bus.js          # コマンドバス（UI/外部共通の実行経路）
   │   ├── services/
   │   │   ├── sequence-service.js     # バッチシーケンス実行制御
-  │   │   └── command-log-service.js  # コマンド実行ログ管理
+  │   │   ├── command-log-service.js  # コマンド実行ログ管理
+  │   │   └── video-stream-service.js # 映像ストリーミング制御サービス [NEW]
   │   └── profile/
   │       ├── default-profile.js      # 標準HWプロファイル
   │       └── profile-service.js      # 機種差分プロファイルサービス
   ├── adapters/                       # 外部接続・UIアダプター
   │   ├── ui/
   │   │   └── ui-controller.js        # DOMイベントハンドラ・画面同期
-  │   └── external/
-  │       ├── protocol-v1.js          # 通信プロトコル検証・レスポンス生成
-  │       └── external-gateway.js     # 外部公開API Gateway (window.CTExternalGateway)
+  │   ├── external/
+  │   │   ├── protocol-v1.js          # 通信プロトコル検証・レスポンス生成
+  │   │   └── external-gateway.js     # 外部公開API Gateway (window.CTExternalGateway)
+  │   └── video/                      # 映像配信アダプター [NEW]
+  │       ├── canvas-capturer.js      # Canvasフレームキャプチャ・エンコーダー [NEW]
+  │       └── stream-gateway.js       # RTSP / HTTP ストリーミング転送アダプター [NEW]
   └── view/models/                    # Presentation (Three.js 3D表現)
       ├── room-model.js               # 検査室・壁・床
       ├── gantry-model.js             # ガントリ3Dモデル
@@ -286,22 +375,26 @@ assets/js/
 - **Console (`panel-console`)**: スキャン開始/停止、バッチ編集、シーケンス実行
 - **HW STATE MONITOR (`panel-monitor`)**: ガントリ・寝台・インジェクタ・直近結果表示
 - **HW設定 (`panel-hw-config`)**: Detector Rows、Couch Y/Z、Injector A/B 設定
-- **3D表示・操作 (`panel-3d-config`)**: フォーカス、カメラ、透過、X線、患者表示設定
+- **3D表示・操作 (`panel-3d-config`)**: フォーカス、カメラ、透過、X線、患者表示、カメラ配信設定
 - **Command Log (`panel-command-log`)**: コマンド実行履歴表示
-
-### 7.2 表示仕様
-- **初期表示**: `Console` / `HW STATE MONITOR`
-- **初期非表示**: `HW設定` / `3D表示・操作` / `Command Log`
-- **表示制御**: 上部ツールバーから個別に表示/非表示を切替（同時表示可能）
-- **レイアウト**: 横長・縦長問わず画面4隅配置を維持し、中央の3D描画エリアを圧迫しない設計
 
 ---
 
-## 8. 検証方針
+## 8. 仮想カメラ映像配信アーキテクチャ詳細
+
+### 8.1 配信方式とプロトコル構成
+
+| 方式 | コーデック | 通信プロトコル | 技術スタック・伝送方式 |
+| :--- | :--- | :--- | :--- |
+| **MJPEG Stream** | MJPEG (JPEG連番) | HTTP (`multipart/x-mixed-replace`) | HTMLCanvasElement `.toDataURL('image/jpeg')` または Blob 転送 |
+| **H.264 Stream (RTSP)** | H.264 / AVC | RTSP (または WebSocket-RTSP ゲートウェイ) | `MediaRecorder` API (`video/mp4;codecs=avc1` / `video/webm`) ＋ RTSP リレー |
+| **H.264 Stream (HTTP)** | H.264 | HTTP (HLS / Low-Latency HLS) | MediaSource Extensions (MSE) / HLS.js 互換セグメント生成 |
+
+---
+
+## 9. 検証方針
 - **構文チェック**: `node --check`
 - **外部I/Fプロトコル検証**: `node scripts/verify-external-interface.js`
-- **E2E動作テスト**:
-  1. 3Dオブジェクトの正常描画
-  2. UIパネルからの操作による仮想HW状態変化
-  3. バッチシーケンスの正常完走
-  4. 外部API経由のコマンド実行と状態取得
+- **映像配信検証**:
+  - MJPEG over HTTP ストリームのブラウザ再生確認
+  - RTSP ストリーム (VLC メディアプレイヤー / ffmpeg での受信確認)

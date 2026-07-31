@@ -90,6 +90,19 @@
                 return withLog(command, fail("UNKNOWN_SIMULATOR_ACTION"));
             }
 
+            if (target === "camera") {
+                if (!global.CameraSim) return withLog(command, fail("CAMERA_SIM_UNAVAILABLE"));
+                if (action === "startStream") return withLog(command, global.CameraSim.startStream(params));
+                if (action === "stopStream") return withLog(command, global.CameraSim.stopStream());
+                if (action === "getStreamUrl") return withLog(command, global.CameraSim.getStreamUrl());
+                if (action === "getState")
+                    return withLog(command, {
+                        success: true,
+                        state: global.CameraSim.getState(),
+                    });
+                return withLog(command, fail("UNKNOWN_CAMERA_ACTION"));
+            }
+
             return withLog(command, fail("UNKNOWN_TARGET"));
         },
     };

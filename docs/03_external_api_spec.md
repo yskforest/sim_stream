@@ -55,7 +55,7 @@ sequenceDiagram
 
 | フィールド | 型 | 必須 | 説明 |
 | :--- | :--- | :---: | :--- |
-| `target` | `String` | 必須 | 操作対象 (`gantry` \| `couch` \| `injector` \| `simulator`) |
+| `target` | `String` | 必須 | 操作対象 (`gantry` \| `couch` \| `injector` \| `simulator` \| `camera`) |
 | `action` | `String` | 必須 | 実行するアクション名 |
 | `params` | `Object` | オプション | アクション毎のパラメータオブジェクト |
 | `requestId` | `String` | オプション | トラッキング用の任意のリクエストID |
@@ -99,6 +99,10 @@ sequenceDiagram
 | | `getState` | なし | インジェクタの現在状態を取得 |
 | **`simulator`**<br>(全体制御) | `setPatientVisible` | `value: boolean` | 患者モデルの表示 (`true`) / 非表示 (`false`) |
 | | `getState` | なし | 全体の現在状態を取得 |
+| **`camera`**<br>(仮想カメラ・映像配信) | `startStream` | `codec: string` (`'h264'` \| `'mjpeg'`),<br>`protocol: string` (`'rtsp'` \| `'http'`),<br>`fps?: number` | 仮想カメラ映像のエンコードストリーミング配信を開始 |
+| | `stopStream` | なし | 映像ストリーミング配信を停止 |
+| | `getStreamUrl` | なし | 現在配信中のストリーミングURLを取得 |
+| | `getState` | なし | カメラおよび配信状態を取得 |
 
 ---
 

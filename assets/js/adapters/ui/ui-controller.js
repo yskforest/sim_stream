@@ -107,6 +107,31 @@
                 "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition text-gray-400";
         }
 
+        if (state.camera && UI.btnCameraStreamToggle) {
+            if (state.camera.isStreaming) {
+                UI.btnCameraStreamToggle.innerText = "Stop Stream";
+                UI.btnCameraStreamToggle.className =
+                    "w-full bg-red-600 hover:bg-red-500 text-xs py-1 rounded font-bold";
+                if (UI.streamUrlDisplay) {
+                    UI.streamUrlDisplay.innerText = state.camera.streamUrl || "";
+                    UI.streamUrlDisplay.classList.remove("hidden");
+                }
+                if (byId("camera-preview-container")) {
+                    byId("camera-preview-container").classList.remove("hidden");
+                }
+            } else {
+                UI.btnCameraStreamToggle.innerText = "Start Stream";
+                UI.btnCameraStreamToggle.className =
+                    "w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold";
+                if (UI.streamUrlDisplay) {
+                    UI.streamUrlDisplay.classList.add("hidden");
+                }
+                if (byId("camera-preview-container")) {
+                    byId("camera-preview-container").classList.add("hidden");
+                }
+            }
+        }
+
         applyStateToMeshes(state);
     }
 
@@ -404,9 +429,32 @@
         UI.btnPatientToggle = byId("btn-patient-toggle");
         UI.commandLogList = byId("command-log-list");
         UI.btnClearCommandLog = byId("btn-clear-command-log");
+        UI.btnCameraStreamToggle = byId("btn-camera-stream-toggle");
+        UI.selectStreamCodec = byId("select-stream-codec");
+        UI.selectStreamProto = byId("select-stream-proto");
+        UI.streamUrlDisplay = byId("stream-url-display");
 
         applyProfileUIConfig();
         bindPanelControls();
+
+        if (UI.btnCameraStreamToggle) {
+            UI.btnCameraStreamToggle.addEventListener("click", function () {
+                if (global.CameraSim) {
+                    var state = global.CameraSim.getState();
+                    if (state.isStreaming) {
+                        executeConsoleCommand("camera", "stopStream");
+                    } else {
+                        var codec = UI.selectStreamCodec ? UI.selectStreamCodec.value : "mjpeg";
+                        var proto = UI.selectStreamProto ? UI.selectStreamProto.value : "http";
+                        var widthInput = byId("input-stream-width");
+                        var heightInput = byId("input-stream-height");
+                        var width = widthInput ? parseInt(widthInput.value, 10) : 640;
+                        var height = heightInput ? parseInt(heightInput.value, 10) : 480;
+                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: 30, width: width, height: height });
+                    }
+                }
+            });
+        }
 
         UI.sliderCouchY.addEventListener("input", function (e) {
             executeConsoleCommand("couch", "moveY", parseFloat(e.target.value));
@@ -441,6 +489,17 @@
                 global.CTCommandLogService.subscribe(function () {
                     renderCommandLog();
                     updateLastCommandMonitor();
+                }),
+            );
+        }
+
+        if (global.CTStreamGateway && typeof global.CTStreamGateway.subscribeFrames === "function") {
+            unsubscribers.push(
+                global.CTStreamGateway.subscribeFrames(function (frameData) {
+                    var img = byId("camera-live-preview");
+                    if (img && frameData) {
+                        img.src = frameData;
+                    }
                 }),
             );
         }

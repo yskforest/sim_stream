@@ -22,6 +22,12 @@
             setPatientVisible: true,
             getState: true,
         },
+        camera: {
+            startStream: true,
+            stopStream: true,
+            getStreamUrl: true,
+            getState: true,
+        },
     };
 
     function ok() {
@@ -79,6 +85,17 @@
         }
         if (command.target === "simulator" && command.action === "setPatientVisible") {
             if (typeof p.value !== "boolean") return fail("VALIDATION_ERROR", "params.value must be a boolean.");
+        }
+        if (command.target === "camera" && command.action === "startStream") {
+            if (p.codec !== undefined && p.codec !== "h264" && p.codec !== "mjpeg") {
+                return fail("VALIDATION_ERROR", "params.codec must be 'h264' or 'mjpeg'.");
+            }
+            if (p.protocol !== undefined && p.protocol !== "http" && p.protocol !== "rtsp") {
+                return fail("VALIDATION_ERROR", "params.protocol must be 'http' or 'rtsp'.");
+            }
+            if (p.fps !== undefined && typeof p.fps !== "number") {
+                return fail("VALIDATION_ERROR", "params.fps must be a number when provided.");
+            }
         }
         return ok();
     }
