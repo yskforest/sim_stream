@@ -27,6 +27,7 @@
             activeStream.fps = config.fps || 30;
             activeStream.width = config.width || 640;
             activeStream.height = config.height || 480;
+            activeStream.hfov = config.hfov || 60;
             activeStream.isStreaming = true;
             activeStream.streamUrl = generateStreamUrl(activeStream.protocol, activeStream.codec);
 
@@ -37,6 +38,7 @@
                     codec: activeStream.codec,
                     width: activeStream.width,
                     height: activeStream.height,
+                    hfov: activeStream.hfov,
                 });
             }
 
@@ -44,7 +46,7 @@
             var intervalMs = Math.floor(1000 / activeStream.fps);
             activeStream.intervalId = setInterval(function () {
                 if (global.CTStreamGateway && typeof global.CTStreamGateway.broadcastFrame === "function") {
-                    var frame = global.CTCanvasCapturer ? global.CTCanvasCapturer.getLatestFrame(activeStream.width, activeStream.height) : null;
+                    var frame = global.CTCanvasCapturer ? global.CTCanvasCapturer.getLatestFrame(activeStream.width, activeStream.height, activeStream.hfov) : null;
                     global.CTStreamGateway.broadcastFrame(frame);
                 }
             }, intervalMs);

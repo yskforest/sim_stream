@@ -448,9 +448,11 @@
                         var proto = UI.selectStreamProto ? UI.selectStreamProto.value : "http";
                         var widthInput = byId("input-stream-width");
                         var heightInput = byId("input-stream-height");
+                        var hfovInput = byId("input-stream-hfov");
                         var width = widthInput ? parseInt(widthInput.value, 10) : 640;
                         var height = heightInput ? parseInt(heightInput.value, 10) : 480;
-                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: 30, width: width, height: height });
+                        var hfov = hfovInput ? parseInt(hfovInput.value, 10) : 60;
+                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: 30, width: width, height: height, hfov: hfov });
                     }
                 }
             });

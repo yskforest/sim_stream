@@ -3,6 +3,7 @@
         position: { x: 0, y: 1.8, z: 3.5 },
         lookAt: { x: 0, y: 1.2, z: 0 },
         fov: 50,
+        hfov: 60,
         isStreaming: false,
         codec: "mjpeg",
         protocol: "http",
@@ -45,6 +46,13 @@
             }
             return { success: true, state: cameraState };
         },
+        setHFov: function setHFov(hfov) {
+            if (typeof hfov === "number" && hfov > 0) {
+                cameraState.hfov = hfov;
+                notifyStateChange();
+            }
+            return { success: true, state: cameraState };
+        },
         startStream: function startStream(params) {
             params = params || {};
             cameraState.codec = params.codec === "h264" ? "h264" : "mjpeg";
@@ -52,6 +60,7 @@
             cameraState.fps = typeof params.fps === "number" ? params.fps : 30;
             if (typeof params.width === "number") cameraState.width = params.width;
             if (typeof params.height === "number") cameraState.height = params.height;
+            if (typeof params.hfov === "number") cameraState.hfov = params.hfov;
             cameraState.isStreaming = true;
 
             if (global.CTVideoStreamService && typeof global.CTVideoStreamService.start === "function") {
@@ -61,6 +70,7 @@
                     fps: cameraState.fps,
                     width: cameraState.width,
                     height: cameraState.height,
+                    hfov: cameraState.hfov,
                 });
                 cameraState.streamUrl = streamRes.streamUrl;
             } else {

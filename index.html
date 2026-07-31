@@ -330,9 +330,11 @@
                             </div>
                             <div class="flex gap-1 text-[10px] items-center">
                                 <span class="text-gray-400">Res:</span>
-                                <input type="number" id="input-stream-width" value="640" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-14" title="Width (px, must be multiple of 8)" />
+                                <input type="number" id="input-stream-width" value="640" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Width (px)" />
                                 <span class="text-gray-400">x</span>
-                                <input type="number" id="input-stream-height" value="480" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-14" title="Height (px, must be multiple of 8)" />
+                                <input type="number" id="input-stream-height" value="480" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Height (px)" />
+                                <span class="text-gray-400 ml-1">hFOV:</span>
+                                <input type="number" id="input-stream-hfov" value="60" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-10" title="Horizontal FOV (deg)" />
                             </div>
                             <button id="btn-camera-stream-toggle" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold">Start Stream</button>
                             <div id="stream-url-display" class="text-[9px] font-mono text-indigo-300 truncate hidden"></div>
