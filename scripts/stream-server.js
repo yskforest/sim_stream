@@ -26,20 +26,28 @@ const httpServer = http.createServer((req, res) => {
 
     // シミュレータからのフレーム受信 (POST /upload-frame)
     if (req.method === "POST" && req.url === "/upload-frame") {
-        let body = "";
+        const chunks = [];
         req.on("data", (chunk) => {
-            body += chunk;
+            chunks.push(chunk);
         });
         req.on("end", () => {
-            if (body.startsWith("data:image/jpeg;base64,")) {
-                const base64Data = body.replace(/^data:image\/jpeg;base64,/, "");
-                latestFrameBuffer = Buffer.from(base64Data, "base64");
+            const buffer = Buffer.concat(chunks);
+            if (buffer.length > 0) {
+                if (buffer[0] === 0xff && buffer[1] === 0xd8) {
+                    // 生の JPEG バイナリデータの直接処理（超高速）
+                    latestFrameBuffer = buffer;
+                } else {
+                    const body = buffer.toString("utf8");
+                    if (body.startsWith("data:image/jpeg;base64,")) {
+                        const base64Data = body.replace(/^data:image\/jpeg;base64,/, "");
+                        latestFrameBuffer = Buffer.from(base64Data, "base64");
+                    }
+                }
 
-                // HTTP MJPEG クライアントへ配信
-                broadcastHttpMjpeg(latestFrameBuffer);
-
-                // RTSP クライアントへ RTP 配信
-                broadcastRtspFrame(latestFrameBuffer);
+                if (latestFrameBuffer) {
+                    broadcastHttpMjpeg(latestFrameBuffer);
+                    broadcastRtspFrame(latestFrameBuffer);
+                }
             }
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ success: true, httpViewers: httpClients.size, rtspViewers: rtspClients.size }));

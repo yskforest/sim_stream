@@ -22,8 +22,8 @@
             var canvas = getCanvasElement();
             if (!canvas) return null;
 
-            width = width || 640;
-            height = height || 480;
+            width = width || 1280;
+            height = height || 960;
 
             try {
                 if (global.renderer && global.scene && global.camera && typeof THREE !== "undefined") {
@@ -40,6 +40,9 @@
                         capturer.offscreenCanvas.width = width;
                         capturer.offscreenCanvas.height = height;
                         capturer.offscreenCtx = capturer.offscreenCanvas.getContext("2d");
+                        capturer.imageData = capturer.offscreenCtx.createImageData(width, height);
+                        capturer.src32 = new Uint32Array(capturer.pixelBuffer.buffer);
+                        capturer.dst32 = new Uint32Array(capturer.imageData.data.buffer);
                     }
 
                     global.camera.aspect = aspect;
@@ -60,18 +63,16 @@
                     global.camera.fov = oldFov;
                     global.camera.updateProjectionMatrix();
 
-                    var imageData = capturer.offscreenCtx.createImageData(width, height);
+                    var src32 = capturer.src32;
+                    var dst32 = capturer.dst32;
+
                     for (var y = 0; y < height; y++) {
-                        for (var x = 0; x < width; x++) {
-                            var srcIdx = ((height - 1 - y) * width + x) * 4;
-                            var dstIdx = (y * width + x) * 4;
-                            imageData.data[dstIdx] = capturer.pixelBuffer[srcIdx];
-                            imageData.data[dstIdx+1] = capturer.pixelBuffer[srcIdx+1];
-                            imageData.data[dstIdx+2] = capturer.pixelBuffer[srcIdx+2];
-                            imageData.data[dstIdx+3] = 255;
-                        }
+                        var srcLine = (height - 1 - y) * width;
+                        var dstLine = y * width;
+                        dst32.set(src32.subarray(srcLine, srcLine + width), dstLine);
                     }
-                    capturer.offscreenCtx.putImageData(imageData, 0, 0);
+
+                    capturer.offscreenCtx.putImageData(capturer.imageData, 0, 0);
                     lastFrameData = capturer.offscreenCanvas.toDataURL("image/jpeg", 0.7);
                 } else {
                     lastFrameData = canvas.toDataURL("image/jpeg", 0.7);

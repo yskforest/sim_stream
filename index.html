@@ -321,18 +321,32 @@
                             <div class="flex gap-1 text-[10px]">
                                 <select id="select-stream-codec" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
                                     <option value="mjpeg">MJPEG</option>
-                                    <option value="h264">H.264</option>
+                                    <option value="h264" selected>H.264</option>
                                 </select>
                                 <select id="select-stream-proto" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
                                     <option value="http">HTTP</option>
-                                    <option value="rtsp">RTSP</option>
+                                    <option value="rtsp" selected>RTSP</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-1 text-[10px] items-center">
+                                <span class="text-gray-400">FPS:</span>
+                                <select id="select-stream-fps" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                    <option value="15">15</option>
+                                    <option value="30" selected>30</option>
+                                    <option value="60">60</option>
+                                </select>
+                                <span class="text-gray-400 ml-1">Qual:</span>
+                                <select id="select-stream-quality" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                    <option value="0.5">50%</option>
+                                    <option value="0.7" selected>70%</option>
+                                    <option value="0.9">90%</option>
                                 </select>
                             </div>
                             <div class="flex gap-1 text-[10px] items-center">
                                 <span class="text-gray-400">Res:</span>
-                                <input type="number" id="input-stream-width" value="640" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Width (px)" />
+                                <input type="number" id="input-stream-width" value="1280" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Width (px)" />
                                 <span class="text-gray-400">x</span>
-                                <input type="number" id="input-stream-height" value="480" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Height (px)" />
+                                <input type="number" id="input-stream-height" value="960" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Height (px)" />
                                 <span class="text-gray-400 ml-1">hFOV:</span>
                                 <input type="number" id="input-stream-hfov" value="60" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-10" title="Horizontal FOV (deg)" />
                             </div>

@@ -15,9 +15,17 @@
         }
 
         isSending = true;
+
+        var headers = {};
+        if (frameData instanceof ArrayBuffer || frameData instanceof Uint8Array || (typeof Blob !== "undefined" && frameData instanceof Blob)) {
+            headers["Content-Type"] = "application/octet-stream";
+        } else {
+            headers["Content-Type"] = "text/plain";
+        }
+
         fetch(serverUploadUrl, {
             method: "POST",
-            headers: { "Content-Type": "text/plain" },
+            headers: headers,
             body: frameData,
         })
             .then(function (res) {

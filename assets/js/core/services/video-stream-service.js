@@ -22,11 +22,11 @@
                 clearInterval(activeStream.intervalId);
             }
 
-            activeStream.codec = config.codec || "mjpeg";
-            activeStream.protocol = config.protocol || "http";
+            activeStream.codec = config.codec || "h264";
+            activeStream.protocol = config.protocol || "rtsp";
             activeStream.fps = config.fps || 30;
-            activeStream.width = config.width || 640;
-            activeStream.height = config.height || 480;
+            activeStream.width = config.width || 1280;
+            activeStream.height = config.height || 960;
             activeStream.hfov = config.hfov || 60;
             activeStream.isStreaming = true;
             activeStream.streamUrl = generateStreamUrl(activeStream.protocol, activeStream.codec);

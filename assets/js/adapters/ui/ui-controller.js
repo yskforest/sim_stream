@@ -446,13 +446,19 @@
                     } else {
                         var codec = UI.selectStreamCodec ? UI.selectStreamCodec.value : "mjpeg";
                         var proto = UI.selectStreamProto ? UI.selectStreamProto.value : "http";
+                        var fpsSelect = byId("select-stream-fps");
+                        var qualSelect = byId("select-stream-quality");
                         var widthInput = byId("input-stream-width");
                         var heightInput = byId("input-stream-height");
                         var hfovInput = byId("input-stream-hfov");
+
+                        var fps = fpsSelect ? parseInt(fpsSelect.value, 10) : 30;
+                        var quality = qualSelect ? parseFloat(qualSelect.value) : 0.7;
                         var width = widthInput ? parseInt(widthInput.value, 10) : 640;
                         var height = heightInput ? parseInt(heightInput.value, 10) : 480;
                         var hfov = hfovInput ? parseInt(hfovInput.value, 10) : 60;
-                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: 30, width: width, height: height, hfov: hfov });
+
+                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: fps, quality: quality, width: width, height: height, hfov: hfov });
                     }
                 }
             });

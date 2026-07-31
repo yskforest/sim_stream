@@ -5,11 +5,11 @@
         fov: 50,
         hfov: 60,
         isStreaming: false,
-        codec: "mjpeg",
-        protocol: "http",
+        codec: "h264",
+        protocol: "rtsp",
         fps: 30,
-        width: 640,
-        height: 480,
+        width: 1280,
+        height: 960,
         streamUrl: null,
     };
 
