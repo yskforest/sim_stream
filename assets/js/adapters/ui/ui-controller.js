@@ -121,6 +121,14 @@
             }
         }
 
+        if (gantry.isTranslucent) {
+            updateClass("btn-gantry-opaque", "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600");
+            updateClass("btn-gantry-trans", "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold");
+        } else {
+            updateClass("btn-gantry-opaque", "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold");
+            updateClass("btn-gantry-trans", "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600");
+        }
+
         applyStateToMeshes(state);
     }
 

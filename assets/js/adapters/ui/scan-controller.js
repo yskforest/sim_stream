@@ -57,21 +57,10 @@ function setGantryOpacity(isTranslucent) {
             mat.depthWrite = !isTranslucent;
             mat.needsUpdate = true;
         });
-    }
 
-    var btnOpq = document.getElementById("btn-gantry-opaque");
-    var btnTrn = document.getElementById("btn-gantry-trans");
-
-    if (isTranslucent) {
-        btnTrn.className =
-            "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold";
-        btnOpq.className =
-            "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition";
-    } else {
-        btnOpq.className =
-            "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold";
-        btnTrn.className =
-            "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition";
+        if (window.AppState) {
+            AppState.update("gantry", "isTranslucent", isTranslucent);
+        }
     }
 }
 

@@ -5,6 +5,7 @@ const AppState = {
         rotorSpeed: 0,
         angle: 0,
         xrayVisible: false,
+        isTranslucent: false,
         detectorRows: 320,
         scanSequence: [
             { mode: "scano", delay: 0 },

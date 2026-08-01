@@ -68,6 +68,10 @@ function init() {
 
     var pointLight = new THREE.PointLight(0xddf0ff, 0.6, 5);
     pointLight.position.set(0, 1.2, 0);
+    pointLight.castShadow = true;
+    pointLight.shadow.mapSize.width = 1024;
+    pointLight.shadow.mapSize.height = 1024;
+    pointLight.shadow.bias = -0.001;
     scene.add(pointLight);
 
     // --- Environment Build ---
