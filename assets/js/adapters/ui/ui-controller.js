@@ -510,16 +510,6 @@
             );
         }
 
-        if (global.CTStreamGateway && typeof global.CTStreamGateway.subscribeFrames === "function") {
-            unsubscribers.push(
-                global.CTStreamGateway.subscribeFrames(function (frameData) {
-                    var img = byId("camera-live-preview");
-                    if (img && frameData) {
-                        img.src = frameData;
-                    }
-                }),
-            );
-        }
 
         if (typeof global.syncAllPatientTransformUI === "function") {
             global.syncAllPatientTransformUI();
