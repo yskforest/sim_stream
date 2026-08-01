@@ -75,23 +75,30 @@
                     var rowLength = width * 4;
 
                     // Y軸反転 ＋ sRGB ガンマ補正を適応（メインビューアーと同等の明るさ・コントラスト）
-                    for (var y = 0; y < height; y++) {
-                        var srcRow = (height - 1 - y) * rowLength;
-                        var dstRow = y * rowLength;
-                        for (var x = 0; x < rowLength; x += 4) {
-                            var sIdx = srcRow + x;
-                            var dIdx = dstRow + x;
-                            dst[dIdx]     = SRGB_LUT[src[sIdx]];     // R
-                            dst[dIdx + 1] = SRGB_LUT[src[sIdx + 1]]; // G
-                            dst[dIdx + 2] = SRGB_LUT[src[sIdx + 2]]; // B
-                            dst[dIdx + 3] = src[sIdx + 3];            // A
+                    // 速度最適化: 掛け算によるインデックス計算を排除し、シーケンシャルなポインタインクリメントを使用
+                    var dstIdx = 0;
+                    for (var y = height - 1; y >= 0; y--) {
+                        var srcIdx = y * rowLength;
+                        var endIdx = srcIdx + rowLength;
+                        while (srcIdx < endIdx) {
+                            dst[dstIdx++] = SRGB_LUT[src[srcIdx++]]; // R
+                            dst[dstIdx++] = SRGB_LUT[src[srcIdx++]]; // G
+                            dst[dstIdx++] = SRGB_LUT[src[srcIdx++]]; // B
+                            dst[dstIdx++] = 255;                      // A
+                            srcIdx++; // 元画像のAlphaスキップ
                         }
                     }
 
                     capturer.offscreenCtx.putImageData(capturer.imageData, 0, 0);
-                    lastFrameData = capturer.offscreenCanvas.toDataURL("image/jpeg", quality);
+                    
+                    // 非同期パイプライン: メインスレッドをブロックするtoDataURLを避け、Blobでエンコード
+                    capturer.offscreenCanvas.toBlob(function(blob) {
+                        lastFrameData = blob;
+                    }, "image/jpeg", quality);
                 } else {
-                    lastFrameData = canvas.toDataURL("image/jpeg", quality);
+                    canvas.toBlob(function(blob) {
+                        lastFrameData = blob;
+                    }, "image/jpeg", quality);
                 }
             } catch (e) {
                 console.error("CanvasCapturer Error:", e);
