@@ -1,6 +1,6 @@
 const http = require("http");
 const net = require("net");
-const WebSocket = require("ws");
+const crypto = require("crypto");
 const HTTP_PORT = 8080;
 const RTSP_PORT = 8554;
 const BOUNDARY = "ct_simulator_mjpeg_boundary";
@@ -385,15 +385,78 @@ function broadcastRtspFrame(buffer) {
 // ===================================================
 // 3. WebSocket Ingestion Server (Port 8080)
 // ===================================================
-const wss = new WebSocket.Server({ server: httpServer });
+httpServer.on("upgrade", (req, socket, head) => {
+    if (req.headers["upgrade"] !== "websocket") {
+        socket.end("HTTP/1.1 400 Bad Request");
+        return;
+    }
+    const key = req.headers["sec-websocket-key"];
+    const hash = crypto.createHash("sha1");
+    hash.update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+    const acceptKey = hash.digest("base64");
 
-wss.on("connection", (ws) => {
-    ws.on("message", (message) => {
-        if (Buffer.isBuffer(message) && message.length > 0) {
-            lastFrameTime = Date.now();
-            latestFrameBuffer = message;
-            broadcastHttpMjpeg(latestFrameBuffer);
-            broadcastRtspFrame(latestFrameBuffer);
+    const headers = [
+        "HTTP/1.1 101 Switching Protocols",
+        "Upgrade: websocket",
+        "Connection: Upgrade",
+        `Sec-WebSocket-Accept: ${acceptKey}`
+    ];
+    socket.write(headers.join("\r\n") + "\r\n\r\n");
+
+    let buffer = Buffer.alloc(0);
+    let messageFrames = [];
+
+    socket.on("data", (chunk) => {
+        buffer = Buffer.concat([buffer, chunk]);
+        while (buffer.length >= 2) {
+            const fin = (buffer[0] & 0x80) === 0x80;
+            const opcode = buffer[0] & 0x0f;
+            const masked = (buffer[1] & 0x80) === 0x80;
+            let payloadLen = buffer[1] & 0x7f;
+            let offset = 2;
+
+            if (payloadLen === 126) {
+                if (buffer.length < 4) return;
+                payloadLen = buffer.readUInt16BE(2);
+                offset = 4;
+            } else if (payloadLen === 127) {
+                if (buffer.length < 10) return;
+                payloadLen = Number(buffer.readBigUInt64BE(2));
+                offset = 10;
+            }
+
+            let maskingKey;
+            if (masked) {
+                if (buffer.length < offset + 4) return;
+                maskingKey = buffer.subarray(offset, offset + 4);
+                offset += 4;
+            }
+
+            if (buffer.length < offset + payloadLen) return;
+
+            const payload = buffer.subarray(offset, offset + payloadLen);
+            if (masked) {
+                for (let i = 0; i < payload.length; i++) {
+                    payload[i] ^= maskingKey[i % 4];
+                }
+            }
+
+            if (opcode === 0x8) {
+                socket.end();
+                return;
+            } else if (opcode === 0x2 || opcode === 0x0) {
+                messageFrames.push(payload);
+                if (fin) {
+                    const fullMessage = Buffer.concat(messageFrames);
+                    messageFrames = [];
+                    lastFrameTime = Date.now();
+                    latestFrameBuffer = fullMessage;
+                    broadcastHttpMjpeg(latestFrameBuffer);
+                    broadcastRtspFrame(latestFrameBuffer);
+                }
+            }
+
+            buffer = buffer.subarray(offset + payloadLen);
         }
     });
 });
