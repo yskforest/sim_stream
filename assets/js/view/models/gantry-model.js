@@ -10,6 +10,13 @@ function buildCTScanner() {
     const baseCoverMat = new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.5 });
     const tunnelMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.2, side: THREE.DoubleSide });
 
+    Meshes.materials = {
+        gantry: gantryMat,
+        base: baseCoverMat,
+        tunnel: tunnelMat,
+        accessories: [darkMat]
+    };
+
     // Helper for Logos
     function createLogoTexture(text, fontStr, color, width, height) {
         const canvas = document.createElement('canvas');

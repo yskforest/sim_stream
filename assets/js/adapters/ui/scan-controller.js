@@ -74,3 +74,7 @@ function setGantryOpacity(isTranslucent) {
             "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition";
     }
 }
+
+if (typeof window !== "undefined") {
+    window.setGantryOpacity = setGantryOpacity;
+}
