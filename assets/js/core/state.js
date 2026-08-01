@@ -18,6 +18,9 @@ const AppState = {
     },
     injector: { a: 0, b: 0 },
     patientVisible: true,
+    patientModelId: "rp_posed_00178_29",
+    useGlbPatient: true,
+    customGlbModels: [],
 
     listeners: [],
     subscribe(callback) {

@@ -316,6 +316,30 @@
                         >
                             Hide Patient
                         </button>
+                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
+                            <div class="text-[10px] font-bold text-blue-300">GLB Model Settings</div>
+                            <select
+                                id="select-patient-glb"
+                                onchange="changePatientGlbModel(this.value)"
+                                class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
+                            >
+                                <option value="rp_posed_00178_29">Patient: Male Posed (rp_posed_00178_29.glb)</option>
+                            </select>
+                            <div class="flex gap-1">
+                                <input
+                                    type="text"
+                                    id="input-add-glb-path"
+                                    placeholder="assets/glb/new_model.glb"
+                                    class="flex-1 bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white"
+                                />
+                                <button
+                                    onclick="spawnCustomGlbFromInput()"
+                                    class="bg-blue-700 hover:bg-blue-600 text-xs px-2 py-1 rounded font-bold"
+                                >
+                                    + Spawn
+                                </button>
+                            </div>
+                        </div>
                         <div class="border-t border-gray-700 pt-2 space-y-1">
                             <div class="text-[10px] font-bold text-gray-400">Virtual Camera Stream</div>
                             <div class="flex gap-1 text-[10px]">
@@ -409,31 +433,44 @@
             import { GLTFLoader } from "three/addons/GLTFLoader.js";
 
             window.THREE = Object.assign({}, THREE, { OrbitControls, GLTFLoader });
-        </script>
-        <script defer src="./assets/vendor/tween/tween.umd.js"></script>
 
-        <script defer src="./assets/js/core/store.js"></script>
-        <script defer src="./assets/js/core/state.js"></script>
-        <script defer src="./assets/js/core/profile/default-profile.js"></script>
-        <script defer src="./assets/js/core/profile/profile-service.js"></script>
-        <script defer src="./assets/js/core/hw/gantry-sim.js"></script>
-        <script defer src="./assets/js/core/hw/couch-sim.js"></script>
-        <script defer src="./assets/js/core/hw/injector-sim.js"></script>
-        <script defer src="./assets/js/core/hw/camera-sim.js"></script>
-        <script defer src="./assets/js/core/services/command-log-service.js"></script>
-        <script defer src="./assets/js/core/services/video-stream-service.js"></script>
-        <script defer src="./assets/js/core/commands/command-bus.js"></script>
-        <script defer src="./assets/js/core/services/sequence-service.js"></script>
-        <script defer src="./assets/js/adapters/external/protocol-v1.js"></script>
-        <script defer src="./assets/js/adapters/external/external-gateway.js"></script>
-        <script defer src="./assets/js/adapters/video/canvas-capturer.js"></script>
-        <script defer src="./assets/js/adapters/video/stream-gateway.js"></script>
-        <script defer src="./assets/js/adapters/ui/ui-controller.js"></script>
-        <script defer src="./assets/js/view/models/room-model.js"></script>
-        <script defer src="./assets/js/view/models/gantry-model.js"></script>
-        <script defer src="./assets/js/view/models/injector-model.js"></script>
-        <script defer src="./assets/js/view/models/control-room-model.js"></script>
-        <script defer src="./assets/js/view/models/server-rack-model.js"></script>
-        <script defer src="./assets/js/core/main.js"></script>
+            const scripts = [
+                "./assets/vendor/tween/tween.umd.js",
+                "./assets/js/core/store.js",
+                "./assets/js/core/state.js",
+                "./assets/js/core/profile/default-profile.js",
+                "./assets/js/core/profile/profile-service.js",
+                "./assets/js/core/hw/gantry-sim.js",
+                "./assets/js/core/hw/couch-sim.js",
+                "./assets/js/core/hw/injector-sim.js",
+                "./assets/js/core/hw/camera-sim.js",
+                "./assets/js/core/config/models-config.js",
+                "./assets/js/core/services/model-registry.js",
+                "./assets/js/core/services/command-log-service.js",
+                "./assets/js/core/services/video-stream-service.js",
+                "./assets/js/core/commands/command-bus.js",
+                "./assets/js/core/services/sequence-service.js",
+                "./assets/js/adapters/external/protocol-v1.js",
+                "./assets/js/adapters/external/external-gateway.js",
+                "./assets/js/adapters/video/canvas-capturer.js",
+                "./assets/js/adapters/video/stream-gateway.js",
+                "./assets/js/adapters/ui/ui-controller.js",
+                "./assets/js/view/models/room-model.js",
+                "./assets/js/view/models/gantry-model.js",
+                "./assets/js/view/models/injector-model.js",
+                "./assets/js/view/models/control-room-model.js",
+                "./assets/js/view/models/server-rack-model.js",
+                "./assets/js/core/main.js"
+            ];
+
+            function loadNext(idx) {
+                if (idx >= scripts.length) return;
+                const s = document.createElement("script");
+                s.src = scripts[idx];
+                s.onload = () => loadNext(idx + 1);
+                document.body.appendChild(s);
+            }
+            loadNext(0);
+        </script>
     </body>
 </html>

@@ -20,6 +20,8 @@
         },
         simulator: {
             setPatientVisible: true,
+            setPatientModel: true,
+            loadGlbModel: true,
             getState: true,
         },
         camera: {
@@ -86,6 +88,11 @@
         if (command.target === "simulator" && command.action === "setPatientVisible") {
             if (typeof p.value !== "boolean") return fail("VALIDATION_ERROR", "params.value must be a boolean.");
         }
+        if (command.target === "simulator" && command.action === "setPatientModel") {
+            if (p.modelId !== undefined && typeof p.modelId !== "string") {
+                return fail("VALIDATION_ERROR", "params.modelId must be a string when provided.");
+            }
+        }
         if (command.target === "camera" && command.action === "startStream") {
             if (p.codec !== undefined && p.codec !== "h264" && p.codec !== "mjpeg") {
                 return fail("VALIDATION_ERROR", "params.codec must be 'h264' or 'mjpeg'.");
@@ -140,4 +147,4 @@
         buildSuccess: buildSuccess,
         buildError: buildError,
     };
-})(window);
+})(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : this));

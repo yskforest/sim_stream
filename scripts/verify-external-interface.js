@@ -89,12 +89,30 @@ assert(invalidCameraCodec.error.code === "VALIDATION_ERROR", "Expected VALIDATIO
 // Full integration mock test
 loadScript(ctx, "assets/js/core/store.js");
 loadScript(ctx, "assets/js/core/state.js");
+loadScript(ctx, "assets/js/core/config/models-config.js");
+loadScript(ctx, "assets/js/core/services/model-registry.js");
 loadScript(ctx, "assets/js/core/hw/camera-sim.js");
 loadScript(ctx, "assets/js/core/services/video-stream-service.js");
 loadScript(ctx, "assets/js/core/commands/command-bus.js");
 loadScript(ctx, "assets/js/adapters/external/external-gateway.js");
 
 ctx.CTStore.bindState(ctx.AppState);
+
+const validGlbModel = proto.validateCommand({
+    requestId: "req-glb-1",
+    target: "simulator",
+    action: "setPatientModel",
+    params: { modelId: "rp_posed_00178_29" },
+});
+assert(validGlbModel.valid === true, "Expected valid setPatientModel command");
+
+const gatewayGlbRes = ctx.CTExternalGateway.send({
+    requestId: "req-glb-2",
+    target: "simulator",
+    action: "setPatientModel",
+    params: { modelId: "rp_posed_00178_29" },
+});
+assert(gatewayGlbRes.success === true, "Expected gateway.send success for setPatientModel");
 
 const gatewayRes = ctx.CTExternalGateway.send({
     requestId: "req-cam-3",

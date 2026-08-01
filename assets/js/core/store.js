@@ -38,4 +38,4 @@
     };
 
     global.CTStore = store;
-})(window);
+})(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : this));

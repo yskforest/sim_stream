@@ -297,37 +297,25 @@ function buildCTScanner() {
     tabletopGroup.add(patientGroup);
     Meshes.patientGroup = patientGroup;
 
-    const loader = new THREE.GLTFLoader();
-    loader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/Xbot.glb", function (gltf) {
-        const model = gltf.scene;
-        model.rotation.x = -Math.PI / 2;
-        model.scale.set(0.45, 0.45, 0.45); // Appropriately scaled down to fit 80cm bore
-        model.position.set(0, 0.1, 0.1);
-
-        model.traverse(function (child) {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
+    async function loadPatientGlb() {
+        try {
+            if (window.CTModelRegistry) {
+                const instance = await window.CTModelRegistry.spawnModelInstance(
+                    AppState.patientModelId || "rp_posed_00178_29",
+                    { instanceId: "patient_primary", attachTo: "couch", visible: AppState.patientVisible }
+                );
+                patientGroup.visible = AppState.patientVisible;
             }
-        });
-
-        if (gltf.animations && gltf.animations.length > 0) {
-            mixer = new THREE.AnimationMixer(model);
-            const idleAnim = gltf.animations.find((a) => a.name === "idle") || gltf.animations[0];
-            if (idleAnim) mixer.clipAction(idleAnim).play();
+        } catch (e) {
+            console.warn("Failed to load primary GLB patient model, fallback to dummy mesh:", e);
+            const dummy = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.7, 0.2), new THREE.MeshStandardMaterial({ color: 0x5599cc, roughness: 0.8 }));
+            dummy.position.set(0, 0.1, 0);
+            dummy.castShadow = true;
+            patientGroup.add(dummy);
+            patientGroup.visible = AppState.patientVisible;
         }
-
-        patientGroup.add(model);
-        patientGroup.visible = AppState.patientVisible;
-    }, undefined, function (error) {
-        const dummy = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.7, 0.25), new THREE.MeshStandardMaterial({ color: 0x5599cc, roughness: 0.8 }));
-        dummy.scale.set(0.45, 0.45, 0.45);
-        dummy.position.set(0, 0.1, 0.1);
-        dummy.rotation.x = -Math.PI / 2;
-        dummy.castShadow = true;
-        patientGroup.add(dummy);
-        patientGroup.visible = AppState.patientVisible;
-    });
+    }
+    loadPatientGlb();
 
     couchGroup.add(tabletopGroup);
     Meshes.tabletopGroup = tabletopGroup;
