@@ -18,7 +18,7 @@ UI操作と外部APIからの遠隔操作を同一の制御基盤（Command Bus�
 
 ### 2.1 セットアップ（外部ライブラリの取得）
 初回起動時、または外部ライブラリを更新・再取得する場合は、Git Bash (Windows) または Linux / macOS ターミナルで `setup.sh` を実行します。
-Three.js 本体・各種アドオン、Tween.js、Tailwind CSS 等を `assets/vendor/` へ自動ダウンロードします。
+Three.js 本体・必須アドオン (OrbitControls, GLTFLoader)、Tailwind CSS 等を `assets/vendor/` へ自動ダウンロードします。
 ```bash
 bash setup.sh
 ```

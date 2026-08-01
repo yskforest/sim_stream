@@ -26,23 +26,23 @@ download_file() {
     fi
 }
 
-echo "=== Setup External Libraries (Latest / Three.js r185) ==="
+echo "=== Setup External Libraries (Three.js r185, Tween.js & Tailwind CSS) ==="
 
-# 1. Three.js (r185 -> v0.185.0) & Addons
+# 1. Three.js (r185 -> v0.185.0) & Core & Addons
 THREE_VERSION="0.185.0"
 download_file "https://unpkg.com/three@${THREE_VERSION}/build/three.module.js" "${THREE_DIR}/three.module.js"
+download_file "https://unpkg.com/three@${THREE_VERSION}/build/three.core.js" "${THREE_DIR}/three.core.js"
 download_file "https://unpkg.com/three@${THREE_VERSION}/examples/jsm/controls/OrbitControls.js" "${THREE_DIR}/OrbitControls.js"
 download_file "https://unpkg.com/three@${THREE_VERSION}/examples/jsm/loaders/GLTFLoader.js" "${THREE_DIR}/GLTFLoader.js"
 
-# 2. Utils (three@0.185.0)
+# 2. Required Utilities for GLTFLoader
 download_file "https://unpkg.com/three@${THREE_VERSION}/examples/jsm/utils/BufferGeometryUtils.js" "${UTILS_DIR}/BufferGeometryUtils.js"
 download_file "https://unpkg.com/three@${THREE_VERSION}/examples/jsm/utils/SkeletonUtils.js" "${UTILS_DIR}/SkeletonUtils.js"
 
-# 3. Tween.js (Latest version 23.1.3)
-TWEEN_VERSION="23.1.3"
-download_file "https://unpkg.com/@tweenjs/tween.js@${TWEEN_VERSION}/dist/tween.umd.js" "${TWEEN_DIR}/tween.umd.js"
+# 3. Tween.js (v18.6.4 UMD)
+download_file "https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js" "${TWEEN_DIR}/tween.umd.js"
 
-# 4. Tailwind CSS (Latest Play CDN)
+# 4. Tailwind CSS
 download_file "https://cdn.tailwindcss.com" "${TAILWIND_DIR}/tailwindcss.js"
 
-echo "=== All external libraries downloaded successfully! ==="
+echo "=== All external libraries setup successfully! ==="
