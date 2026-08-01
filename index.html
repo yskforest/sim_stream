@@ -361,9 +361,10 @@
                                 </select>
                                 <span class="text-gray-400 ml-1">Qual:</span>
                                 <select id="select-stream-quality" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
-                                    <option value="0.5">50%</option>
-                                    <option value="0.7" selected>70%</option>
-                                    <option value="0.9">90%</option>
+                                    <option value="0.7">70%</option>
+                                    <option value="0.85">85%</option>
+                                    <option value="0.92" selected>92% (High)</option>
+                                    <option value="0.98">98% (Max)</option>
                                 </select>
                             </div>
                             <div class="flex gap-1 text-[10px] items-center">
@@ -381,7 +382,7 @@
                                     <span>LIVE CAMERA PREVIEW</span>
                                     <span class="text-green-400 font-bold">REC ●</span>
                                 </div>
-                                <img id="camera-live-preview" class="w-full h-28 object-cover bg-black" src="" alt="Virtual Camera Preview" />
+                                <img id="camera-live-preview" class="w-full h-28 object-contain bg-black" src="" alt="Virtual Camera Preview" />
                             </div>
                         </div>
                     </div>

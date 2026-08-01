@@ -249,20 +249,33 @@ function parseJpegDimensions(jpegBuffer) {
     let width = 640;
     let height = 480;
     try {
-        let offset = 2;
+        let offset = 2; // SOI (0xff 0xd8) の次から
         while (offset < jpegBuffer.length - 8) {
-            if (jpegBuffer[offset] !== 0xff) {
+            // パディングバイト (0xFF) のスキップ
+            while (offset < jpegBuffer.length && jpegBuffer[offset] === 0xff) {
                 offset++;
+            }
+            if (offset >= jpegBuffer.length) break;
+            
+            const marker = jpegBuffer[offset];
+            offset++;
+            
+            if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
                 continue;
             }
-            const marker = jpegBuffer[offset + 1];
+            
+            if (offset + 2 > jpegBuffer.length) break;
+            const len = jpegBuffer.readUInt16BE(offset);
+            
             if (marker === 0xc0 || marker === 0xc2) {
-                height = jpegBuffer.readUInt16BE(offset + 5);
-                width = jpegBuffer.readUInt16BE(offset + 7);
-                break;
+                if (offset + 7 < jpegBuffer.length) {
+                    height = jpegBuffer.readUInt16BE(offset + 3);
+                    width = jpegBuffer.readUInt16BE(offset + 5);
+                    break;
+                }
             }
-            const len = jpegBuffer.readUInt16BE(offset + 2);
-            offset += 2 + len;
+            
+            offset += len;
         }
     } catch (e) {
         // パース失敗時はデフォルト維持
@@ -272,50 +285,66 @@ function parseJpegDimensions(jpegBuffer) {
 
 function sendRtpFrame(session, jpegBuffer) {
     if (!session || !session.socket || session.socket.destroyed) return;
+    if (!Buffer.isBuffer(jpegBuffer)) return;
 
     try {
-        let payloadData = jpegBuffer;
+        const dims = parseJpegDimensions(jpegBuffer);
+        
+        // JPEG全体をペイロードとして使用 (先頭のSOI 0xff 0xd8 を除く)
+        // VLC等はこの内包されたDQT, DHT, SOF0を読み取ってRFCの標準テーブルを上書きしてくれる
+        let rawJpeg = jpegBuffer;
         if (jpegBuffer.length > 2 && jpegBuffer[0] === 0xff && jpegBuffer[1] === 0xd8) {
-            payloadData = jpegBuffer.slice(2);
+            rawJpeg = jpegBuffer.slice(2);
         }
 
-        const rtpHeaderLen = 12;
-        const jpeghdrLen = 8;
-        const totalPayloadLen = rtpHeaderLen + jpeghdrLen + payloadData.length;
-
-        // 1. Interleaved Frame (TCP) Header (4 bytes)
-        const tcpHeader = Buffer.alloc(4);
-        tcpHeader[0] = 0x24; // '$'
-        tcpHeader[1] = 0x00; // Channel 0
-        tcpHeader.writeUInt16BE(totalPayloadLen, 2);
-
-        // 2. RTP Header (12 bytes)
-        const rtpHeader = Buffer.alloc(rtpHeaderLen);
-        rtpHeader[0] = 0x80; // V=2, P=0, X=0, CC=0
-        rtpHeader[1] = 0x9a; // M=1 (Marker: Frame Complete), PT=26 (JPEG)
-        rtpHeader.writeUInt16BE(rtpSeq & 0xffff, 2);
-
         const timestamp = Math.floor((Date.now() - startTime) * 90) >>> 0;
-        rtpHeader.writeUInt32BE(timestamp, 4);
-        rtpHeader.writeUInt32BE(0x12345678, 8); // SSRC
+        const CHUNK_SIZE = 1400;
+        const totalLen = rawJpeg.length;
+        let offset = 0;
 
-        // 3. JPEG Header for RTP (8 bytes - RFC 2435)
-        const dims = parseJpegDimensions(jpegBuffer);
-        const jpegHeader = Buffer.alloc(jpeghdrLen);
-        jpegHeader[0] = 0x00; // Type Specific
-        jpegHeader[1] = 0x00; // Fragment Offset High
-        jpegHeader[2] = 0x00; // Fragment Offset Mid
-        jpegHeader[3] = 0x00; // Fragment Offset Low
-        jpegHeader[4] = 0x01; // Type = 1 (4:2:0)
-        jpegHeader[5] = 0x50; // Q = 80
-        jpegHeader[6] = Math.min(255, Math.ceil(dims.width / 8));
-        jpegHeader[7] = Math.min(255, Math.ceil(dims.height / 8));
+        while (offset < totalLen) {
+            const isLast = (offset + CHUNK_SIZE >= totalLen);
+            const chunkSize = Math.min(CHUNK_SIZE, totalLen - offset);
+            const chunkData = rawJpeg.slice(offset, offset + chunkSize);
 
-        // 4. パケットの単一バッファ化一括送信
-        const packet = Buffer.concat([tcpHeader, rtpHeader, jpegHeader, payloadData]);
-        session.socket.write(packet);
+            const rtpHeaderLen = 12;
+            const jpeghdrLen = 8;
+            const payloadLen = rtpHeaderLen + jpeghdrLen + chunkSize;
 
-        rtpSeq++;
+            // 1. Interleaved Frame (TCP) Header (4 bytes)
+            const tcpHeader = Buffer.alloc(4);
+            tcpHeader[0] = 0x24; // '$'
+            tcpHeader[1] = 0x00; // Channel 0
+            tcpHeader.writeUInt16BE(payloadLen, 2);
+
+            // 2. RTP Header (12 bytes)
+            const rtpHeader = Buffer.alloc(rtpHeaderLen);
+            rtpHeader[0] = 0x80; // V=2, P=0, X=0, CC=0
+            rtpHeader[1] = (isLast ? 0x80 : 0x00) | 26; // M=1 (Marker: Frame Complete) for last chunk, PT=26 (JPEG)
+            rtpHeader.writeUInt16BE(rtpSeq & 0xffff, 2);
+            rtpHeader.writeUInt32BE(timestamp, 4);
+            rtpHeader.writeUInt32BE(0x12345678, 8); // SSRC
+
+            // 3. JPEG Header for RTP (8 bytes - RFC 2435)
+            // タイプとQ値は適当な固定値 (VLCはペイロード内のマーカーを優先するため)
+            const jpegHeader = Buffer.alloc(jpeghdrLen);
+            jpegHeader[0] = 0x00; // Type Specific
+            jpegHeader[1] = (offset >> 16) & 0xff; // Fragment Offset High
+            jpegHeader[2] = (offset >> 8) & 0xff;  // Fragment Offset Mid
+            jpegHeader[3] = offset & 0xff;         // Fragment Offset Low
+            jpegHeader[4] = 0x01; // Type = 1 (4:2:0)
+            jpegHeader[5] = 0x50; // Q = 80
+            jpegHeader[6] = Math.min(255, Math.ceil(dims.width / 8));
+            jpegHeader[7] = Math.min(255, Math.ceil(dims.height / 8));
+
+            // 4. パケットの単一バッファ化一括送信
+            const packet = Buffer.concat([tcpHeader, rtpHeader, jpegHeader, chunkData]);
+            session.socket.write(packet);
+
+            rtpSeq = (rtpSeq + 1) & 0xffff;
+            offset += chunkSize;
+        }
+
         session.framesSent++;
     } catch (e) {
         rtspClients.delete(session);
