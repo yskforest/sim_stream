@@ -1,6 +1,6 @@
 const http = require("http");
 const net = require("net");
-
+const WebSocket = require("ws");
 const HTTP_PORT = 8080;
 const RTSP_PORT = 8554;
 const BOUNDARY = "ct_simulator_mjpeg_boundary";
@@ -382,6 +382,21 @@ function broadcastRtspFrame(buffer) {
         }
     }
 }
+// ===================================================
+// 3. WebSocket Ingestion Server (Port 8080)
+// ===================================================
+const wss = new WebSocket.Server({ server: httpServer });
+
+wss.on("connection", (ws) => {
+    ws.on("message", (message) => {
+        if (Buffer.isBuffer(message) && message.length > 0) {
+            lastFrameTime = Date.now();
+            latestFrameBuffer = message;
+            broadcastHttpMjpeg(latestFrameBuffer);
+            broadcastRtspFrame(latestFrameBuffer);
+        }
+    });
+});
 
 // サーバー起動
 httpServer.listen(HTTP_PORT, () => {

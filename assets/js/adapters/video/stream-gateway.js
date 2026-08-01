@@ -4,9 +4,46 @@
     var isSending = false;
     var serverAvailable = true;
     var lastCheckTime = 0;
+    var ws = null;
+    var isWsConnected = false;
+    var wsUrl = "ws://127.0.0.1:8080/";
+
+    function connectWebSocket() {
+        if (ws) return;
+        try {
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = "blob";
+            ws.onopen = function () {
+                isWsConnected = true;
+                serverAvailable = true;
+            };
+            ws.onclose = function () {
+                isWsConnected = false;
+                ws = null;
+                setTimeout(connectWebSocket, 3000);
+            };
+            ws.onerror = function () {
+                isWsConnected = false;
+            };
+        } catch (e) {
+            isWsConnected = false;
+        }
+    }
+    connectWebSocket();
 
     function sendFrameToServer(frameData) {
-        if (!frameData || isSending || typeof fetch === "undefined") return;
+        if (!frameData) return;
+
+        if (isWsConnected && ws && ws.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(frameData);
+                return;
+            } catch (e) {
+                // fallback to fetch if WS send fails
+            }
+        }
+
+        if (isSending || typeof fetch === "undefined") return;
 
         var now = Date.now();
         if (!serverAvailable && now - lastCheckTime < 5000) {
@@ -40,7 +77,6 @@
                 isSending = false;
             });
     }
-
     var gateway = {
         broadcastFrame: function broadcastFrame(frameData) {
             if (!frameData) return;
