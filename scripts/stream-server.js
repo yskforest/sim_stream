@@ -8,7 +8,18 @@ const BOUNDARY = "ct_simulator_mjpeg_boundary";
 const httpClients = new Set();
 const rtspClients = new Set();
 let latestFrameBuffer = null;
+let lastFrameTime = Date.now();
 const startTime = Date.now();
+
+// Idle Heartbeat Timer: 画面停止時やバックグラウンド時にVLCが10秒でタイムアウト切断されるのを全自動防止
+setInterval(() => {
+    const now = Date.now();
+    if (latestFrameBuffer && now - lastFrameTime >= 100) {
+        if (rtspClients.size > 0) {
+            broadcastRtspFrame(latestFrameBuffer);
+        }
+    }
+}, 100);
 
 // ===================================================
 // 1. HTTP ストリーミングサーバー (Port 8080)
@@ -33,6 +44,7 @@ const httpServer = http.createServer((req, res) => {
         req.on("end", () => {
             const buffer = Buffer.concat(chunks);
             if (buffer.length > 0) {
+                lastFrameTime = Date.now();
                 if (buffer[0] === 0xff && buffer[1] === 0xd8) {
                     // 生の JPEG バイナリデータの直接処理（超高速）
                     latestFrameBuffer = buffer;
@@ -187,12 +199,24 @@ const rtspServer = net.createServer((socket) => {
         if (method === "SETUP") {
             console.log(`[RTSP Log] Client CSeq=${session.cseq}: SETUP`);
             const transportMatch = msg.match(/Transport:\s*([^\r\n]+)/i);
-            const transport = transportMatch ? transportMatch[1] : "RTP/AVP/TCP;interleaved=0-1";
+            const reqTransport = transportMatch ? transportMatch[1] : "";
+
+            let channel = 0;
+            const interMatch = reqTransport.match(/interleaved=(\d+)(?:-(\d+))?/i);
+            if (interMatch) {
+                channel = parseInt(interMatch[1], 10);
+            }
+            session.channel = channel;
+
+            let respTransport = reqTransport;
+            if (!respTransport.includes("interleaved")) {
+                respTransport = `RTP/AVP/TCP;unicast;interleaved=${channel}-${channel + 1}`;
+            }
 
             const resp =
                 `RTSP/1.0 200 OK\r\n` +
                 `CSeq: ${session.cseq}\r\n` +
-                `Transport: ${transport}\r\n` +
+                `Transport: ${respTransport}\r\n` +
                 `Session: ${session.id};timeout=60\r\n\r\n`;
             socket.write(resp);
             return;
@@ -314,7 +338,7 @@ function sendRtpFrame(session, jpegBuffer) {
             // 1. Interleaved Frame (TCP) Header (4 bytes)
             const tcpHeader = Buffer.alloc(4);
             tcpHeader[0] = 0x24; // '$'
-            tcpHeader[1] = 0x00; // Channel 0
+            tcpHeader[1] = (session.channel !== undefined ? session.channel : 0) & 0xff; // Dynamic Channel
             tcpHeader.writeUInt16BE(payloadLen, 2);
 
             // 2. RTP Header (12 bytes)

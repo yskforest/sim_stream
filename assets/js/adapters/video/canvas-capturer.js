@@ -10,6 +10,19 @@
         SRGB_LUT[i] = Math.min(255, Math.max(0, Math.round(s * 255)));
     }
 
+    function dataURLtoUint8Array(dataUrl) {
+        if (typeof dataUrl !== "string") return null;
+        var parts = dataUrl.split(",");
+        if (parts.length < 2) return null;
+        var bstr = (typeof window !== "undefined" && window.atob) ? window.atob(parts[1]) : "";
+        var n = bstr.length;
+        var u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return u8arr;
+    }
+
     function getCanvasElement() {
         if (typeof document === "undefined") return null;
         var container = document.getElementById("canvas-container");
@@ -61,9 +74,8 @@
                         ctx.drawImage(canvas, 0, 0, width, height);
                     }
 
-                    capturer.offscreenCanvas.toBlob(function (blob) {
-                        lastFrameData = blob;
-                    }, "image/jpeg", quality);
+                    var dataUrl = capturer.offscreenCanvas.toDataURL("image/jpeg", quality);
+                    lastFrameData = dataURLtoUint8Array(dataUrl);
                 } else if (mode === "virtual" && global.renderer && global.scene && typeof THREE !== "undefined") {
                     // 【virtual モード】独立した仮想カメラと WebGLRenderTarget を使って二次レンダリング
                     if (!capturer.virtualCamera) {
@@ -132,13 +144,11 @@
 
                     capturer.offscreenCtx.putImageData(capturer.imageData, 0, 0);
 
-                    capturer.offscreenCanvas.toBlob(function (blob) {
-                        lastFrameData = blob;
-                    }, "image/jpeg", quality);
+                    var dataUrl = capturer.offscreenCanvas.toDataURL("image/jpeg", quality);
+                    lastFrameData = dataURLtoUint8Array(dataUrl);
                 } else {
-                    canvas.toBlob(function (blob) {
-                        lastFrameData = blob;
-                    }, "image/jpeg", quality);
+                    var dataUrl = canvas.toDataURL("image/jpeg", quality);
+                    lastFrameData = dataURLtoUint8Array(dataUrl);
                 }
             } catch (e) {
                 console.error("CanvasCapturer Error:", e);

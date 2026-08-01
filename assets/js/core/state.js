@@ -65,8 +65,8 @@ const Descriptions = {
     dynamic: "Dynamic scan mode.",
     real_prep: "Real prep mode.",
 };
-const UI = {};
-const Meshes = {};
+const UI = (typeof window !== "undefined" && window.UI) || {};
+const Meshes = (typeof window !== "undefined" && window.Meshes) || {};
 let scene, camera, renderer, controls, mixer, clock;
 
 if (window.CTStore) {
@@ -74,4 +74,6 @@ if (window.CTStore) {
 }
 if (typeof window !== "undefined") {
     window.AppState = AppState;
+    window.UI = UI;
+    window.Meshes = Meshes;
 }

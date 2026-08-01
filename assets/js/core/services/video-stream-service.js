@@ -89,6 +89,16 @@
 
             activeStream.isStreaming = false;
             activeStream.streamUrl = null;
+
+            // カメラのアスペクト比を現在のウィンドウサイズに再計算・復元
+            if (typeof window !== "undefined") {
+                window.activeViewportBounds = null;
+                if (global.camera) {
+                    global.camera.aspect = window.innerWidth / window.innerHeight;
+                    global.camera.updateProjectionMatrix();
+                }
+            }
+
             return { success: true };
         },
 

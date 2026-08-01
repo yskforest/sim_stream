@@ -6,9 +6,8 @@
     var lastCheckTime = 0;
 
     function sendFrameToServer(frameData) {
-        if (isSending || typeof fetch === "undefined") return;
+        if (!frameData || isSending || typeof fetch === "undefined") return;
 
-        // サーバーが未応答だった場合、再試行間隔を5秒あけてコンソールエラーの連発を防ぐ
         var now = Date.now();
         if (!serverAvailable && now - lastCheckTime < 5000) {
             return;

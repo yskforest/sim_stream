@@ -112,14 +112,13 @@ const CTModelRegistry = {
         this.loadedInstances.set(instanceId, instanceData);
 
         // 3Dシーングラフへの追加 (寝台グループまたはScene)
-        if (typeof window.scene !== "undefined") {
-            if (attachTo === "couch" && window.Meshes && window.Meshes.tabletopGroup) {
-                window.Meshes.tabletopGroup.add(clonedScene);
-            } else if (attachTo === "couch" && window.Meshes && window.Meshes.patientGroup) {
-                window.Meshes.patientGroup.add(clonedScene);
-            } else {
-                window.scene.add(clonedScene);
-            }
+        const meshesObj = (typeof window !== "undefined" && window.Meshes) || (typeof Meshes !== "undefined" ? Meshes : null);
+        const couchParent = (meshesObj && (meshesObj.patientGroup || meshesObj.tabletopGroup)) || null;
+
+        if ((attachTo === "couch" || attachTo === "patient" || modelDef.category === "patient" || modelDef.category === "prop") && couchParent) {
+            couchParent.add(clonedScene);
+        } else if (typeof window.scene !== "undefined") {
+            window.scene.add(clonedScene);
         }
 
         return instanceData;
