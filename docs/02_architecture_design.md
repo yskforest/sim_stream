@@ -89,9 +89,11 @@ classDiagram
     }
 
     class UIController {
-        +init()
-        +bindEvents()
-        +updateUI(state)
+        +setup()
+        +teardown()
+        +renderBatchQueue()
+        +renderMonitor()
+        +renderCommandLog()
     }
 
     class CTCommandBus {
@@ -103,7 +105,10 @@ classDiagram
         +setDetectorRows(number) Object
         +setXrayVisible(boolean) Object
         +setRotorSpeed(number) Object
+        +setField(key, value) Object
     }
+
+
 
     class CouchSim {
         +moveToY(value) Object
@@ -122,23 +127,20 @@ classDiagram
     }
 
     class VideoStreamService {
-        +startStream(config) Object
-        +stopStream() Object
-        +getStreamUrl() String
-        +captureFrame() Blob
+        +start(config) Object
+        +stop() Object
+        +getStatus() Object
     }
 
     class StreamGateway {
-        +publishMJPEG(frameData)
-        +publishH264(videoChunk)
-        +getRtspEndpoint() String
-        +getHttpEndpoint() String
+        +broadcastFrame(frameData)
+        +subscribeFrames(listener) Function
     }
 
     class CTStore {
         +bindState(state)
         +getState() AppState
-        +dispatch(action) Object
+        +dispatch(command) Object
         +subscribe(listener) Function
     }
 
@@ -157,6 +159,34 @@ classDiagram
         +add(entry)
         +list() Array
         +clear()
+        +subscribe(listener) Function
+        +exportJson() String
+    }
+
+    class CTSequenceService {
+        +setCancelRequested(value) Object
+        +setActiveBatchIndex(value) Object
+        +setCurrentScanMode(value) Object
+        +setCountdown(value) Object
+        +resetInitialHardwareState()
+        +finalizeState(defaultMode)
+    }
+
+    class CTModelsConfig {
+        +defaultPatientId String
+        +models Array
+        +registerModel(modelDef) Boolean
+        +getModel(id) Object
+        +getAllModels() Array
+    }
+
+    class CTModelRegistry {
+        +loadGLTF(path) Promise
+        +spawnModelInstance(modelId, options) Promise
+        +removeInstance(instanceId) Boolean
+        +setInstanceVisibility(instanceId, visible)
+        +updateInstanceTransform(instanceId, transform)
+        +getAllInstances() Array
     }
 
     CTExternalGateway ..> CTProtocolV1 : uses
@@ -171,6 +201,9 @@ classDiagram
     CTCommandBus --> CTStore : dispatches
     CTCommandBus --> CTCommandLogService : logs
     CTStore --> AppState : manages
+    CTSequenceService ..> CTCommandBus : delegates to
+    CTModelRegistry ..> CTModelsConfig : reads config
+    CameraSim --> VideoStreamService : delegates stream
 ```
 
 ---
@@ -338,13 +371,16 @@ assets/js/
   │   │   ├── gantry-sim.js           # ガントリ制御ロジック
   │   │   ├── couch-sim.js            # 寝台制御ロジック
   │   │   ├── injector-sim.js         # インジェクタ制御ロジック
-  │   │   └── camera-sim.js           # 仮想カメラ制御ロジック [NEW]
+  │   │   └── camera-sim.js           # 仮想カメラ制御ロジック
   │   ├── commands/
   │   │   └── command-bus.js          # コマンドバス（UI/外部共通の実行経路）
+  │   ├── config/
+  │   │   └── models-config.js        # 3Dモデル定義・登録管理
   │   ├── services/
   │   │   ├── sequence-service.js     # バッチシーケンス実行制御
   │   │   ├── command-log-service.js  # コマンド実行ログ管理
-  │   │   └── video-stream-service.js # 映像ストリーミング制御サービス [NEW]
+  │   │   ├── model-registry.js       # GLTFモデルローダ・インスタンス管理
+  │   │   └── video-stream-service.js # 映像ストリーミング制御サービス
   │   └── profile/
   │       ├── default-profile.js      # 標準HWプロファイル
   │       └── profile-service.js      # 機種差分プロファイルサービス
@@ -354,9 +390,9 @@ assets/js/
   │   ├── external/
   │   │   ├── protocol-v1.js          # 通信プロトコル検証・レスポンス生成
   │   │   └── external-gateway.js     # 外部公開API Gateway (window.CTExternalGateway)
-  │   └── video/                      # 映像配信アダプター [NEW]
-  │       ├── canvas-capturer.js      # Canvasフレームキャプチャ・エンコーダー [NEW]
-  │       └── stream-gateway.js       # RTSP / HTTP ストリーミング転送アダプター [NEW]
+  │   └── video/                      # 映像配信アダプター
+  │       ├── canvas-capturer.js      # Canvasフレームキャプチャ・エンコーダー
+  │       └── stream-gateway.js       # RTSP / HTTP ストリーミング転送アダプター
   └── view/models/                    # Presentation (Three.js 3D表現)
       ├── room-model.js               # 検査室・壁・床
       ├── gantry-model.js             # ガントリ3Dモデル

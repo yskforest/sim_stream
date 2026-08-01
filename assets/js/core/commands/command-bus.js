@@ -65,7 +65,8 @@
             }
 
             if (target === "simulator") {
-                var state = (g.CTStore && typeof g.CTStore.getState === "function" ? g.CTStore.getState() : null) || g.AppState || (g.window ? g.window.AppState : null) || {};
+                var state = (g.CTStore && typeof g.CTStore.getState === "function" ? g.CTStore.getState() : null) || g.AppState || (g.window ? g.window.AppState : null);
+                if (!state) return withLog(command, fail("STATE_NOT_BOUND"));
                 if (action === "setPatientVisible") {
                     state.patientVisible = !!params.value;
                     if (typeof state.notify === "function") state.notify();

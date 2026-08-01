@@ -38,6 +38,8 @@ sequenceDiagram
 | `send(command)` | `command: Object` | `ResponseEnvelope` | コマンドを発行し、同期的に結果を受け取る |
 | `getState()` | なし | `ResponseEnvelope` | シミュレータ全体の最新状態を取得する |
 | `subscribe(onStateChange)` | `callback: Function` | `unsubscribe: Function` | 状態変化時の自動通知を購読する（解除関数を返却） |
+| `diagnostics.getRecentCommands()` | なし | `Array` | 直近のコマンド実行履歴を取得する |
+| `diagnostics.clearCommandLog()` | なし | なし | コマンド実行履歴を全消去する |
 
 ---
 

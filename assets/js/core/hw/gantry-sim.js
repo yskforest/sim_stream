@@ -17,6 +17,7 @@
         setRotorSpeed: function setRotorSpeed(rpm) {
             return setField("rotorSpeed", rpm);
         },
+        setField: setField,
     };
 
     global.GantrySim = gantrySim;

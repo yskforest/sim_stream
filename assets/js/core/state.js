@@ -37,8 +37,6 @@ const AppState = {
     },
     notify() {
         this.listeners.forEach((cb) => cb(this));
-        updateStateMonitor();
-        renderBatchUI();
     },
 };
 
@@ -73,4 +71,7 @@ let scene, camera, renderer, controls, mixer, clock;
 
 if (window.CTStore) {
     window.CTStore.bindState(AppState);
+}
+if (typeof window !== "undefined") {
+    window.AppState = AppState;
 }

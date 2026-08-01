@@ -491,6 +491,10 @@
         renderBatchUI();
         renderCommandLog();
         unsubscribers.push(AppState.subscribe(syncInteractiveState));
+        unsubscribers.push(AppState.subscribe(function () {
+            updateStateMonitor();
+            renderBatchUI();
+        }));
 
         if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
             unsubscribers.push(
