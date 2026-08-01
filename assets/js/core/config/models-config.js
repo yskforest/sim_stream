@@ -8,7 +8,7 @@ const CTModelsConfig = {
             category: "patient",
             attachTo: "couch",
             transform: {
-                position: [0, 0, 0.45], // 天板上の最適中央位置
+                position: [0, -0.1, 0.45], // 天板上の最適中央位置
                 rotation: [-90, 0, 0],   // ユーザー参照画像と100%一致する仰臥位（胸上・背中着地・頭奥・足手前）
                 targetHeight: 1.7       // 身長 170cm (1.7m)
             }

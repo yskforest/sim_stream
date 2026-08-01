@@ -21,9 +21,23 @@ async function changePatientGlbModel(modelId) {
             visible: AppState.patientVisible
         });
         var obj = instance.sceneObject;
-        obj.position.set(0, 0.05, 0.2);
         Meshes.patientGroup.add(obj);
         Meshes.patientGroup.visible = AppState.patientVisible;
+
+        // スポーン直後の実際の初期トランスフォーム（Y位置補正等を含む）を AppState および UI にロード
+        if (instance && instance.transform && window.AppState) {
+            var pos = instance.transform.position || [0, -0.1, 0.45];
+            var rot = instance.transform.rotation || [-90, 0, 0];
+            window.AppState.patientOffset = {
+                x: pos[0],
+                y: pos[1],
+                z: pos[2],
+                rotX: rot[0],
+                rotY: rot[1],
+                rotZ: rot[2]
+            };
+            syncAllPatientTransformUI();
+        }
     }
 }
 
@@ -44,4 +58,103 @@ async function spawnCustomGlbFromInput() {
     } catch (err) {
         alert("Failed to load GLB from path: " + path);
     }
+}
+
+function onPatientPosSliderChange(key) {
+    if (!window.AppState) return;
+    if (!window.AppState.patientOffset) {
+        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+    }
+
+    if (!key) {
+        syncAllPatientTransformUI();
+        return;
+    }
+
+    var slider = document.getElementById("slider-patient-pos-" + key);
+    var input = document.getElementById("input-patient-pos-" + key);
+    if (!slider) return;
+
+    var val = parseFloat(slider.value);
+    if (isNaN(val)) return;
+
+    // 対象キーの軸値のみを更新（他軸の値には一切干渉しない）
+    window.AppState.patientOffset[key] = val;
+
+    if (input) {
+        input.value = key.startsWith("rot") ? val.toFixed(0) : val.toFixed(2);
+    }
+
+    var po = window.AppState.patientOffset;
+    if (window.CTModelRegistry) {
+        window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+            position: [po.x, po.y, po.z],
+            rotation: [po.rotX, po.rotY, po.rotZ]
+        });
+    }
+}
+
+function onPatientPosInputChange(key) {
+    if (!window.AppState) return;
+    if (!window.AppState.patientOffset) {
+        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+    }
+
+    if (!key) {
+        syncAllPatientTransformUI();
+        return;
+    }
+
+    var input = document.getElementById("input-patient-pos-" + key);
+    var slider = document.getElementById("slider-patient-pos-" + key);
+    if (!input) return;
+
+    var val = parseFloat(input.value);
+    if (isNaN(val)) return;
+
+    // 対象キーの軸値のみを更新（他軸の値には一切干渉しない）
+    window.AppState.patientOffset[key] = val;
+
+    if (slider) {
+        slider.value = String(val);
+    }
+
+    var po = window.AppState.patientOffset;
+    if (window.CTModelRegistry) {
+        window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+            position: [po.x, po.y, po.z],
+            rotation: [po.rotX, po.rotY, po.rotZ]
+        });
+    }
+}
+
+function syncAllPatientTransformUI() {
+    if (!window.AppState || !window.AppState.patientOffset) return;
+    var po = window.AppState.patientOffset;
+    var keys = ["x", "y", "z", "rotX", "rotY", "rotZ"];
+    keys.forEach(function (k) {
+        var input = document.getElementById("input-patient-pos-" + k);
+        var slider = document.getElementById("slider-patient-pos-" + k);
+        var val = po[k];
+        if (input) input.value = k.startsWith("rot") ? val.toFixed(0) : val.toFixed(2);
+        if (slider) slider.value = String(val);
+    });
+}
+
+function resetPatientPositionUI() {
+    if (!window.AppState) return;
+    window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+    syncAllPatientTransformUI();
+
+    var po = window.AppState.patientOffset;
+    if (window.CTModelRegistry) {
+        window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+            position: [po.x, po.y, po.z],
+            rotation: [po.rotX, po.rotY, po.rotZ]
+        });
+    }
+}
+
+if (typeof window !== "undefined") {
+    window.syncAllPatientTransformUI = syncAllPatientTransformUI;
 }

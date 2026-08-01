@@ -80,6 +80,28 @@
                     if (typeof state.notify === "function") state.notify();
                     return withLog(command, { success: true, state: state });
                 }
+                if (action === "setPatientPosition") {
+                    if (!state.patientOffset) state.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+                    if (typeof params.x === "number") state.patientOffset.x = params.x;
+                    if (typeof params.y === "number") state.patientOffset.y = params.y;
+                    if (typeof params.z === "number") state.patientOffset.z = params.z;
+                    if (typeof params.rotX === "number") state.patientOffset.rotX = params.rotX;
+                    if (typeof params.rotY === "number") state.patientOffset.rotY = params.rotY;
+                    if (typeof params.rotZ === "number") state.patientOffset.rotZ = params.rotZ;
+
+                    if (g.CTModelRegistry) {
+                        g.CTModelRegistry.updateInstanceTransform("patient_primary", {
+                            position: [state.patientOffset.x, state.patientOffset.y, state.patientOffset.z],
+                            rotation: [
+                                typeof state.patientOffset.rotX === "number" ? state.patientOffset.rotX : -90,
+                                typeof state.patientOffset.rotY === "number" ? state.patientOffset.rotY : 0,
+                                typeof state.patientOffset.rotZ === "number" ? state.patientOffset.rotZ : 0
+                            ]
+                        });
+                    }
+                    if (typeof state.notify === "function") state.notify();
+                    return withLog(command, { success: true, state: state });
+                }
                 if (action === "loadGlbModel") {
                     if (g.CTModelRegistry && params.path) {
                         g.CTModelRegistry.spawnModelInstance(params.id || "custom_glb", {

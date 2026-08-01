@@ -53,21 +53,26 @@
     }
 
     function syncInteractiveState(state) {
-        byId("couch-y-val").innerText = state.couch.y.toFixed(0) + "%";
-        byId("couch-z-val").innerText = state.couch.z.toFixed(0) + "%";
-        byId("rotor-speed-val").innerText = state.gantry.rotorSpeed.toFixed(0) + " rpm";
-        byId("inject-a-val").innerText = state.injector.a.toFixed(0) + "%";
-        byId("inject-b-val").innerText = state.injector.b.toFixed(0) + "%";
+        if (!state) return;
+        var couch = state.couch || { y: 0, z: 0 };
+        var gantry = state.gantry || { rotorSpeed: 0, isScanning: false, activeBatchIndex: -1, detectorRows: 320, xrayVisible: false };
+        var injector = state.injector || { a: 0, b: 0 };
 
-        UI.sliderCouchY.value = state.couch.y;
-        UI.sliderCouchZ.value = state.couch.z;
-        UI.sliderRotorSpeed.value = state.gantry.rotorSpeed;
-        UI.sliderInjectA.value = state.injector.a;
-        UI.sliderInjectB.value = state.injector.b;
-        UI.selectDetectorRows.value = state.gantry.detectorRows;
+        var elCY = byId("couch-y-val"); if (elCY) elCY.innerText = couch.y.toFixed(0) + "%";
+        var elCZ = byId("couch-z-val"); if (elCZ) elCZ.innerText = couch.z.toFixed(0) + "%";
+        var elRS = byId("rotor-speed-val"); if (elRS) elRS.innerText = gantry.rotorSpeed.toFixed(0) + " rpm";
+        var elIA = byId("inject-a-val"); if (elIA) elIA.innerText = injector.a.toFixed(0) + "%";
+        var elIB = byId("inject-b-val"); if (elIB) elIB.innerText = injector.b.toFixed(0) + "%";
 
-        var isRunning = state.gantry.isScanning || state.gantry.activeBatchIndex >= 0;
-        UI.selectDetectorRows.disabled = isRunning;
+        if (UI.sliderCouchY) UI.sliderCouchY.value = couch.y;
+        if (UI.sliderCouchZ) UI.sliderCouchZ.value = couch.z;
+        if (UI.sliderRotorSpeed) UI.sliderRotorSpeed.value = gantry.rotorSpeed;
+        if (UI.sliderInjectA) UI.sliderInjectA.value = injector.a;
+        if (UI.sliderInjectB) UI.sliderInjectB.value = injector.b;
+        if (UI.selectDetectorRows) UI.selectDetectorRows.value = gantry.detectorRows;
+
+        var isRunning = gantry.isScanning || gantry.activeBatchIndex >= 0;
+        if (UI.selectDetectorRows) UI.selectDetectorRows.disabled = isRunning;
 
         if (state.gantry.isScanning) {
             UI.btnScanToggle.innerText = "Stop Scan";
@@ -514,6 +519,10 @@
                     }
                 }),
             );
+        }
+
+        if (typeof global.syncAllPatientTransformUI === "function") {
+            global.syncAllPatientTransformUI();
         }
 
         isSetup = true;
