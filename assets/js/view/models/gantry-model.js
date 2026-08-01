@@ -17,21 +17,7 @@ function buildCTScanner() {
         accessories: [darkMat]
     };
 
-    // Helper for Logos
-    function createLogoTexture(text, fontStr, color, width, height) {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.font = fontStr;
-        ctx.fillStyle = color;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, width / 2, height / 2);
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        return texture;
-    }
+
 
     // --- 1. Gantry Silhouette (Matching reference image exactly) ---
     const shellW = 1.18;      // Half-width
@@ -96,58 +82,12 @@ function buildCTScanner() {
     glowRing.position.z = shellDepth / 2 + flareDepth / 2 - 0.01;
     gantryGroup.add(glowRing);
 
+
+
     // --- 2. High-Contrast Emphasized Control Panels ---
-    function createControlPanel(x, y) {
-        const group = new THREE.Group();
-        group.position.set(x, y, frontZ);
-
-        // Emphasized Bezel / Frame
-        const bezel = new THREE.Mesh(
-            new THREE.BoxGeometry(0.28, 0.42, 0.015),
-            new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.6 })
-        );
-        bezel.position.z = 0.0075;
-        bezel.castShadow = true;
-        group.add(bezel);
-
-        // Dark-themed LCD Screen (Blackish/Dark Grey)
-        const screenMat = new THREE.MeshBasicMaterial({ color: 0x181a1f });
-        const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.24), screenMat);
-        screen.position.set(0, 0.07, 0.016);
-        group.add(screen);
-
-        // Light UI on Dark Screen (Human Figure)
-        const uiMat = new THREE.MeshBasicMaterial({ color: 0xddeeff });
-        const head = new THREE.Mesh(new THREE.CircleGeometry(0.025, 16), uiMat);
-        head.position.set(0, 0.11, 0.017);
-        group.add(head);
-        const body = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.10), uiMat);
-        body.position.set(0, 0.03, 0.017);
-        group.add(body);
-
-        // Emphasized D-Pad Buttons
-        const dpadGroup = new THREE.Group();
-        dpadGroup.position.set(0, -0.11, 0.016);
-
-        const btnGeo = new THREE.CylinderGeometry(0.014, 0.016, 0.005, 24);
-        btnGeo.rotateX(Math.PI / 2);
-        const btnMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
-
-        const positions = [[0, 0.04], [0, -0.04], [-0.04, 0], [0.04, 0], [0, 0]];
-        positions.forEach(pos => {
-            const btn = new THREE.Mesh(btnGeo, btnMat);
-            btn.position.set(pos[0], pos[1], 0);
-            btn.castShadow = true;
-            dpadGroup.add(btn);
-        });
-        group.add(dpadGroup);
-
-        return group;
-    }
-
     // Positioned exactly like the reference image
-    gantryGroup.add(createControlPanel(0.75, 0.35));
-    gantryGroup.add(createControlPanel(-0.75, 0.35));
+    gantryGroup.add(CTMeshFactory.createGantryControlPanel(0.75, 0.35, frontZ));
+    gantryGroup.add(CTMeshFactory.createGantryControlPanel(-0.75, 0.35, frontZ));
 
     // Status LEDs
     const ledRedMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });

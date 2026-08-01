@@ -52,88 +52,72 @@
         return executeCommand("ui-console", target, action, valueOrParams);
     }
 
+    function updateText(id, text) { var el = byId(id); if (el && el.innerText !== text) el.innerText = text; }
+    function updateValue(id, value) { var el = byId(id); if (el && el.value != value) el.value = value; }
+    function updateClass(id, cls) { var el = byId(id); if (el && el.className !== cls) el.className = cls; }
+    function updateStyle(id, prop, val) { var el = byId(id); if (el && el.style[prop] !== val) el.style[prop] = val; }
+
     function syncInteractiveState(state) {
         if (!state) return;
         var couch = state.couch || { y: 0, z: 0 };
         var gantry = state.gantry || { rotorSpeed: 0, isScanning: false, activeBatchIndex: -1, detectorRows: 320, xrayVisible: false };
         var injector = state.injector || { a: 0, b: 0 };
 
-        var elCY = byId("couch-y-val"); if (elCY) elCY.innerText = couch.y.toFixed(0) + "%";
-        var elCZ = byId("couch-z-val"); if (elCZ) elCZ.innerText = couch.z.toFixed(0) + "%";
-        var elRS = byId("rotor-speed-val"); if (elRS) elRS.innerText = gantry.rotorSpeed.toFixed(0) + " rpm";
-        var elIA = byId("inject-a-val"); if (elIA) elIA.innerText = injector.a.toFixed(0) + "%";
-        var elIB = byId("inject-b-val"); if (elIB) elIB.innerText = injector.b.toFixed(0) + "%";
+        updateText("couch-y-val", couch.y.toFixed(0) + "%");
+        updateText("couch-z-val", couch.z.toFixed(0) + "%");
+        updateText("rotor-speed-val", gantry.rotorSpeed.toFixed(0) + " rpm");
+        updateText("inject-a-val", injector.a.toFixed(0) + "%");
+        updateText("inject-b-val", injector.b.toFixed(0) + "%");
 
-        if (UI.sliderCouchY) UI.sliderCouchY.value = couch.y;
-        if (UI.sliderCouchZ) UI.sliderCouchZ.value = couch.z;
-        if (UI.sliderRotorSpeed) UI.sliderRotorSpeed.value = gantry.rotorSpeed;
-        if (UI.sliderInjectA) UI.sliderInjectA.value = injector.a;
-        if (UI.sliderInjectB) UI.sliderInjectB.value = injector.b;
-        if (UI.selectDetectorRows) UI.selectDetectorRows.value = gantry.detectorRows;
+        updateValue("slider-couch-y", couch.y);
+        updateValue("slider-couch-z", couch.z);
+        updateValue("slider-rotor-speed", gantry.rotorSpeed);
+        updateValue("slider-inject-a", injector.a);
+        updateValue("slider-inject-b", injector.b);
+        updateValue("select-detector-rows", gantry.detectorRows);
 
         var isRunning = gantry.isScanning || gantry.activeBatchIndex >= 0;
         if (UI.selectDetectorRows) UI.selectDetectorRows.disabled = isRunning;
 
-        if (state.gantry.isScanning) {
-            UI.btnScanToggle.innerText = "Stop Scan";
-            UI.btnScanToggle.classList.replace("bg-green-600", "bg-red-600");
-            UI.btnScanToggle.classList.replace("hover:bg-green-500", "hover:bg-red-500");
+        if (gantry.isScanning) {
+            updateText("btn-scan-toggle", "Stop Scan");
+            updateClass("btn-scan-toggle", "w-full bg-red-600 hover:bg-red-500 text-sm py-2 rounded shadow-lg transition font-bold");
         } else {
-            UI.btnScanToggle.innerText = "Start Scan";
-            UI.btnScanToggle.classList.replace("bg-red-600", "bg-green-600");
-            UI.btnScanToggle.classList.replace("hover:bg-red-500", "hover:bg-green-500");
+            updateText("btn-scan-toggle", "Start Scan");
+            updateClass("btn-scan-toggle", "w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded shadow-lg transition font-bold");
         }
 
-        if (state.gantry.xrayVisible) {
-            UI.btnXrayToggle.innerText = "Hide X-Ray Beam";
-            UI.btnXrayToggle.className =
-                "w-full bg-yellow-500 hover:bg-yellow-400 text-xs py-1.5 rounded transition font-bold text-black";
+        if (gantry.xrayVisible) {
+            updateText("btn-xray-toggle", "Hide X-Ray Beam");
+            updateClass("btn-xray-toggle", "w-full bg-yellow-500 hover:bg-yellow-400 text-xs py-1.5 rounded transition font-bold text-black");
         } else {
-            UI.btnXrayToggle.innerText = "Show X-Ray Beam";
-            UI.btnXrayToggle.className =
-                "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition";
+            updateText("btn-xray-toggle", "Show X-Ray Beam");
+            updateClass("btn-xray-toggle", "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition");
         }
 
-        if (Meshes.xrayBeam) {
-            Meshes.xrayBeam.material.opacity = state.gantry.xrayVisible ? 0.35 : 0.0;
-        }
-
-        if (Meshes.patientGroup) {
-            Meshes.patientGroup.visible = state.patientVisible;
-        }
+        if (Meshes.xrayBeam) Meshes.xrayBeam.material.opacity = gantry.xrayVisible ? 0.35 : 0.0;
+        if (Meshes.patientGroup) Meshes.patientGroup.visible = state.patientVisible;
 
         if (state.patientVisible) {
-            UI.btnPatientToggle.innerText = "Hide Patient";
-            UI.btnPatientToggle.className =
-                "w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold";
+            updateText("btn-patient-toggle", "Hide Patient");
+            updateClass("btn-patient-toggle", "w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold");
         } else {
-            UI.btnPatientToggle.innerText = "Show Patient";
-            UI.btnPatientToggle.className =
-                "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition text-gray-400";
+            updateText("btn-patient-toggle", "Show Patient");
+            updateClass("btn-patient-toggle", "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition text-gray-400");
         }
 
-        if (state.camera && UI.btnCameraStreamToggle) {
+        if (state.camera) {
             if (state.camera.isStreaming) {
-                UI.btnCameraStreamToggle.innerText = "Stop Stream";
-                UI.btnCameraStreamToggle.className =
-                    "w-full bg-red-600 hover:bg-red-500 text-xs py-1 rounded font-bold";
-                if (UI.streamUrlDisplay) {
-                    UI.streamUrlDisplay.innerText = state.camera.streamUrl || "";
-                    UI.streamUrlDisplay.classList.remove("hidden");
-                }
-                if (byId("camera-preview-container")) {
-                    byId("camera-preview-container").classList.remove("hidden");
-                }
+                updateText("btn-camera-stream-toggle", "Stop Stream");
+                updateClass("btn-camera-stream-toggle", "w-full bg-red-600 hover:bg-red-500 text-xs py-1 rounded font-bold");
+                updateText("stream-url-display", state.camera.streamUrl || "");
+                updateClass("stream-url-display", "w-full bg-gray-900 border border-gray-700 text-xs p-1 rounded font-mono text-green-400 break-all");
+                updateClass("camera-preview-container", "mt-2 relative w-full aspect-video bg-black border border-gray-700 rounded overflow-hidden");
             } else {
-                UI.btnCameraStreamToggle.innerText = "Start Stream";
-                UI.btnCameraStreamToggle.className =
-                    "w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold";
-                if (UI.streamUrlDisplay) {
-                    UI.streamUrlDisplay.classList.add("hidden");
-                }
-                if (byId("camera-preview-container")) {
-                    byId("camera-preview-container").classList.add("hidden");
-                }
+                updateText("btn-camera-stream-toggle", "Start Stream");
+                updateClass("btn-camera-stream-toggle", "w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold");
+                updateClass("stream-url-display", "hidden");
+                updateClass("camera-preview-container", "hidden");
             }
         }
 
@@ -164,38 +148,31 @@
 
     function updateStateMonitor() {
         var rpm = Math.round(AppState.gantry.rotorSpeed);
-        byId("monitor-rpm").innerText = rpm + " rpm";
-        byId("monitor-rpm-bar").style.width = (rpm / 100) * 100 + "%";
-        byId("monitor-mode").innerText = AppState.gantry.currentScanMode.replace(/_/g, " ").toUpperCase();
-        byId("monitor-rows").innerText = AppState.gantry.detectorRows;
+        updateText("monitor-rpm", rpm + " rpm");
+        updateStyle("monitor-rpm-bar", "width", (rpm / 100) * 100 + "%");
+        updateText("monitor-mode", AppState.gantry.currentScanMode.replace(/_/g, " ").toUpperCase());
+        updateText("monitor-rows", AppState.gantry.detectorRows);
 
-        var badge = byId("status-badge");
         if (AppState.gantry.isScanning) {
-            badge.innerText = "SCANNING";
-            badge.className =
-                "px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse";
+            updateText("status-badge", "SCANNING");
+            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse");
         } else if (rpm > 0) {
-            badge.innerText = "SPINNING";
-            badge.className =
-                "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/50";
+            updateText("status-badge", "SPINNING");
+            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/50");
         } else {
-            badge.innerText = "STANDBY";
-            badge.className =
-                "px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300";
+            updateText("status-badge", "STANDBY");
+            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300");
         }
 
-        byId("monitor-couch-y").innerText = Math.round(AppState.couch.y) + "%";
-        byId("monitor-couch-z").innerText = Math.round(AppState.couch.z) + "%";
+        updateText("monitor-couch-y", Math.round(AppState.couch.y) + "%");
+        updateText("monitor-couch-z", Math.round(AppState.couch.z) + "%");
 
         var injA = Math.round(AppState.injector.a);
         var injB = Math.round(AppState.injector.b);
-        var remainA = 100 - injA;
-        var remainB = 100 - injB;
-
-        byId("monitor-inj-a").innerText = remainA + "%";
-        byId("monitor-inj-b").innerText = remainB + "%";
-        byId("monitor-inj-a-bar").style.width = remainA + "%";
-        byId("monitor-inj-b-bar").style.width = remainB + "%";
+        updateText("monitor-inj-a", (100 - injA) + "%");
+        updateText("monitor-inj-b", (100 - injB) + "%");
+        updateStyle("monitor-inj-a-bar", "width", (100 - injA) + "%");
+        updateStyle("monitor-inj-b-bar", "width", (100 - injB) + "%");
 
         updateLastCommandMonitor();
     }
