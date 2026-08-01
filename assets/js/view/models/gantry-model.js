@@ -75,7 +75,7 @@ function buildCTScanner() {
     backFlare.position.z = -(shellDepth / 2 + flareDepth / 2);
     gantryGroup.add(backFlare);
 
-    // Distinctive glowing blue ring (Aquilion style)
+    // Distinctive glowing blue ring
     const glowGeo = new THREE.TorusGeometry(boreRadius + 0.015, 0.015, 32, 128);
     const glowMat = new THREE.MeshBasicMaterial({ color: 0x5599ff, transparent: true, opacity: 0.6 });
     const glowRing = new THREE.Mesh(glowGeo, glowMat);

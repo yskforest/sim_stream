@@ -29,7 +29,7 @@
         rows.forEach(function (v) {
             var option = document.createElement("option");
             option.value = String(v);
-            option.textContent = v === 320 ? "320 Rows (Aquilion ONE class)" : v + " Rows";
+            option.textContent = v === 320 ? "320 Rows (High-End class)" : v + " Rows";
             if (AppState.gantry.detectorRows === v) option.selected = true;
             UI.selectDetectorRows.appendChild(option);
         });
@@ -212,142 +212,67 @@
         var activeIdx = AppState.gantry.activeBatchIndex;
         var syncIdx = AppState.gantry.injectorSyncIndex;
         var countdown = AppState.gantry.countdown;
-
-        container.innerHTML = "";
-
-        seq.forEach(function (batch, index) {
-            var isActive = index === activeIdx;
-            var isRunning = AppState.gantry.isScanning || activeIdx >= 0;
-            var mode = batch.mode;
-            var delay = batch.delay;
-            var isSyncTarget = index === syncIdx;
-
-            var card = document.createElement("div");
-            var cardClasses = "relative rounded-lg p-2.5 w-36 flex flex-col items-center transition-all duration-300 ";
-            cardClasses += isActive
-                ? "bg-blue-900/80 border-2 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-105 z-10"
-                : "bg-gray-800 border border-gray-600";
-            card.className = cardClasses;
-
-            if (isActive && countdown > 0) {
-                var overlay = document.createElement("div");
-                overlay.className =
-                    "absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]";
-                overlay.innerHTML =
-                    '<span class="text-[10px] text-yellow-400 font-bold mb-1 tracking-widest">DELAY</span><span class="text-2xl font-mono text-white font-bold leading-none">' +
-                    countdown +
-                    "</span>";
-                card.appendChild(overlay);
-            }
-
-            var header = document.createElement("div");
-            header.className = "text-[10px] text-gray-400 mb-1.5 w-full flex justify-between items-center";
-
-            var label = document.createElement("span");
-            label.innerText = "Batch " + (index + 1);
-            if (isActive) label.className = "text-yellow-400 font-bold";
-
-            var delBtn = document.createElement("button");
-            delBtn.innerHTML = "&times;";
-            delBtn.className = "hover:text-red-400 text-base leading-none transition-colors";
-            delBtn.disabled = isRunning || seq.length <= 1;
-            if (delBtn.disabled) delBtn.className += " opacity-30 cursor-not-allowed";
-            delBtn.onclick = function () {
-                removeScanBatch(index);
-            };
-
-            header.appendChild(label);
-            header.appendChild(delBtn);
-
-            var select = document.createElement("select");
-            select.className =
-                "w-full bg-gray-900 text-white text-[11px] p-1.5 rounded border border-gray-700 outline-none hover:border-blue-500 transition-colors cursor-pointer";
-            select.disabled = isRunning;
-            if (select.disabled) select.className += " opacity-70 cursor-not-allowed";
-            select.onchange = function (e) {
-                updateBatchData(index, "mode", e.target.value);
-            };
-
-            [
-                { val: "scano", text: "Scano" },
-                { val: "dual_scano", text: "Dual Scano" },
-                { val: "3d_landmark", text: "3D Landmark" },
-                { val: "helical", text: "Helical" },
-                { val: "axial", text: "Axial" },
-                { val: "volume", text: "Volume" },
-                { val: "dynamic", text: "Dynamic" },
-                { val: "real_prep", text: "Real Prep" },
-            ].forEach(function (opt) {
-                var option = document.createElement("option");
-                option.value = opt.val;
-                option.innerText = opt.text;
-                if (opt.val === mode) option.selected = true;
-                select.appendChild(option);
-            });
-
-            var delayWrapper = document.createElement("div");
-            delayWrapper.className = "w-full flex items-center justify-between mt-2 text-[10px] text-gray-400";
-            delayWrapper.innerHTML = "<span>Delay (s)</span>";
-
-            var delayInput = document.createElement("input");
-            delayInput.type = "number";
-            delayInput.min = "0";
-            delayInput.max = "60";
-            delayInput.value = delay;
-            delayInput.className =
-                "w-10 bg-gray-900 text-white p-1 rounded border border-gray-700 outline-none text-center";
-            delayInput.disabled = isRunning;
-            delayInput.onchange = function (e) {
-                updateBatchData(index, "delay", parseInt(e.target.value, 10) || 0);
-            };
-            delayWrapper.appendChild(delayInput);
-
-            var syncBtn = document.createElement("button");
-            syncBtn.innerText = isSyncTarget ? "INJ SYNC: ON" : "INJ SYNC: OFF";
-            syncBtn.className = isSyncTarget
-                ? "w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors bg-purple-600/80 text-white border border-purple-400"
-                : "w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors bg-gray-900 text-gray-500 border border-gray-700 hover:bg-gray-700";
-            syncBtn.disabled = isRunning;
-            if (syncBtn.disabled) {
-                syncBtn.classList.add("opacity-50", "cursor-not-allowed");
-                syncBtn.classList.remove("hover:bg-gray-700");
-            }
-            syncBtn.onclick = function () {
-                setInjectorSync(index);
-            };
-
-            card.appendChild(header);
-            card.appendChild(select);
-            card.appendChild(delayWrapper);
-            card.appendChild(syncBtn);
-            container.appendChild(card);
-        });
-
         var isRunning = AppState.gantry.isScanning || activeIdx >= 0;
+
+        container.innerHTML = seq.map(function (batch, index) {
+            var isActive = index === activeIdx;
+            var isSync = index === syncIdx;
+            var opts = ["scano", "dual_scano", "3d_landmark", "helical", "axial", "volume", "dynamic", "real_prep"];
+            var optHtml = opts.map(function(o) {
+                return `<option value="${o}" ${o === batch.mode ? "selected" : ""}>${o === "dual_scano" ? "Dual Scano" : o === "3d_landmark" ? "3D Landmark" : o === "real_prep" ? "Real Prep" : o.charAt(0).toUpperCase() + o.slice(1)}</option>`;
+            }).join("");
+
+            var cardCls = "relative rounded-lg p-2.5 w-36 flex flex-col items-center transition-all duration-300 " + 
+                (isActive ? "bg-blue-900/80 border-2 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-105 z-10" : "bg-gray-800 border border-gray-600");
+
+            var overlay = (isActive && countdown > 0) ? `<div class="absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]">
+                <span class="text-[10px] text-yellow-400 font-bold mb-1 tracking-widest">DELAY</span>
+                <span class="text-2xl font-mono text-white font-bold leading-none">${countdown}</span></div>` : "";
+
+            var dis = isRunning ? "disabled" : "";
+            var disCls = isRunning ? "opacity-70 cursor-not-allowed" : "";
+
+            return `<div class="${cardCls}">
+                ${overlay}
+                <div class="text-[10px] text-gray-400 mb-1.5 w-full flex justify-between items-center">
+                    <span class="${isActive ? 'text-yellow-400 font-bold' : ''}">Batch ${index + 1}</span>
+                    <button class="btn-del hover:text-red-400 text-base leading-none transition-colors ${(isRunning || seq.length <= 1) ? 'opacity-30 cursor-not-allowed' : ''}" ${(isRunning || seq.length <= 1) ? "disabled" : ""}>&times;</button>
+                </div>
+                <select class="sel-mode w-full bg-gray-900 text-white text-[11px] p-1.5 rounded border border-gray-700 outline-none hover:border-blue-500 transition-colors cursor-pointer ${disCls}" ${dis}>
+                    ${optHtml}
+                </select>
+                <div class="w-full flex items-center justify-between mt-2 text-[10px] text-gray-400">
+                    <span>Delay (s)</span>
+                    <input type="number" min="0" max="60" value="${batch.delay}" class="inp-delay w-10 bg-gray-900 text-white p-1 rounded border border-gray-700 outline-none text-center" ${dis}>
+                </div>
+                <button class="btn-sync w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors ${isSync ? 'bg-purple-600/80 text-white border border-purple-400' : 'bg-gray-900 text-gray-500 border border-gray-700 hover:bg-gray-700'} ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}" ${dis}>
+                    INJ SYNC: ${isSync ? "ON" : "OFF"}
+                </button>
+            </div>`;
+        }).join("");
+
+        Array.from(container.children).forEach(function(card, idx) {
+            var delBtn = card.querySelector(".btn-del");
+            if(delBtn) delBtn.onclick = function() { removeScanBatch(idx); };
+            var sel = card.querySelector(".sel-mode");
+            if(sel) sel.onchange = function(e) { updateBatchData(idx, "mode", e.target.value); };
+            var inp = card.querySelector(".inp-delay");
+            if(inp) inp.onchange = function(e) { updateBatchData(idx, "delay", parseInt(e.target.value, 10) || 0); };
+            var syn = card.querySelector(".btn-sync");
+            if(syn) syn.onclick = function() { setInjectorSync(idx); };
+        });
 
         var addBtn = byId("btn-add-batch");
         addBtn.disabled = seq.length >= 5 || isRunning;
-        addBtn.classList.toggle("opacity-30", addBtn.disabled);
-        addBtn.classList.toggle("cursor-not-allowed", addBtn.disabled);
+        addBtn.className = "w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-600 flex items-center justify-center text-gray-400 hover:text-white transition-colors " + (addBtn.disabled ? "opacity-30 cursor-not-allowed" : "");
 
         var runBtn = byId("btn-run-sequence");
-        if (isRunning) {
-            runBtn.disabled = false;
-            runBtn.onclick = stopAutoSequence;
-            runBtn.className =
-                "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 rounded py-1.5 text-xs font-bold";
-            runBtn.innerText = AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE";
-            if (AppState.gantry.cancelRequested) {
-                runBtn.disabled = true;
-                runBtn.classList.add("opacity-60", "cursor-not-allowed");
-            }
-        } else {
-            runBtn.disabled = false;
-            runBtn.onclick = runAutoSequence;
-            runBtn.className =
-                "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold";
-            runBtn.innerText = "RUN SEQUENCE";
-        }
+        runBtn.disabled = isRunning && AppState.gantry.cancelRequested;
+        runBtn.onclick = isRunning ? stopAutoSequence : runAutoSequence;
+        runBtn.className = isRunning 
+            ? "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 rounded py-1.5 text-xs font-bold " + (AppState.gantry.cancelRequested ? "opacity-60 cursor-not-allowed" : "")
+            : "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold";
+        runBtn.innerText = isRunning ? (AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE") : "RUN SEQUENCE";
     }
 
     function setPanelVisibilityForViewport() {
