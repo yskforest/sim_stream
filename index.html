@@ -316,6 +316,21 @@
                         >
                             Hide Patient
                         </button>
+
+                        <!-- Stream Diagnostics -->
+                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
+                            <div class="text-[10px] font-bold text-green-400">Stream Status / Diagnostics</div>
+                            <div class="flex gap-2">
+                                <a href="http://127.0.0.1:8080/" target="_blank" class="flex-1 bg-green-900 hover:bg-green-800 text-green-100 text-center text-[10px] py-1.5 rounded border border-green-700 transition block">
+                                    Open Stream Server Info
+                                </a>
+                            </div>
+                            <div class="text-[9px] text-gray-400 bg-gray-900/50 p-1.5 rounded border border-gray-700 break-all leading-tight">
+                                <span class="text-blue-300 font-bold">HTTP MJPEG:</span> http://127.0.0.1:8080/live/ct-camera.mjpg<br/>
+                                <span class="text-yellow-300 font-bold">RTSP (VLC):</span> rtsp://127.0.0.1:8554/live/ct-camera.mp4
+                            </div>
+                        </div>
+
                         <div class="border-t border-gray-700 pt-2 space-y-1.5">
                             <div class="text-[10px] font-bold text-blue-300">GLB Model & Position Settings</div>
                             <select

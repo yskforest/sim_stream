@@ -74,8 +74,13 @@
                         ctx.drawImage(canvas, 0, 0, width, height);
                     }
 
-                    var dataUrl = capturer.offscreenCanvas.toDataURL("image/jpeg", quality);
-                    lastFrameData = dataURLtoUint8Array(dataUrl);
+                    if (!capturer.isProcessingBlob) {
+                        capturer.isProcessingBlob = true;
+                        capturer.offscreenCanvas.toBlob(function (blob) {
+                            lastFrameData = blob;
+                            capturer.isProcessingBlob = false;
+                        }, "image/jpeg", quality);
+                    }
                 } else if (mode === "virtual" && global.renderer && global.scene && typeof THREE !== "undefined") {
                     // 【virtual モード】独立した仮想カメラと WebGLRenderTarget を使って二次レンダリング
                     if (!capturer.virtualCamera) {
@@ -144,11 +149,21 @@
 
                     capturer.offscreenCtx.putImageData(capturer.imageData, 0, 0);
 
-                    var dataUrl = capturer.offscreenCanvas.toDataURL("image/jpeg", quality);
-                    lastFrameData = dataURLtoUint8Array(dataUrl);
+                    if (!capturer.isProcessingBlob) {
+                        capturer.isProcessingBlob = true;
+                        capturer.offscreenCanvas.toBlob(function (blob) {
+                            lastFrameData = blob;
+                            capturer.isProcessingBlob = false;
+                        }, "image/jpeg", quality);
+                    }
                 } else {
-                    var dataUrl = canvas.toDataURL("image/jpeg", quality);
-                    lastFrameData = dataURLtoUint8Array(dataUrl);
+                    if (!capturer.isProcessingBlob) {
+                        capturer.isProcessingBlob = true;
+                        canvas.toBlob(function (blob) {
+                            lastFrameData = blob;
+                            capturer.isProcessingBlob = false;
+                        }, "image/jpeg", quality);
+                    }
                 }
             } catch (e) {
                 console.error("CanvasCapturer Error:", e);
