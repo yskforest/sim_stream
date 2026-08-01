@@ -248,11 +248,15 @@ function buildCTScanner() {
     // Bottom wide structural base
     const couchFloorBase = createRoundedBox(0.85, 0.15, 2.0, 0.06, baseCoverMat);
     couchFloorBase.position.set(0, -0.07, 2.6);
+    couchFloorBase.castShadow = true;
+    couchFloorBase.receiveShadow = true;
     couchGroup.add(couchFloorBase);
 
     // Middle sliding mechanism cover
     const couchMidBase = createRoundedBox(0.65, 0.15, 1.95, 0.05, new THREE.MeshStandardMaterial({ color: 0xf0f0f0 }));
     couchMidBase.position.set(0, 0.08, 2.6);
+    couchMidBase.castShadow = true;
+    couchMidBase.receiveShadow = true;
     couchGroup.add(couchMidBase);
 
     // Expanding Bellows
@@ -264,6 +268,8 @@ function buildCTScanner() {
         const width = 0.58 - i * 0.02;
         const depth = 1.82 - i * 0.04;
         const bMesh = createRoundedBox(width, 0.10, depth, 0.04, new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.85 }));
+        bMesh.castShadow = true;
+        bMesh.receiveShadow = true;
         bellowsParts.push(bMesh);
         bellowsGroup.add(bMesh);
     }
@@ -277,6 +283,8 @@ function buildCTScanner() {
     // Under-table support structure
     const supportBase = createRoundedBox(0.55, 0.15, 2.45, 0.05, new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.35 }));
     supportBase.position.y = -0.12;
+    supportBase.castShadow = true;
+    supportBase.receiveShadow = true;
     tabletopGroup.add(supportBase);
 
     // New U-Shaped Front Handle (Matches reference)
@@ -285,6 +293,8 @@ function buildCTScanner() {
     const handle = new THREE.Mesh(handleGeo, handleMat);
     handle.rotation.x = -Math.PI / 2;
     handle.position.set(0, -0.01, 1.70); // Placed at the very front tip
+    handle.castShadow = true;
+    handle.receiveShadow = true;
     tabletopGroup.add(handle);
 
     // Tabletop carbon-fiber/grey material
@@ -297,6 +307,8 @@ function buildCTScanner() {
     // Thick Mattress with light grey cover
     const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.035, 3.35), new THREE.MeshStandardMaterial({ color: 0xe5ebf2, roughness: 0.9 }));
     mattress.position.set(0, 0.042, -0.15);
+    mattress.castShadow = true;
+    mattress.receiveShadow = true;
     tabletopGroup.add(mattress);
 
     const patientGroup = new THREE.Group();
