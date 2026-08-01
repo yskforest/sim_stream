@@ -29,6 +29,9 @@
             activeStream.height = config.height || 960;
             activeStream.hfov = config.hfov || 60;
             activeStream.quality = typeof config.quality === "number" ? config.quality : 0.92;
+            activeStream.mode = config.mode || config.captureMode || "main";
+            activeStream.virtualPosition = config.virtualPosition || null;
+            activeStream.virtualLookAt = config.virtualLookAt || null;
             activeStream.isStreaming = true;
             activeStream.streamUrl = generateStreamUrl(activeStream.protocol, activeStream.codec);
 
@@ -41,6 +44,9 @@
                     height: activeStream.height,
                     hfov: activeStream.hfov,
                     quality: activeStream.quality,
+                    mode: activeStream.mode,
+                    virtualPosition: activeStream.virtualPosition,
+                    virtualLookAt: activeStream.virtualLookAt,
                 });
             }
 
@@ -48,7 +54,15 @@
             var intervalMs = Math.floor(1000 / activeStream.fps);
             activeStream.intervalId = setInterval(function () {
                 if (global.CTStreamGateway && typeof global.CTStreamGateway.broadcastFrame === "function") {
-                    var frame = global.CTCanvasCapturer ? global.CTCanvasCapturer.getLatestFrame(activeStream.width, activeStream.height, activeStream.hfov, activeStream.quality) : null;
+                    var frame = global.CTCanvasCapturer ? global.CTCanvasCapturer.getLatestFrame(
+                        activeStream.width,
+                        activeStream.height,
+                        activeStream.hfov,
+                        activeStream.quality,
+                        activeStream.mode,
+                        activeStream.virtualPosition,
+                        activeStream.virtualLookAt
+                    ) : null;
                     global.CTStreamGateway.broadcastFrame(frame);
                 }
             }, intervalMs);
@@ -85,7 +99,15 @@
                 protocol: activeStream.protocol,
                 fps: activeStream.fps,
                 streamUrl: activeStream.streamUrl,
+                mode: activeStream.mode,
+                width: activeStream.width,
+                height: activeStream.height,
+                hfov: activeStream.hfov,
             };
+        },
+
+        getActiveStream: function getActiveStream() {
+            return activeStream;
         },
     };
 

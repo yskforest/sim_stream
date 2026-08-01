@@ -2,8 +2,11 @@
     var cameraState = {
         position: { x: 0, y: 1.8, z: 3.5 },
         lookAt: { x: 0, y: 1.2, z: 0 },
+        virtualPosition: { x: 0, y: 1.8, z: 3.5 },
+        virtualLookAt: { x: 0, y: 1.2, z: 0 },
         fov: 50,
         hfov: 60,
+        mode: "main",
         isStreaming: false,
         codec: "h264",
         protocol: "rtsp",
@@ -39,6 +42,20 @@
             notifyStateChange();
             return { success: true, state: cameraState };
         },
+        setVirtualTransform: function setVirtualTransform(position, lookAt) {
+            if (position) {
+                cameraState.virtualPosition.x = typeof position.x === "number" ? position.x : cameraState.virtualPosition.x;
+                cameraState.virtualPosition.y = typeof position.y === "number" ? position.y : cameraState.virtualPosition.y;
+                cameraState.virtualPosition.z = typeof position.z === "number" ? position.z : cameraState.virtualPosition.z;
+            }
+            if (lookAt) {
+                cameraState.virtualLookAt.x = typeof lookAt.x === "number" ? lookAt.x : cameraState.virtualLookAt.x;
+                cameraState.virtualLookAt.y = typeof lookAt.y === "number" ? lookAt.y : cameraState.virtualLookAt.y;
+                cameraState.virtualLookAt.z = typeof lookAt.z === "number" ? lookAt.z : cameraState.virtualLookAt.z;
+            }
+            notifyStateChange();
+            return { success: true, state: cameraState };
+        },
         setFov: function setFov(fov) {
             if (typeof fov === "number" && fov > 0) {
                 cameraState.fov = fov;
@@ -58,9 +75,12 @@
             cameraState.codec = params.codec === "h264" ? "h264" : "mjpeg";
             cameraState.protocol = params.protocol === "rtsp" ? "rtsp" : "http";
             cameraState.fps = typeof params.fps === "number" ? params.fps : 30;
+            cameraState.mode = params.mode || params.captureMode || "main";
             if (typeof params.width === "number") cameraState.width = params.width;
             if (typeof params.height === "number") cameraState.height = params.height;
             if (typeof params.hfov === "number") cameraState.hfov = params.hfov;
+            if (params.virtualPosition) cameraState.virtualPosition = params.virtualPosition;
+            if (params.virtualLookAt) cameraState.virtualLookAt = params.virtualLookAt;
             cameraState.isStreaming = true;
 
             if (global.CTVideoStreamService && typeof global.CTVideoStreamService.start === "function") {
@@ -71,6 +91,9 @@
                     width: cameraState.width,
                     height: cameraState.height,
                     hfov: cameraState.hfov,
+                    mode: cameraState.mode,
+                    virtualPosition: cameraState.virtualPosition,
+                    virtualLookAt: cameraState.virtualLookAt,
                 });
                 cameraState.streamUrl = streamRes.streamUrl;
             } else {

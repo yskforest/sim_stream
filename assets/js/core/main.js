@@ -103,5 +103,52 @@ function animate(time) {
     }
 
     controls.update();
-    renderer.render(scene, camera);
+
+    var activeStream = window.CTVideoStreamService ? window.CTVideoStreamService.getActiveStream() : null;
+    if (activeStream && activeStream.isStreaming && activeStream.mode === "main") {
+        var targetAspect = activeStream.width / activeStream.height;
+        camera.aspect = targetAspect;
+        if (typeof activeStream.hfov === "number" && activeStream.hfov > 0) {
+            var hfovRad = (activeStream.hfov * Math.PI) / 180;
+            var vfovRad = 2 * Math.atan(Math.tan(hfovRad / 2) / targetAspect);
+            camera.fov = (vfovRad * 180) / Math.PI;
+        }
+        camera.updateProjectionMatrix();
+
+        var winW = window.innerWidth;
+        var winH = window.innerHeight;
+        var winAspect = winW / winH;
+
+        var vpW, vpH, vpX, vpY;
+        if (winAspect > targetAspect) {
+            vpH = winH;
+            vpW = vpH * targetAspect;
+            vpX = Math.floor((winW - vpW) / 2);
+            vpY = 0;
+        } else {
+            vpW = winW;
+            vpH = vpW / targetAspect;
+            vpX = 0;
+            vpY = Math.floor((winH - vpH) / 2);
+        }
+
+        renderer.setScissorTest(true);
+        renderer.setClearColor(0x000000, 1.0);
+        renderer.setViewport(0, 0, winW, winH);
+        renderer.setScissor(0, 0, winW, winH);
+        renderer.clear();
+
+        renderer.setViewport(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
+        renderer.setScissor(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
+        renderer.render(scene, camera);
+
+        renderer.setScissorTest(false);
+
+        window.activeViewportBounds = { x: vpX, y: vpY, w: Math.floor(vpW), h: Math.floor(vpH), winW: winW, winH: winH };
+    } else {
+        window.activeViewportBounds = null;
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+        renderer.render(scene, camera);
+    }
 }
