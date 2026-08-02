@@ -112,12 +112,10 @@
                 updateClass("btn-camera-stream-toggle", "w-full bg-red-600 hover:bg-red-500 text-xs py-1 rounded font-bold");
                 updateText("stream-url-display", state.camera.streamUrl || "");
                 updateClass("stream-url-display", "w-full bg-gray-900 border border-gray-700 text-xs p-1 rounded font-mono text-green-400 break-all");
-                updateClass("camera-preview-container", "mt-2 relative w-full aspect-video bg-black border border-gray-700 rounded overflow-hidden");
             } else {
                 updateText("btn-camera-stream-toggle", "Start Stream");
                 updateClass("btn-camera-stream-toggle", "w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold");
                 updateClass("stream-url-display", "hidden");
-                updateClass("camera-preview-container", "hidden");
             }
         }
 
@@ -406,9 +404,21 @@
         renderBatchUI();
         renderCommandLog();
         unsubscribers.push(AppState.subscribe(syncInteractiveState));
+        var lastBatchState = "";
         unsubscribers.push(AppState.subscribe(function () {
             updateStateMonitor();
-            renderBatchUI();
+            var currentState = JSON.stringify([
+                AppState.gantry.scanSequence, 
+                AppState.gantry.activeBatchIndex, 
+                AppState.gantry.injectorSyncIndex, 
+                AppState.gantry.countdown, 
+                AppState.gantry.isScanning,
+                AppState.gantry.cancelRequested
+            ]);
+            if (currentState !== lastBatchState) {
+                lastBatchState = currentState;
+                renderBatchUI();
+            }
         }));
 
         if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
