@@ -19,7 +19,7 @@ const AppState = {
     },
     injector: { a: 0, b: 0 },
     patientVisible: true,
-    patientModelId: "rp_posed_00178_29",
+    patientModelId: (typeof CTModelsConfig !== "undefined" && typeof CTModelsConfig.getDefaultPatientId === "function") ? CTModelsConfig.getDefaultPatientId() : null,
     patientOffset: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 },
     useGlbPatient: true,
     customGlbModels: [],

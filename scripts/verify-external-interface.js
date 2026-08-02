@@ -98,11 +98,13 @@ loadScript(ctx, "assets/js/adapters/external/external-gateway.js");
 
 ctx.CTStore.bindState(ctx.AppState);
 
+const targetModelId = ctx.CTModelsConfig.getDefaultPatientId();
+
 const validGlbModel = proto.validateCommand({
     requestId: "req-glb-1",
     target: "simulator",
     action: "setPatientModel",
-    params: { modelId: "rp_posed_00178_29" },
+    params: { modelId: targetModelId },
 });
 assert(validGlbModel.valid === true, "Expected valid setPatientModel command");
 
@@ -110,7 +112,7 @@ const gatewayGlbRes = ctx.CTExternalGateway.send({
     requestId: "req-glb-2",
     target: "simulator",
     action: "setPatientModel",
-    params: { modelId: "rp_posed_00178_29" },
+    params: { modelId: targetModelId },
 });
 assert(gatewayGlbRes.success === true, "Expected gateway.send success for setPatientModel");
 

@@ -41,6 +41,27 @@ async function changePatientGlbModel(modelId) {
     }
 }
 
+function updatePatientGlbSelectOptions() {
+    if (typeof document === "undefined") return;
+    var selectEl = document.getElementById("select-patient-glb");
+    if (!selectEl) return;
+
+    var models = (window.CTModelsConfig && typeof window.CTModelsConfig.getAllModels === "function")
+        ? window.CTModelsConfig.getAllModels()
+        : [];
+
+    selectEl.innerHTML = "";
+    models.forEach(function (m) {
+        var opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.name || (m.id + " (" + (m.path || "").split("/").pop() + ")");
+        if (window.AppState && window.AppState.patientModelId === m.id) {
+            opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+    });
+}
+
 async function spawnCustomGlbFromInput() {
     var inputEl = document.getElementById("input-add-glb-path");
     if (!inputEl || !inputEl.value.trim()) return;
@@ -48,7 +69,14 @@ async function spawnCustomGlbFromInput() {
     var modelId = path.split("/").pop().replace(".glb", "") || "custom_glb";
 
     if (window.CTModelsConfig) {
-        window.CTModelsConfig.registerModel({ id: modelId, path: path, category: "prop", attachTo: "couch" });
+        window.CTModelsConfig.registerModel({
+            id: modelId,
+            name: "Custom GLB: " + modelId,
+            path: path,
+            category: "patient",
+            attachTo: "couch"
+        });
+        updatePatientGlbSelectOptions();
     }
 
     try {
@@ -121,4 +149,13 @@ function resetPatientPositionUI() {
 
 if (typeof window !== "undefined") {
     window.syncAllPatientTransformUI = syncAllPatientTransformUI;
+    window.updatePatientGlbSelectOptions = updatePatientGlbSelectOptions;
+
+    if (typeof document !== "undefined") {
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", updatePatientGlbSelectOptions);
+        } else {
+            updatePatientGlbSelectOptions();
+        }
+    }
 }

@@ -73,7 +73,10 @@
                     return withLog(command, { success: true, state: state });
                 }
                 if (action === "setPatientModel") {
-                    state.patientModelId = params.modelId || "rp_posed_00178_29";
+                    var defaultId = (g.CTModelsConfig && typeof g.CTModelsConfig.getDefaultPatientId === "function")
+                        ? g.CTModelsConfig.getDefaultPatientId()
+                        : null;
+                    state.patientModelId = params.modelId || defaultId;
                     if (typeof g.changePatientGlbModel === "function") {
                         g.changePatientGlbModel(state.patientModelId);
                     }

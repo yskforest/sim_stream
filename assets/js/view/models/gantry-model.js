@@ -337,8 +337,11 @@ function buildCTScanner() {
     async function loadPatientGlb() {
         try {
             if (window.CTModelRegistry) {
+                const defaultId = (window.CTModelsConfig && typeof window.CTModelsConfig.getDefaultPatientId === "function")
+                    ? window.CTModelsConfig.getDefaultPatientId()
+                    : null;
                 const instance = await window.CTModelRegistry.spawnModelInstance(
-                    AppState.patientModelId || "rp_posed_00178_29",
+                    AppState.patientModelId || defaultId,
                     { instanceId: "patient_primary", attachTo: "couch", visible: AppState.patientVisible }
                 );
                 patientGroup.visible = AppState.patientVisible;
