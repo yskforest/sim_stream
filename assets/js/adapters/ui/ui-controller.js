@@ -206,6 +206,7 @@
 
     function renderBatchUI() {
         var container = byId("batch-container");
+        if (!container) return;
         var seq = AppState.gantry.scanSequence;
         var activeIdx = AppState.gantry.activeBatchIndex;
         var syncIdx = AppState.gantry.injectorSyncIndex;
@@ -251,26 +252,33 @@
 
         Array.from(container.children).forEach(function(card, idx) {
             var delBtn = card.querySelector(".btn-del");
-            if(delBtn) delBtn.onclick = function() { removeScanBatch(idx); };
+            if(delBtn) delBtn.onclick = function() { if (typeof removeScanBatch === "function") removeScanBatch(idx); };
             var sel = card.querySelector(".sel-mode");
-            if(sel) sel.onchange = function(e) { updateBatchData(idx, "mode", e.target.value); };
+            if(sel) sel.onchange = function(e) { if (typeof updateBatchData === "function") updateBatchData(idx, "mode", e.target.value); };
             var inp = card.querySelector(".inp-delay");
-            if(inp) inp.onchange = function(e) { updateBatchData(idx, "delay", parseInt(e.target.value, 10) || 0); };
+            if(inp) inp.onchange = function(e) { if (typeof updateBatchData === "function") updateBatchData(idx, "delay", parseInt(e.target.value, 10) || 0); };
             var syn = card.querySelector(".btn-sync");
-            if(syn) syn.onclick = function() { setInjectorSync(idx); };
+            if(syn) syn.onclick = function() { if (typeof setInjectorSync === "function") setInjectorSync(idx); };
         });
 
         var addBtn = byId("btn-add-batch");
-        addBtn.disabled = seq.length >= 5 || isRunning;
-        addBtn.className = "w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-600 flex items-center justify-center text-gray-400 hover:text-white transition-colors " + (addBtn.disabled ? "opacity-30 cursor-not-allowed" : "");
+        if (addBtn) {
+            addBtn.disabled = seq.length >= 5 || isRunning;
+            addBtn.className = "w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-600 flex items-center justify-center text-gray-400 hover:text-white transition-colors " + (addBtn.disabled ? "opacity-30 cursor-not-allowed" : "");
+        }
 
         var runBtn = byId("btn-run-sequence");
-        runBtn.disabled = isRunning && AppState.gantry.cancelRequested;
-        runBtn.onclick = isRunning ? stopAutoSequence : runAutoSequence;
-        runBtn.className = isRunning 
-            ? "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 rounded py-1.5 text-xs font-bold " + (AppState.gantry.cancelRequested ? "opacity-60 cursor-not-allowed" : "")
-            : "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold";
-        runBtn.innerText = isRunning ? (AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE") : "RUN SEQUENCE";
+        if (runBtn) {
+            runBtn.disabled = isRunning && AppState.gantry.cancelRequested;
+            runBtn.onclick = function() {
+                if (isRunning && typeof stopAutoSequence === "function") stopAutoSequence();
+                else if (typeof runAutoSequence === "function") runAutoSequence();
+            };
+            runBtn.className = isRunning 
+                ? "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 rounded py-1.5 text-xs font-bold " + (AppState.gantry.cancelRequested ? "opacity-60 cursor-not-allowed" : "")
+                : "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold";
+            runBtn.innerText = isRunning ? (AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE") : "RUN SEQUENCE";
+        }
     }
 
     function setPanelVisibilityForViewport() {
@@ -377,21 +385,31 @@
             });
         }
 
-        UI.sliderCouchY.addEventListener("input", function (e) {
-            executeConsoleCommand("couch", "moveY", parseFloat(e.target.value));
-        });
-        UI.sliderCouchZ.addEventListener("input", function (e) {
-            executeConsoleCommand("couch", "moveZ", parseFloat(e.target.value));
-        });
-        UI.sliderInjectA.addEventListener("input", function (e) {
-            executeConsoleCommand("injector", "setA", parseFloat(e.target.value));
-        });
-        UI.sliderInjectB.addEventListener("input", function (e) {
-            executeConsoleCommand("injector", "setB", parseFloat(e.target.value));
-        });
-        UI.selectDetectorRows.addEventListener("change", function (e) {
-            executeConsoleCommand("gantry", "setDetectorRows", parseInt(e.target.value, 10));
-        });
+        if (UI.sliderCouchY) {
+            UI.sliderCouchY.addEventListener("input", function (e) {
+                executeConsoleCommand("couch", "moveY", parseFloat(e.target.value));
+            });
+        }
+        if (UI.sliderCouchZ) {
+            UI.sliderCouchZ.addEventListener("input", function (e) {
+                executeConsoleCommand("couch", "moveZ", parseFloat(e.target.value));
+            });
+        }
+        if (UI.sliderInjectA) {
+            UI.sliderInjectA.addEventListener("input", function (e) {
+                executeConsoleCommand("injector", "setA", parseFloat(e.target.value));
+            });
+        }
+        if (UI.sliderInjectB) {
+            UI.sliderInjectB.addEventListener("input", function (e) {
+                executeConsoleCommand("injector", "setB", parseFloat(e.target.value));
+            });
+        }
+        if (UI.selectDetectorRows) {
+            UI.selectDetectorRows.addEventListener("change", function (e) {
+                executeConsoleCommand("gantry", "setDetectorRows", parseInt(e.target.value, 10));
+            });
+        }
 
         if (UI.btnClearCommandLog && global.CTCommandLogService) {
             UI.btnClearCommandLog.addEventListener("click", function () {

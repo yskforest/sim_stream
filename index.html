@@ -12,346 +12,122 @@
 
         <div id="ui-layer">
             <div id="ui-toolbar" class="pointer-events-auto">
-                <button class="toolbar-btn" data-panel-target="panel-console">Console</button>
-                <button class="toolbar-btn" data-panel-target="panel-monitor">Monitor</button>
-                <button class="toolbar-btn" data-panel-target="panel-hw-config">HW</button>
-                <button class="toolbar-btn" data-panel-target="panel-3d-config">3D</button>
-                <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
-                <button id="btn-hud-toggle" class="toolbar-btn" onclick="CTPerformanceService.toggleHud()">PERF</button>
+                <button class="toolbar-btn" data-panel-target="panel-hw-config">HW Bed Move</button>
+                <button class="toolbar-btn" data-panel-target="panel-stream">Video Stream</button>
             </div>
 
             <div id="ui-panels">
-                <section id="panel-console" class="ui-panel panel-left panel-top pointer-events-auto">
+                <!-- HW Bed Movement Control Panel -->
+                <section id="panel-hw-config" class="ui-panel panel-left panel-top pointer-events-auto">
                     <header class="ui-panel-header">
-                        <div>
-                            <h1 class="text-sm font-bold text-blue-300">CT Console Mock</h1>
-                            <p class="text-[10px] text-gray-400">Command Driven</p>
-                        </div>
+                        <h3 class="text-xs font-bold text-gray-300">HW 寝台位置設定</h3>
                         <div class="panel-actions">
                             <button class="panel-action" data-panel-action="collapse">_</button>
                             <button class="panel-action" data-panel-action="hide">×</button>
                         </div>
                     </header>
-                    <div class="ui-panel-body">
-                        <div class="space-y-2">
-                            <button
-                                id="btn-scan-toggle"
-                                onclick="toggleScan()"
-                                class="w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded font-bold"
-                            >
-                                Start Scan
-                            </button>
-                            <label class="text-xs text-gray-400 flex justify-between"
-                                ><span>Rotor Speed</span><span id="rotor-speed-val">0 rpm</span></label
-                            >
+                    <div class="ui-panel-body space-y-3">
+                        <div>
+                            <label class="text-[11px] text-gray-400 flex justify-between">
+                                <span>Couch Y (高さ):</span>
+                                <span id="couch-y-val" class="font-mono text-blue-300">0%</span>
+                            </label>
                             <input
-                                type="range"
-                                id="slider-rotor-speed"
-                                min="0"
-                                max="100"
-                                value="0"
-                                class="w-full accent-green-500"
-                                disabled
-                            />
-                        </div>
-
-                        <hr class="border-gray-700 my-3" />
-
-                        <div class="space-y-2">
-                            <div id="batch-container" class="flex flex-wrap gap-2"></div>
-                            <div class="flex gap-2">
-                                <button
-                                    id="btn-add-batch"
-                                    onclick="addScanBatch()"
-                                    class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded py-1.5 text-xs"
-                                >
-                                    + Batch
-                                </button>
-                                <button
-                                    id="btn-run-sequence"
-                                    onclick="runAutoSequence()"
-                                    class="flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold"
-                                >
-                                    RUN
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="panel-monitor" class="ui-panel panel-right panel-top pointer-events-auto">
-                    <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">HW STATE MONITOR</h3>
-                        <div class="panel-actions">
-                            <button class="panel-action" data-panel-action="collapse">_</button
-                            ><button class="panel-action" data-panel-action="hide">×</button>
-                        </div>
-                    </header>
-                    <div class="ui-panel-body">
-                        <div class="flex items-center justify-between mb-2">
-                            <span
-                                id="status-badge"
-                                class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600"
-                                >STANDBY</span
-                            >
-                        </div>
-                        <div class="text-xs">
-                            Gantry <span id="monitor-rpm" class="font-mono text-green-400">0 rpm</span>
-                        </div>
-                        <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1 mb-2">
-                            <div id="monitor-rpm-bar" class="bg-green-500 h-1.5 rounded-full" style="width: 0%"></div>
-                        </div>
-                        <div class="text-[10px] text-gray-400">
-                            Mode: <span id="monitor-mode">SCANO</span> / Rows: <span id="monitor-rows">320</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 mt-2">
-                            <div class="bg-gray-800 p-2 rounded text-center">
-                                <div class="text-[10px] text-gray-500">Couch Y</div>
-                                <div id="monitor-couch-y" class="text-sm font-mono">0%</div>
-                            </div>
-                            <div class="bg-gray-800 p-2 rounded text-center">
-                                <div class="text-[10px] text-gray-500">Couch Z</div>
-                                <div id="monitor-couch-z" class="text-sm font-mono">0%</div>
-                            </div>
-                        </div>
-                        <div class="mt-2 text-[10px] space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="w-12">A</span>
-                                <div class="flex-1 bg-gray-800 rounded h-2">
-                                    <div
-                                        id="monitor-inj-a-bar"
-                                        class="bg-purple-500 h-2 rounded"
-                                        style="width: 100%"
-                                    ></div>
-                                </div>
-                                <span id="monitor-inj-a" class="w-8 text-right">100%</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-12">B</span>
-                                <div class="flex-1 bg-gray-800 rounded h-2">
-                                    <div
-                                        id="monitor-inj-b-bar"
-                                        class="bg-blue-400 h-2 rounded"
-                                        style="width: 100%"
-                                    ></div>
-                                </div>
-                                <span id="monitor-inj-b" class="w-8 text-right">100%</span>
-                            </div>
-                        </div>
-                        <div class="border-t border-gray-700 mt-2 pt-2 text-[10px] text-gray-400">
-                            <div>Last Source: <span id="monitor-last-source">-</span></div>
-                            <div>Last Result: <span id="monitor-last-result">-</span></div>
-                            <div>Error: <span id="monitor-last-error" class="text-red-300">-</span></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="panel-hw-config" class="ui-panel panel-left panel-mid pointer-events-auto is-hidden">
-                    <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">HW設定</h3>
-                        <div class="panel-actions">
-                            <button class="panel-action" data-panel-action="collapse">_</button
-                            ><button class="panel-action" data-panel-action="hide">×</button>
-                        </div>
-                    </header>
-                    <div class="ui-panel-body space-y-2">
-                        <div>
-                            <label class="text-[11px] text-gray-400">Detector Rows</label
-                            ><select
-                                id="select-detector-rows"
-                                class="w-full mt-1 bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
-                            ></select>
-                        </div>
-                        <div>
-                            <label class="text-[11px] text-gray-400 flex justify-between"
-                                ><span>Couch Y</span><span id="couch-y-val">0%</span></label
-                            ><input
                                 type="range"
                                 id="slider-couch-y"
                                 min="0"
                                 max="100"
                                 value="0"
-                                class="w-full accent-blue-500"
+                                class="w-full accent-blue-500 mt-1 cursor-pointer"
                             />
                         </div>
                         <div>
-                            <label class="text-[11px] text-gray-400 flex justify-between"
-                                ><span>Couch Z</span><span id="couch-z-val">0%</span></label
-                            ><input
+                            <label class="text-[11px] text-gray-400 flex justify-between">
+                                <span>Couch Z (前後):</span>
+                                <span id="couch-z-val" class="font-mono text-blue-300">0%</span>
+                            </label>
+                            <input
                                 type="range"
                                 id="slider-couch-z"
                                 min="0"
                                 max="100"
                                 value="0"
-                                class="w-full accent-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label class="text-[11px] text-gray-400 flex justify-between"
-                                ><span>Contrast A</span><span id="inject-a-val">0%</span></label
-                            ><input
-                                type="range"
-                                id="slider-inject-a"
-                                min="0"
-                                max="100"
-                                value="0"
-                                class="w-full accent-purple-500"
-                            />
-                        </div>
-                        <div>
-                            <label class="text-[11px] text-gray-400 flex justify-between"
-                                ><span>Saline B</span><span id="inject-b-val">0%</span></label
-                            ><input
-                                type="range"
-                                id="slider-inject-b"
-                                min="0"
-                                max="100"
-                                value="0"
-                                class="w-full accent-cyan-400"
+                                class="w-full accent-blue-500 mt-1 cursor-pointer"
                             />
                         </div>
                     </div>
                 </section>
 
-                <section id="panel-3d-config" class="ui-panel panel-right panel-bottom pointer-events-auto is-hidden">
+                <!-- Video Streaming Panel -->
+                <section id="panel-stream" class="ui-panel panel-right panel-top pointer-events-auto">
                     <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">3D表示/操作</h3>
+                        <h3 class="text-xs font-bold text-gray-300">映像配信設定 (Virtual Camera)</h3>
                         <div class="panel-actions">
-                            <button class="panel-action" data-panel-action="collapse">_</button
-                            ><button class="panel-action" data-panel-action="hide">×</button>
+                            <button class="panel-action" data-panel-action="collapse">_</button>
+                            <button class="panel-action" data-panel-action="hide">×</button>
                         </div>
                     </header>
                     <div class="ui-panel-body space-y-2">
-                        <select
-                            id="select-focus"
-                            onchange="handleFocusChange(this.value)"
-                            class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600"
-                        >
-                            <option value="" disabled selected>フォーカス対象を選択...</option>
-                            <optgroup label="CT Room Components">
-                                <option value="Injector">Injector</option>
-                                <option value="Gantry">CT Gantry</option>
-                                <option value="Couch">CT Couch</option>
-                                <option value="TouchPanel">CT Touch Panel</option>
-                                <option value="XrayTube">X-ray Tube</option>
-                                <option value="Detector">Detector</option>
-                                <option value="ConsoleDisplay">Console Display</option>
-                                <option value="OperationSwitcher">Operation Switcher</option>
-                            </optgroup>
-                            <optgroup label="Server Rack (Console BOX)">
-                                <option value="SCON">Server: SCON</option>
-                                <option value="DCON">Server: DCON</option>
-                                <option value="RTM">Server: RTM</option>
-                                <option value="IDD">Server: IDD</option>
-                                <option value="RDD">Server: RDD</option>
-                                <option value="SAC">Server: SAC</option>
-                                <option value="FullRack">Console BOX (Full Rack)</option>
-                            </optgroup>
-                        </select>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <button
-                                onclick="setCameraView('free')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Free
-                            </button>
-                            <button
-                                onclick="setCameraView('operator')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Operator
-                            </button>
-                            <button
-                                onclick="setCameraView('patient')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Patient
-                            </button>
-                            <button
-                                onclick="setCameraView('injector')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Injector
-                            </button>
-                            <button
-                                onclick="setCameraView('gantryTop')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Gantry Top
-                            </button>
-                            <button
-                                onclick="setCameraView('gantrySide')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Gantry Side
-                            </button>
-                        </div>
-                        <div class="flex gap-2">
-                            <button
-                                id="btn-gantry-opaque"
-                                onclick="setGantryOpacity(false)"
-                                class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
-                            >
-                                Opaque
-                            </button>
-                            <button
-                                id="btn-gantry-trans"
-                                onclick="setGantryOpacity(true)"
-                                class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Translucent
-                            </button>
-                        </div>
-                        <div class="flex gap-2">
-                            <button
-                                id="btn-laser-toggle"
-                                onclick="toggleLaserAlignment()"
-                                class="flex-1 bg-red-700 hover:bg-red-600 text-xs py-1.5 rounded border border-red-500 font-bold"
-                            >
-                                Laser Crosshair
-                            </button>
-                            <select
-                                id="select-graphics-quality"
-                                onchange="setGraphicsQuality(this.value)"
-                                class="flex-1 bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
-                            >
-                                <option value="high" selected>Quality: High (ACES/2x)</option>
-                                <option value="standard">Quality: Standard (1x)</option>
+                        <div class="flex gap-1 text-[10px]">
+                            <select id="select-stream-codec" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                <option value="mjpeg">MJPEG</option>
+                                <option value="h264" selected>H.264</option>
+                            </select>
+                            <select id="select-stream-proto" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                <option value="http">HTTP</option>
+                                <option value="rtsp" selected>RTSP</option>
                             </select>
                         </div>
+                        <div class="flex gap-1 text-[10px] items-center">
+                            <span class="text-gray-400">FPS:</span>
+                            <select id="select-stream-fps" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                <option value="15">15</option>
+                                <option value="30" selected>30</option>
+                                <option value="60">60</option>
+                            </select>
+                            <span class="text-gray-400 ml-1">Qual:</span>
+                            <select id="select-stream-quality" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
+                                <option value="0.7">70%</option>
+                                <option value="0.85">85%</option>
+                                <option value="0.92" selected>92% (High)</option>
+                                <option value="0.98">98% (Max)</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-1 text-[10px] items-center">
+                            <span class="text-gray-400">Res:</span>
+                            <input type="number" id="input-stream-width" value="1280" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Width (px)" />
+                            <span class="text-gray-400">x</span>
+                            <input type="number" id="input-stream-height" value="960" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Height (px)" />
+                            <span class="text-gray-400 ml-1">hFOV:</span>
+                            <input type="number" id="input-stream-hfov" value="60" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-10" title="Horizontal FOV (deg)" />
+                        </div>
+                        <button id="btn-camera-stream-toggle" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1.5 rounded font-bold shadow transition">Start Stream</button>
+                        <div id="stream-url-display" class="text-[9px] font-mono text-indigo-300 truncate hidden"></div>
 
-                        <button
-                            id="btn-phantom-toggle"
-                            onclick="toggleWaterPhantom()"
-                            class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                        >
-                            Toggle Water Phantom
-                        </button>
-                        <button
-                            id="btn-xray-toggle"
-                            onclick="toggleXRay()"
-                            class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                        >
-                            Show X-Ray Beam
-                        </button>
-                        <button
-                            id="btn-fisheye-toggle"
-                            onclick="toggleFisheye()"
-                            class="w-full bg-purple-900 hover:bg-purple-800 text-xs py-1.5 rounded border border-purple-700"
-                        >
-                            Toggle Fisheye Lens
-                        </button>
-                        <button
-                            id="btn-patient-toggle"
-                            onclick="togglePatient()"
-                            class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
-                        >
-                            Hide Patient
-                        </button>
+                        <!-- Camera View Presets -->
+                        <div class="border-t border-gray-700 pt-2 mt-2 space-y-1">
+                            <div class="text-[10px] font-bold text-blue-300">Camera Angle Presets (視点・位置切り替え)</div>
+                            <div class="grid grid-cols-3 gap-1 text-[10px]">
+                                <button onclick="setCameraView('free')" class="bg-gray-800 hover:bg-gray-700 text-white py-1 rounded border border-gray-600 font-medium transition">Free</button>
+                                <button onclick="setCameraView('patient')" class="bg-gray-800 hover:bg-gray-700 text-white py-1 rounded border border-gray-600 font-medium transition">Patient</button>
+                                <button onclick="setCameraView('operator')" class="bg-gray-800 hover:bg-gray-700 text-white py-1 rounded border border-gray-600 font-medium transition">Operator</button>
+                                <button onclick="setCameraView('gantryTop')" class="bg-indigo-900 hover:bg-indigo-800 text-indigo-100 py-1 rounded border border-indigo-600 font-bold transition">Gantry Top</button>
+                                <button onclick="setCameraView('gantrySide')" class="bg-indigo-900 hover:bg-indigo-800 text-indigo-100 py-1 rounded border border-indigo-600 font-bold transition col-span-2">Gantry Side</button>
+                            </div>
+                        </div>
 
-                        <!-- Stream Diagnostics -->
-                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
+                        <div class="flex gap-2 pt-1">
+                            <button
+                                id="btn-fisheye-toggle"
+                                onclick="toggleFisheye()"
+                                class="w-full bg-purple-800 hover:bg-purple-700 text-xs py-1.5 rounded border border-purple-600 font-bold transition"
+                            >
+                                Toggle Fisheye Lens (魚眼レンズ)
+                            </button>
+                        </div>
+
+                        <!-- Diagnostics & Stream Server Links -->
+                        <div class="border-t border-gray-700 pt-2 space-y-2 mt-2">
                             <div class="flex items-center justify-between text-[10px] font-bold text-green-400">
                                 <span>Stream Status / Diagnostics</span>
                                 <span id="diag-stream-fps" class="text-sky-300 font-mono">OFF</span>
@@ -360,181 +136,17 @@
                                 <div><span class="text-gray-400">Latency:</span> <strong id="diag-stream-latency" class="text-emerald-400 font-mono">-- ms</strong></div>
                                 <div><span class="text-gray-400">Bitrate:</span> <strong id="diag-stream-bitrate" class="text-sky-400 font-mono">-- KB/s</strong></div>
                             </div>
-                            <div class="flex gap-2">
-                                <a href="http://127.0.0.1:8080/" target="_blank" class="flex-1 bg-green-900 hover:bg-green-800 text-green-100 text-center text-[10px] py-1.5 rounded border border-green-700 transition block">
-                                    Open Stream Server Info
-                                </a>
+                            <a href="http://127.0.0.1:8080/" target="_blank" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white text-center text-xs py-1.5 rounded font-bold transition block border border-emerald-500 shadow">
+                                Open Stream Server Info (http://127.0.0.1:8080)
+                            </a>
+                            <div class="text-[10px] text-gray-300 bg-gray-900/90 p-2 rounded border border-gray-700 break-all leading-relaxed space-y-1">
+                                <div><span class="text-blue-400 font-bold">HTTP MJPEG:</span> <a href="http://127.0.0.1:8080/live/ct-camera.mjpg" target="_blank" class="underline text-blue-300 hover:text-blue-200">http://127.0.0.1:8080/live/ct-camera.mjpg</a></div>
+                                <div><span class="text-yellow-400 font-bold">RTSP (VLC):</span> <code class="text-yellow-300 font-mono select-all">rtsp://127.0.0.1:8554/live/ct-camera.mp4</code></div>
                             </div>
-                            <div class="text-[9px] text-gray-400 bg-gray-900/50 p-1.5 rounded border border-gray-700 break-all leading-tight">
-                                <span class="text-blue-300 font-bold">HTTP MJPEG:</span> http://127.0.0.1:8080/live/ct-camera.mjpg<br/>
-                                <span class="text-yellow-300 font-bold">RTSP (VLC):</span> rtsp://127.0.0.1:8554/live/ct-camera.mp4
-                            </div>
-                        </div>
-
-                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
-                            <div class="text-[10px] font-bold text-blue-300">GLB Model & Position Settings</div>
-                            <select
-                                id="select-patient-glb"
-                                onchange="changePatientGlbModel(this.value)"
-                                class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
-                            ></select>
-
-                            <!-- Patient Position & 3-Axis Rotation Controls -->
-                            <div class="bg-gray-900/80 p-2 rounded border border-gray-700 space-y-1.5 text-[10px]">
-                                <div class="flex justify-between items-center text-gray-300 font-bold mb-1 border-b border-gray-700 pb-1">
-                                    <span>Patient Transform (数値入力 & 6軸操作)</span>
-                                    <button onclick="resetPatientPositionUI()" class="text-[9px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset</button>
-                                </div>
-                                <div class="text-[9px] text-blue-300 font-bold">平行移動 (XYZ)</div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos X (左右):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-x" value="0.00" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('x')" />
-                                            <span>m</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-x" min="-2" max="2" step="0.01" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('x')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos Y (高さ):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-y" value="-0.10" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('y')" />
-                                            <span>m</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-y" min="-2" max="2" step="0.01" value="-0.1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('y')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos Z (前後):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-z" value="0.45" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('z')" />
-                                            <span>m</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-z" min="-3" max="3" step="0.01" value="0.45" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('z')" />
-                                </div>
-
-                                <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">3軸回転 (Rot XYZ)</div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot X (ピッチ):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-rotX" value="-90" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotX')" />
-                                            <span>°</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-rotX" min="-180" max="180" step="1" value="-90" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotX')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot Y (ヨー):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-rotY" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotY')" />
-                                            <span>°</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-rotY" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotY')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot Z (ロール):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-rotZ" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotZ')" />
-                                            <span>°</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-rotZ" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotZ')" />
-                                </div>
-                            </div>
-
-                            <div class="flex gap-1">
-                                <input
-                                    type="text"
-                                    id="input-add-glb-path"
-                                    placeholder="assets/glb/new_model.glb"
-                                    class="flex-1 bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white"
-                                />
-                                <button
-                                    onclick="spawnCustomGlbFromInput()"
-                                    class="bg-blue-700 hover:bg-blue-600 text-xs px-2 py-1 rounded font-bold"
-                                >
-                                    + Spawn
-                                </button>
-                            </div>
-                        </div>
-                        <div class="border-t border-gray-700 pt-2 space-y-1">
-                            <div class="text-[10px] font-bold text-gray-400">Virtual Camera Stream</div>
-                            <div class="flex gap-1 text-[10px]">
-                                <select id="select-stream-codec" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
-                                    <option value="mjpeg">MJPEG</option>
-                                    <option value="h264" selected>H.264</option>
-                                </select>
-                                <select id="select-stream-proto" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
-                                    <option value="http">HTTP</option>
-                                    <option value="rtsp" selected>RTSP</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-1 text-[10px] items-center">
-                                <span class="text-gray-400">FPS:</span>
-                                <select id="select-stream-fps" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
-                                    <option value="15">15</option>
-                                    <option value="30" selected>30</option>
-                                    <option value="60">60</option>
-                                </select>
-                                <span class="text-gray-400 ml-1">Qual:</span>
-                                <select id="select-stream-quality" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
-                                    <option value="0.7">70%</option>
-                                    <option value="0.85">85%</option>
-                                    <option value="0.92" selected>92% (High)</option>
-                                    <option value="0.98">98% (Max)</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-1 text-[10px] items-center">
-                                <span class="text-gray-400">Res:</span>
-                                <input type="number" id="input-stream-width" value="1280" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Width (px)" />
-                                <span class="text-gray-400">x</span>
-                                <input type="number" id="input-stream-height" value="960" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-12" title="Height (px)" />
-                                <span class="text-gray-400 ml-1">hFOV:</span>
-                                <input type="number" id="input-stream-hfov" value="60" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white w-10" title="Horizontal FOV (deg)" />
-                            </div>
-                            <button id="btn-camera-stream-toggle" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold">Start Stream</button>
-                            <div id="stream-url-display" class="text-[9px] font-mono text-indigo-300 truncate hidden"></div>
-
                         </div>
                     </div>
                 </section>
 
-                <section id="panel-command-log" class="ui-panel panel-left panel-bottom pointer-events-auto is-hidden">
-                    <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">Command Log</h3>
-                        <div class="panel-actions">
-                            <button id="btn-clear-command-log" class="panel-action">C</button
-                            ><button class="panel-action" data-panel-action="collapse">_</button
-                            ><button class="panel-action" data-panel-action="hide">×</button>
-                        </div>
-                    </header>
-                    <div class="ui-panel-body">
-                        <div
-                            id="command-log-list"
-                            class="h-40 overflow-y-auto text-[10px] font-mono bg-gray-950/70 border border-gray-800 rounded p-2 space-y-1"
-                        ></div>
-                    </div>
-                </section>
-
-                <div id="info-dialog" class="hidden ui-info pointer-events-auto">
-                    <div class="flex justify-between items-start mb-2 border-b border-gray-700 pb-2">
-                        <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
-                        <button onclick="hideInfoDialog()" class="text-gray-400 hover:text-white text-2xl leading-none">
-                            &times;
-                        </button>
-                    </div>
-                    <p id="info-dialog-desc" class="text-xs text-gray-300 whitespace-pre-line leading-relaxed">
-                        Description goes here...
-                    </p>
-                </div>
             </div>
         </div>
 
@@ -562,24 +174,16 @@
                 "./assets/js/core/profile/profile-service.js",
                 "./assets/js/core/hw/gantry-sim.js",
                 "./assets/js/core/hw/couch-sim.js",
-                "./assets/js/core/hw/injector-sim.js",
                 "./assets/js/core/hw/camera-sim.js",
                 "./assets/js/core/config/models-config.js",
                 "./assets/js/core/services/model-registry.js",
-                "./assets/js/core/services/command-log-service.js",
                 "./assets/js/core/services/video-stream-service.js",
                 "./assets/js/core/commands/command-bus.js",
-                "./assets/js/core/services/sequence-service.js",
-                "./assets/js/core/services/batch-service.js",
                 "./assets/js/core/services/tween-utils.js",
-                "./assets/js/core/services/sequence-runner.js",
-                "./assets/js/core/services/performance-service.js",
                 "./assets/js/adapters/external/protocol-v1.js",
                 "./assets/js/adapters/external/external-gateway.js",
                 "./assets/js/adapters/video/canvas-capturer.js",
                 "./assets/js/adapters/video/stream-gateway.js",
-                "./assets/js/adapters/ui/dialog-controller.js",
-                "./assets/js/adapters/ui/scan-controller.js",
                 "./assets/js/adapters/ui/patient-controller.js",
                 "./assets/js/adapters/ui/ui-controller.js",
                 "./assets/js/view/view-sync.js",
@@ -587,9 +191,6 @@
                 "./assets/js/view/models/mesh-factory.js",
                 "./assets/js/view/models/room-model.js",
                 "./assets/js/view/models/gantry-model.js",
-                "./assets/js/view/models/injector-model.js",
-                "./assets/js/view/models/control-room-model.js",
-                "./assets/js/view/models/server-rack-model.js",
                 "./assets/js/core/main.js"
             ];
 

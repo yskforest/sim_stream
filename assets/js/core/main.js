@@ -159,9 +159,6 @@ function init() {
     // --- Environment Build ---
     buildRoom();
     buildCTScanner();
-    buildInjector();
-    buildControlRoom();
-    buildServerRack();
 
     // --- UI Setup ---
     CTUIController.setup();
@@ -201,13 +198,7 @@ function animate(time) {
         mixer.update(delta);
     }
 
-    if (Meshes.serverLeds) {
-        Meshes.serverLeds.forEach(function (mat) {
-            if (Math.random() > 0.85) {
-                mat.opacity = Math.random();
-            }
-        });
-    }
+
 
     controls.update();
 

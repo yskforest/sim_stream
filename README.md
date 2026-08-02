@@ -24,22 +24,27 @@ bash setup.sh
 ```
 
 ### 2.2 起動方法
-HTTPサーバー（`npx serve` や Live Server など）を立ち上げ、ブラウザで `index.html` にアクセスします。
+Pythonの組み込みHTTPサーバー（または Live Server など）を立ち上げ、ブラウザで `http://localhost:8000` にアクセスします。
 ```bash
-npx serve .
+python -m http.server 8000
 ```
 
 ### 2.3 動作検証コマンド
 外部I/Fプロトコルおよび動作を自動検証します。
 ```bash
-node scripts/verify-external-interface.js
+python scripts/verify_external_interface.py
 ```
 
 ### 2.4 リアルタイム動画配信サーバーの起動 (HTTP MJPEG / RTSP)
 `http://127.0.0.1:8080/live/ct-camera.mjpg` で外部ブラウザやVLCプレイヤーから閲覧する場合は、ストリーミングサーバーを起動します。
-```bash
-node scripts/stream-server.js
-```
+- **Python版（推奨・依存なし）**:
+  ```bash
+  python scripts/stream_server.py
+  ```
+- **Node.js版**:
+  ```bash
+  node scripts/stream-server.js
+  ```
 
 ### 2.5 外部APIでの操作例
 ブラウザのコンソールや外部アプリケーションから直接操作が可能です。

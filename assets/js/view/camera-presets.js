@@ -1,7 +1,7 @@
 // カメラ視点プリセットと視点遷移制御
 function setCameraView(viewType) {
     if (!viewType.startsWith("focus_")) {
-        hideInfoDialog();
+        if (typeof hideInfoDialog === "function") hideInfoDialog();
     }
 
     // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
