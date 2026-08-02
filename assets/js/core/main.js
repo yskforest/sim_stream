@@ -5,6 +5,46 @@ window.toggleFisheye = function() {
     var btn = document.getElementById("btn-fisheye-toggle");
     if (btn) btn.style.backgroundColor = window.isFisheyeEnabled ? "#7e22ce" : "";
 };
+window.toggleLaserAlignment = function() {
+    if (window.Meshes && window.Meshes.laserGroup) {
+        window.Meshes.laserGroup.visible = !window.Meshes.laserGroup.visible;
+        var btn = document.getElementById("btn-laser-toggle");
+        if (btn) {
+            if (window.Meshes.laserGroup.visible) {
+                btn.className = "w-full bg-red-700 hover:bg-red-600 text-xs py-1.5 rounded border border-red-500 font-bold";
+            } else {
+                btn.className = "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600";
+            }
+        }
+    }
+};
+window.toggleWaterPhantom = function() {
+    if (window.Meshes && window.Meshes.phantomGroup) {
+        window.Meshes.phantomGroup.visible = !window.Meshes.phantomGroup.visible;
+        var btn = document.getElementById("btn-phantom-toggle");
+        if (btn) {
+            if (window.Meshes.phantomGroup.visible) {
+                btn.className = "w-full bg-cyan-700 hover:bg-cyan-600 text-xs py-1.5 rounded border border-cyan-500 font-bold";
+            } else {
+                btn.className = "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600";
+            }
+        }
+    }
+};
+window.setGraphicsQuality = function(mode) {
+    if (!window.renderer) return;
+    if (mode === "high") {
+        window.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        if (typeof THREE.ACESFilmicToneMapping !== "undefined") {
+            window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            window.renderer.toneMappingExposure = 1.05;
+        }
+    } else {
+        window.renderer.setPixelRatio(1.0);
+        window.renderer.toneMapping = THREE.NoToneMapping;
+    }
+    window.renderer.setSize(window.innerWidth, window.innerHeight);
+};
 var fisheyeRenderTarget = null;
 var fisheyeCamera = null;
 var fisheyeScene = null;
@@ -28,30 +68,72 @@ function init() {
     }
     var container = document.getElementById("canvas-container");
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111115);
-    scene.fog = new THREE.FogExp2(0x111115, 0.03);
+    scene.background = new THREE.Color(0x0f172a);
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.025);
 
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });
     window.renderer = renderer;
     window.scene = scene;
     window.camera = camera;
+    
+    // --- High DPI Sharpness & Color Pipeline ---
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    if (typeof THREE.ACESFilmicToneMapping !== "undefined") {
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+    }
+    if (typeof THREE.SRGBColorSpace !== "undefined") {
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+    } else if (typeof THREE.sRGBEncoding !== "undefined") {
+        renderer.outputEncoding = THREE.sRGBEncoding;
+    }
+
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
+
+    // --- Procedural IBL Environment Map Generation ---
+    try {
+        if (typeof THREE.PMREMGenerator === "function") {
+            var pmremGen = new THREE.PMREMGenerator(renderer);
+            pmremGen.compileEquirectangularShader();
+            
+            var envScene = new THREE.Scene();
+            var envLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+            envLight1.position.set(2, 5, 2);
+            envScene.add(envLight1);
+            
+            var envLight2 = new THREE.DirectionalLight(0x38bdf8, 0.8);
+            envLight2.position.set(-2, -3, -2);
+            envScene.add(envLight2);
+
+            var envBoxGeo = new THREE.BoxGeometry(10, 10, 10);
+            var envBoxMat = new THREE.MeshBasicMaterial({ color: 0x475569, side: THREE.BackSide });
+            envScene.add(new THREE.Mesh(envBoxGeo, envBoxMat));
+
+            var envTexture = pmremGen.fromScene(envScene).texture;
+            scene.environment = envTexture;
+            pmremGen.dispose();
+        }
+    } catch (e) {
+        console.warn("Failed to generate PMREM environment map:", e);
+    }
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.01;
 
-    // --- Lighting ---
-    var ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    // --- High-Quality Realistic Medical Lighting ---
+    var hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x334155, 0.55);
+    hemiLight.position.set(0, 10, 0);
+    scene.add(hemiLight);
 
-    var dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+    var dirLight = new THREE.DirectionalLight(0xffffff, 1.15);
     dirLight.position.set(5, 10, 5);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
@@ -62,17 +144,17 @@ function init() {
     dirLight.shadow.camera.right = 6;
     dirLight.shadow.camera.top = 6;
     dirLight.shadow.camera.bottom = -6;
-    dirLight.shadow.bias = -0.0003;
+    dirLight.shadow.bias = -0.0001;
     dirLight.shadow.normalBias = 0.02;
     scene.add(dirLight);
 
-    var pointLight = new THREE.PointLight(0xddf0ff, 0.6, 5);
-    pointLight.position.set(0, 1.2, 0);
-    pointLight.castShadow = true;
-    pointLight.shadow.mapSize.width = 1024;
-    pointLight.shadow.mapSize.height = 1024;
-    pointLight.shadow.bias = -0.001;
-    scene.add(pointLight);
+    var ceilingPanelLight = new THREE.PointLight(0xe0f2fe, 0.8, 8);
+    ceilingPanelLight.position.set(0, 3.2, 0);
+    ceilingPanelLight.castShadow = true;
+    ceilingPanelLight.shadow.mapSize.width = 1024;
+    ceilingPanelLight.shadow.mapSize.height = 1024;
+    ceilingPanelLight.shadow.bias = -0.0005;
+    scene.add(ceilingPanelLight);
 
     // --- Environment Build ---
     buildRoom();
@@ -91,6 +173,7 @@ function init() {
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
@@ -165,11 +248,17 @@ function animate(time) {
         renderer.setScissor(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
         
         if (window.isFisheyeEnabled) {
-            var rw = Math.floor(vpW);
-            var rh = Math.floor(vpH);
+            var dpr = renderer.getPixelRatio();
+            var rw = Math.floor(vpW * dpr);
+            var rh = Math.floor(vpH * dpr);
             if (!fisheyeRenderTarget || fisheyeRenderTarget.width !== rw || fisheyeRenderTarget.height !== rh) {
                 if (fisheyeRenderTarget) fisheyeRenderTarget.dispose();
-                fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, { format: THREE.RGBAFormat });
+                fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, {
+                    format: THREE.RGBAFormat,
+                    samples: 4,
+                    minFilter: THREE.LinearFilter,
+                    magFilter: THREE.LinearFilter
+                });
                 if (!fisheyeScene) {
                     fisheyeScene = new THREE.Scene();
                     fisheyeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -194,8 +283,8 @@ function animate(time) {
 
             renderer.setRenderTarget(null);
             renderer.setScissorTest(true);
-            renderer.setViewport(vpX, vpY, rw, rh);
-            renderer.setScissor(vpX, vpY, rw, rh);
+            renderer.setViewport(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
+            renderer.setScissor(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
             renderer.render(fisheyeScene, fisheyeCamera);
         } else {
             renderer.render(scene, camera);
@@ -209,11 +298,17 @@ function animate(time) {
         renderer.setScissorTest(false);
         
         if (window.isFisheyeEnabled) {
-            var rw = window.innerWidth;
-            var rh = window.innerHeight;
+            var dpr = renderer.getPixelRatio();
+            var rw = Math.floor(window.innerWidth * dpr);
+            var rh = Math.floor(window.innerHeight * dpr);
             if (!fisheyeRenderTarget || fisheyeRenderTarget.width !== rw || fisheyeRenderTarget.height !== rh) {
                 if (fisheyeRenderTarget) fisheyeRenderTarget.dispose();
-                fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, { format: THREE.RGBAFormat });
+                fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, {
+                    format: THREE.RGBAFormat,
+                    samples: 4,
+                    minFilter: THREE.LinearFilter,
+                    magFilter: THREE.LinearFilter
+                });
                 if (!fisheyeScene) {
                     fisheyeScene = new THREE.Scene();
                     fisheyeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -234,7 +329,7 @@ function animate(time) {
             renderer.render(scene, camera);
 
             renderer.setRenderTarget(null);
-            renderer.setViewport(0, 0, rw, rh);
+            renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
             renderer.render(fisheyeScene, fisheyeCamera);
         } else {
             renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);

@@ -10,6 +10,12 @@ function buildInjector() {
     standBase.position.y = 0.05;
     injectorGroup.add(standBase);
 
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createContactShadowPlane === "function") {
+        const injectorShadow = window.CTMeshFactory.createContactShadowPlane(0.7, 0.7, 0.5);
+        injectorShadow.position.set(0, 0.001, 0);
+        injectorGroup.add(injectorShadow);
+    }
+
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 32), bodyMat);
     pole.position.y = 0.8;
     injectorGroup.add(pole);
@@ -153,8 +159,16 @@ function buildInjector() {
 
         // Glass/Plastic Barrel - DepthWrite false avoids transparency sorting issues
         const barrelMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff, transparent: true, opacity: 0.15,
-            roughness: 0.05, transmission: 0.9, depthWrite: false
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.25,
+            roughness: 0.05,
+            transmission: 0.9,
+            ior: 1.48,
+            thickness: 0.04,
+            clearcoat: 0.5,
+            clearcoatRoughness: 0.05,
+            depthWrite: false
         });
         const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.3, 32), barrelMat);
         syringeGroup.add(barrel);
@@ -255,5 +269,15 @@ function buildInjector() {
     };
 
     injectorGroup.add(headGroup);
+
+    injectorGroup.traverse(function (child) {
+        if (child.isMesh) {
+            if (!child.material || child.material.transparent !== true) {
+                child.castShadow = true;
+            }
+            child.receiveShadow = true;
+        }
+    });
+
     scene.add(injectorGroup);
 }

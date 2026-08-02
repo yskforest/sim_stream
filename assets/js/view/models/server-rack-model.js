@@ -17,6 +17,12 @@ function buildServerRack() {
     frame.receiveShadow = true;
     rackGroup.add(frame);
 
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createContactShadowPlane === "function") {
+        const rackShadow = window.CTMeshFactory.createContactShadowPlane(0.9, 1.1, 0.6);
+        rackShadow.position.set(0, 0.001, 0);
+        rackGroup.add(rackShadow);
+    }
+
     const innerMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
     const innerPanel = new THREE.Mesh(
         new THREE.BoxGeometry(rackWidth - 0.04, rackHeight - 0.1, rackDepth + 0.01),
@@ -94,6 +100,15 @@ function buildServerRack() {
         target: new THREE.Vector3(rackX, rackHeight / 2, rackZ),
         cameraPos: new THREE.Vector3(rackX - 2.5, rackHeight / 2 + 0.2, rackZ + 2.0),
     };
+
+    rackGroup.traverse(function (child) {
+        if (child.isMesh) {
+            if (!child.material || child.material.transparent !== true) {
+                child.castShadow = true;
+            }
+            child.receiveShadow = true;
+        }
+    });
 
     scene.add(rackGroup);
 }

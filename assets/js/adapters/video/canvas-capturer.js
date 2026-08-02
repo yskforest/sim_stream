@@ -65,13 +65,19 @@
                     var ctx = capturer.offscreenCtx;
                     var vp = window.activeViewportBounds;
                     if (vp && vp.w > 0 && vp.h > 0) {
-                        var sx = vp.x;
-                        var sy = vp.winH - (vp.y + vp.h);
-                        var sw = vp.w;
-                        var sh = vp.h;
+                        var winW = vp.winW || (typeof window !== "undefined" ? window.innerWidth : 1);
+                        var winH = vp.winH || (typeof window !== "undefined" ? window.innerHeight : 1);
+                        var scaleX = canvas.width / winW;
+                        var scaleY = canvas.height / winH;
+
+                        var sx = Math.floor(vp.x * scaleX);
+                        var sy = Math.floor((winH - (vp.y + vp.h)) * scaleY);
+                        var sw = Math.floor(vp.w * scaleX);
+                        var sh = Math.floor(vp.h * scaleY);
+
                         ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, width, height);
                     } else {
-                        ctx.drawImage(canvas, 0, 0, width, height);
+                        ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, width, height);
                     }
 
                     if (!capturer.isProcessingBlob) {

@@ -1,21 +1,29 @@
 function buildRoom() {
     const floorGeo = new THREE.PlaneGeometry(30, 30);
-    // 病室・CT検査室をイメージした明るく清潔感のある医療用フロアカラー
+    
+    let floorTexture = null;
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createFloorTileTexture === "function") {
+        floorTexture = window.CTMeshFactory.createFloorTileTexture();
+    }
+
     const floorMat = new THREE.MeshStandardMaterial({
-        color: 0xc4d4e0,
-        roughness: 0.35,
-        metalness: 0.05,
+        color: 0xcbd5e1,
+        roughness: 0.25,
+        metalness: 0.1,
+        map: floorTexture,
+        bumpMap: floorTexture,
+        bumpScale: 0.003
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // 50cm (0.5m) 間隔の視認性の高いクッキリしたグリッド (30m ÷ 60 = 0.5m)
-    const grid = new THREE.GridHelper(30, 60, 0x1d4ed8, 0x334155);
-    grid.position.y = 0.005;
+    // 50cm (0.5m) 間隔の視認性の高いクッキリした単一基準グリッド (30m ÷ 60 = 0.5m)
+    const grid = new THREE.GridHelper(30, 60, 0x1d4ed8, 0x64748b);
+    grid.position.y = 0.003;
     if (grid.material) {
-        grid.material.opacity = 0.85;
+        grid.material.opacity = 0.65;
         grid.material.transparent = true;
     }
     scene.add(grid);

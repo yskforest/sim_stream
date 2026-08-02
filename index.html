@@ -302,6 +302,31 @@
                                 Translucent
                             </button>
                         </div>
+                        <div class="flex gap-2">
+                            <button
+                                id="btn-laser-toggle"
+                                onclick="toggleLaserAlignment()"
+                                class="flex-1 bg-red-700 hover:bg-red-600 text-xs py-1.5 rounded border border-red-500 font-bold"
+                            >
+                                Laser Crosshair
+                            </button>
+                            <select
+                                id="select-graphics-quality"
+                                onchange="setGraphicsQuality(this.value)"
+                                class="flex-1 bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
+                            >
+                                <option value="high" selected>Quality: High (ACES/2x)</option>
+                                <option value="standard">Quality: Standard (1x)</option>
+                            </select>
+                        </div>
+
+                        <button
+                            id="btn-phantom-toggle"
+                            onclick="toggleWaterPhantom()"
+                            class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+                        >
+                            Toggle Water Phantom
+                        </button>
                         <button
                             id="btn-xray-toggle"
                             onclick="toggleXRay()"

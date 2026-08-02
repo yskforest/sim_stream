@@ -4,11 +4,18 @@ function buildCTScanner() {
     const gantryGroup = new THREE.Group();
     gantryGroup.position.set(0, 1.2, 0);
 
-    // High-end medical materials
-    const gantryMat = new THREE.MeshStandardMaterial({ color: 0xfcfcfc, roughness: 0.15, metalness: 0.1 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
-    const baseCoverMat = new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.5 });
-    const tunnelMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.2, side: THREE.DoubleSide });
+    // High-end medical physical materials
+    const gantryMat = new THREE.MeshPhysicalMaterial({
+        color: 0xfcfcfc,
+        roughness: 0.15,
+        metalness: 0.05,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.08,
+        reflectivity: 0.6
+    });
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4, metalness: 0.3 });
+    const baseCoverMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4, metalness: 0.1 });
+    const tunnelMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.15, clearcoat: 0.3, side: THREE.DoubleSide });
 
     Meshes.materials = {
         gantry: gantryMat,
@@ -56,6 +63,12 @@ function buildCTScanner() {
     mainBody.castShadow = true;
     mainBody.receiveShadow = true;
     gantryGroup.add(mainBody);
+
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createContactShadowPlane === "function") {
+        const gantryShadow = window.CTMeshFactory.createContactShadowPlane(2.6, 1.2, 0.7);
+        gantryShadow.position.set(0, -1.199, 0);
+        gantryGroup.add(gantryShadow);
+    }
 
     // Bore Tunnel
     const tunnelGeo = new THREE.CylinderGeometry(boreRadius - 0.005, boreRadius - 0.005, shellDepth, 128, 1, true);
@@ -192,6 +205,12 @@ function buildCTScanner() {
     couchFloorBase.receiveShadow = true;
     couchGroup.add(couchFloorBase);
 
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createContactShadowPlane === "function") {
+        const couchShadow = window.CTMeshFactory.createContactShadowPlane(1.2, 2.4, 0.6);
+        couchShadow.position.set(0, -0.149, 2.6);
+        couchGroup.add(couchShadow);
+    }
+
     // Middle sliding mechanism cover
     const couchMidBase = createRoundedBox(0.65, 0.15, 1.95, 0.05, new THREE.MeshStandardMaterial({ color: 0xf0f0f0 }));
     couchMidBase.position.set(0, 0.08, 2.6);
@@ -237,15 +256,65 @@ function buildCTScanner() {
     handle.receiveShadow = true;
     tabletopGroup.add(handle);
 
-    // Tabletop carbon-fiber/grey material
-    const tabletop = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.025, 3.5), new THREE.MeshStandardMaterial({ color: 0x99aacc, roughness: 0.5 }));
+    // --- Positioning Alignment Lasers (Red & Green Crosshairs) ---
+    const laserGroup = new THREE.Group();
+    laserGroup.position.set(0, 0, shellDepth / 2 + bevelT + 0.001);
+
+    const laserMatRed = new THREE.MeshBasicMaterial({
+        color: 0xff1133,
+        transparent: true,
+        opacity: 0.6,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+    });
+    const laserMatGreen = new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.6,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+    });
+
+    // Vertical central alignment laser plane
+    const laserV = new THREE.Mesh(new THREE.PlaneGeometry(0.004, 0.78), laserMatRed);
+    laserGroup.add(laserV);
+
+    // Horizontal alignment laser plane
+    const laserH = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.004), laserMatRed);
+    laserGroup.add(laserH);
+
+    // Lateral green alignment lasers
+    const laserLatLeft = new THREE.Mesh(new THREE.PlaneGeometry(0.004, 0.50), laserMatGreen);
+    laserLatLeft.position.set(-0.38, 0, 0);
+    laserGroup.add(laserLatLeft);
+
+    const laserLatRight = new THREE.Mesh(new THREE.PlaneGeometry(0.004, 0.50), laserMatGreen);
+    laserLatRight.position.set(0.38, 0, 0);
+    laserGroup.add(laserLatRight);
+
+    gantryGroup.add(laserGroup);
+    Meshes.laserGroup = laserGroup;
+
+    // Tabletop carbon-fiber material
+    let carbonTexture = null;
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createCarbonFiberTexture === "function") {
+        carbonTexture = window.CTMeshFactory.createCarbonFiberTexture();
+    }
+    const carbonMat = new THREE.MeshStandardMaterial({
+        color: 0x333742,
+        roughness: 0.35,
+        metalness: 0.2,
+        bumpMap: carbonTexture,
+        bumpScale: 0.002
+    });
+    const tabletop = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.025, 3.5), carbonMat);
     tabletop.position.set(0, 0.012, -0.15);
     tabletop.castShadow = true;
     tabletop.receiveShadow = true;
     tabletopGroup.add(tabletop);
 
     // Thick Mattress with light grey cover
-    const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.035, 3.35), new THREE.MeshStandardMaterial({ color: 0xe5ebf2, roughness: 0.9 }));
+    const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.035, 3.35), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 }));
     mattress.position.set(0, 0.042, -0.15);
     mattress.castShadow = true;
     mattress.receiveShadow = true;
@@ -255,6 +324,15 @@ function buildCTScanner() {
     patientGroup.position.set(0, 0.060, -0.2);
     tabletopGroup.add(patientGroup);
     Meshes.patientGroup = patientGroup;
+
+    const phantomGroup = new THREE.Group();
+    phantomGroup.position.set(0, 0.20, 0.2);
+    if (window.CTMeshFactory && typeof window.CTMeshFactory.createWaterPhantomMesh === "function") {
+        phantomGroup.add(window.CTMeshFactory.createWaterPhantomMesh());
+    }
+    phantomGroup.visible = false;
+    tabletopGroup.add(phantomGroup);
+    Meshes.phantomGroup = phantomGroup;
 
     async function loadPatientGlb() {
         try {

@@ -99,5 +99,55 @@ function buildControlRoom() {
     }
     controlGroup.add(switcherGroup);
 
+    // --- Protective Radiation Lead Glass Partition Window ---
+    const partitionGroup = new THREE.Group();
+    partitionGroup.position.set(-1.0, 1.4, 0);
+
+    // Dark metal frame
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.7 });
+    const frameLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.8, 0.1), frameMat);
+    frameLeft.position.set(0, 0, -1.5);
+    partitionGroup.add(frameLeft);
+
+    const frameRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.8, 0.1), frameMat);
+    frameRight.position.set(0, 0, 1.5);
+    partitionGroup.add(frameRight);
+
+    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 3.1), frameMat);
+    frameTop.position.set(0, 1.4, 0);
+    partitionGroup.add(frameTop);
+
+    const frameBottom = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 3.1), frameMat);
+    frameBottom.position.set(0, -1.4, 0);
+    partitionGroup.add(frameBottom);
+
+    // High-density lead glass pane
+    const leadGlassMat = new THREE.MeshPhysicalMaterial({
+        color: 0xbae6fd,
+        transparent: true,
+        opacity: 0.65,
+        roughness: 0.05,
+        transmission: 0.9,
+        ior: 1.52,
+        thickness: 0.08,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.05,
+        side: THREE.DoubleSide
+    });
+    const glassPane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.7), leadGlassMat);
+    glassPane.rotation.y = Math.PI / 2;
+    partitionGroup.add(glassPane);
+
+    controlGroup.add(partitionGroup);
+
+    controlGroup.traverse(function (child) {
+        if (child.isMesh) {
+            if (!child.material || child.material.transparent !== true) {
+                child.castShadow = true;
+            }
+            child.receiveShadow = true;
+        }
+    });
+
     scene.add(controlGroup);
 }
