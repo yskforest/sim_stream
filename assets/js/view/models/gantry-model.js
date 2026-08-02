@@ -195,38 +195,38 @@ function buildCTScanner() {
     Meshes.rotor = rotorGroup;
     ctGroup.add(gantryGroup);
 
-    // --- 4. Patient Couch (Detailed front, handles, structural tiers) ---
+    // --- 4. Patient Couch (Authentic Medical Hardware Design) ---
     const couchGroup = new THREE.Group();
 
-    // Bottom wide structural base
-    const couchFloorBase = createRoundedBox(0.85, 0.15, 2.0, 0.06, baseCoverMat);
-    couchFloorBase.position.set(0, -0.07, 2.6);
+    // Floor Base Pedestal (Compact, rounded motor housing on the floor)
+    const couchFloorBase = createRoundedBox(0.70, 0.18, 1.40, 0.06, baseCoverMat);
+    couchFloorBase.position.set(0, -0.09, 2.6);
     couchFloorBase.castShadow = true;
     couchFloorBase.receiveShadow = true;
     couchGroup.add(couchFloorBase);
 
     if (window.CTMeshFactory && typeof window.CTMeshFactory.createContactShadowPlane === "function") {
-        const couchShadow = window.CTMeshFactory.createContactShadowPlane(1.2, 2.4, 0.6);
-        couchShadow.position.set(0, -0.149, 2.6);
+        const couchShadow = window.CTMeshFactory.createContactShadowPlane(1.1, 1.8, 0.6);
+        couchShadow.position.set(0, -0.179, 2.6);
         couchGroup.add(couchShadow);
     }
 
     // Middle sliding mechanism cover
-    const couchMidBase = createRoundedBox(0.65, 0.15, 1.95, 0.05, new THREE.MeshStandardMaterial({ color: 0xf0f0f0 }));
-    couchMidBase.position.set(0, 0.08, 2.6);
+    const couchMidBase = createRoundedBox(0.56, 0.12, 1.30, 0.04, new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.4 }));
+    couchMidBase.position.set(0, 0.06, 2.6);
     couchMidBase.castShadow = true;
     couchMidBase.receiveShadow = true;
     couchGroup.add(couchMidBase);
 
-    // Expanding Bellows
+    // Expanding Bellows Column (Vertical accordion lift)
     const bellowsGroup = new THREE.Group();
-    bellowsGroup.position.set(0, 0.25, 2.6);
+    bellowsGroup.position.set(0, 0.22, 2.6);
     const bellowsCount = 6;
     const bellowsParts = [];
     for (let i = 0; i < bellowsCount; i++) {
-        const width = 0.58 - i * 0.02;
-        const depth = 1.82 - i * 0.04;
-        const bMesh = createRoundedBox(width, 0.10, depth, 0.04, new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.85 }));
+        const width = 0.50 - i * 0.015;
+        const depth = 1.15 - i * 0.03;
+        const bMesh = createRoundedBox(width, 0.08, depth, 0.03, new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 }));
         bMesh.castShadow = true;
         bMesh.receiveShadow = true;
         bellowsParts.push(bMesh);
@@ -239,19 +239,19 @@ function buildCTScanner() {
     const tabletopGroup = new THREE.Group();
     tabletopGroup.position.set(0, 0.88, 2.6);
 
-    // Under-table support structure
-    const supportBase = createRoundedBox(0.55, 0.15, 2.45, 0.05, new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.35 }));
-    supportBase.position.y = -0.12;
+    // Under-table Sliding Support Carriage (Cantilevered cradle frame)
+    const supportBase = createRoundedBox(0.46, 0.09, 1.70, 0.04, new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 }));
+    supportBase.position.set(0, -0.06, -0.25);
     supportBase.castShadow = true;
     supportBase.receiveShadow = true;
     tabletopGroup.add(supportBase);
 
-    // New U-Shaped Front Handle (Matches reference)
-    const handleGeo = new THREE.TorusGeometry(0.18, 0.015, 16, 32, Math.PI);
-    const handleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4 });
+    // Grab Handle at the rear end of the extended table
+    const handleGeo = new THREE.TorusGeometry(0.16, 0.012, 16, 32, Math.PI);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.5 });
     const handle = new THREE.Mesh(handleGeo, handleMat);
     handle.rotation.x = -Math.PI / 2;
-    handle.position.set(0, -0.01, 1.70); // Placed at the very front tip
+    handle.position.set(0, -0.01, 0.85); // Positioned at rear end of extended 2.4m plate
     handle.castShadow = true;
     handle.receiveShadow = true;
     tabletopGroup.add(handle);
@@ -295,38 +295,38 @@ function buildCTScanner() {
     gantryGroup.add(laserGroup);
     Meshes.laserGroup = laserGroup;
 
-    // Tabletop carbon-fiber material
+    // Realistic CT Carbon Fiber Tabletop Plate (2.4m length, extended 30cm away from CT)
     let carbonTexture = null;
     if (window.CTMeshFactory && typeof window.CTMeshFactory.createCarbonFiberTexture === "function") {
         carbonTexture = window.CTMeshFactory.createCarbonFiberTexture();
     }
     const carbonMat = new THREE.MeshStandardMaterial({
         color: 0x333742,
-        roughness: 0.35,
+        roughness: 0.3,
         metalness: 0.2,
         bumpMap: carbonTexture,
         bumpScale: 0.002
     });
-    const tabletop = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.025, 3.5), carbonMat);
-    tabletop.position.set(0, 0.012, -0.15);
+    const tabletop = createRoundedBox(0.44, 0.025, 2.40, 0.02, carbonMat);
+    tabletop.position.set(0, 0.012, -0.35);
     tabletop.castShadow = true;
     tabletop.receiveShadow = true;
     tabletopGroup.add(tabletop);
 
-    // Thick Mattress with light grey cover
-    const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.035, 3.35), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 }));
-    mattress.position.set(0, 0.042, -0.15);
+    // Soft Comfort Mattress with pale medical blue-gray vinyl cover (2.25m length)
+    const mattress = createRoundedBox(0.42, 0.035, 2.25, 0.02, new THREE.MeshStandardMaterial({ color: 0x9cb0c5, roughness: 0.65 }));
+    mattress.position.set(0, 0.042, -0.35);
     mattress.castShadow = true;
     mattress.receiveShadow = true;
     tabletopGroup.add(mattress);
 
     const patientGroup = new THREE.Group();
-    patientGroup.position.set(0, 0.060, -0.2);
+    patientGroup.position.set(0, 0.060, 0.0);
     tabletopGroup.add(patientGroup);
     Meshes.patientGroup = patientGroup;
 
     const phantomGroup = new THREE.Group();
-    phantomGroup.position.set(0, 0.20, 0.2);
+    phantomGroup.position.set(0, 0.20, 0.0);
     if (window.CTMeshFactory && typeof window.CTMeshFactory.createWaterPhantomMesh === "function") {
         phantomGroup.add(window.CTMeshFactory.createWaterPhantomMesh());
     }
