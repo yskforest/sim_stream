@@ -34,9 +34,23 @@
     function sendFrameToServer(frameData) {
         if (!frameData) return;
 
+        var sendStart = performance.now();
+        var blobSize = frameData.size || frameData.byteLength || 0;
+
+        function recordMetrics(latencyMs) {
+            if (global.CTPerformanceService) {
+                var captureLatency = (global.CTCanvasCapturer && typeof global.CTCanvasCapturer.lastCaptureLatencyMs === "number")
+                    ? global.CTCanvasCapturer.lastCaptureLatencyMs
+                    : 0.0;
+                global.CTPerformanceService.recordStreamFrame(captureLatency, latencyMs, blobSize);
+            }
+        }
+
         if (isWsConnected && ws && ws.readyState === WebSocket.OPEN) {
             try {
                 ws.send(frameData);
+                var wsLatency = performance.now() - sendStart;
+                recordMetrics(wsLatency);
                 return;
             } catch (e) {
                 // fallback to fetch if WS send fails
@@ -67,6 +81,8 @@
             .then(function (res) {
                 if (res.ok) {
                     serverAvailable = true;
+                    var fetchLatency = performance.now() - sendStart;
+                    recordMetrics(fetchLatency);
                 }
             })
             .catch(function () {

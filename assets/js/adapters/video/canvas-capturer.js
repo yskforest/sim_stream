@@ -82,7 +82,10 @@
 
                     if (!capturer.isProcessingBlob) {
                         capturer.isProcessingBlob = true;
+                        var captureStart = performance.now();
                         capturer.offscreenCanvas.toBlob(function (blob) {
+                            var captureMs = performance.now() - captureStart;
+                            capturer.lastCaptureLatencyMs = captureMs;
                             lastFrameData = blob;
                             capturer.isProcessingBlob = false;
                         }, "image/jpeg", quality);

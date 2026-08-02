@@ -178,6 +178,7 @@ function onWindowResize() {
 }
 
 function animate(time) {
+    var renderStart = performance.now();
     requestAnimationFrame(animate);
     if (!clock || !renderer || !scene || !camera) return;
 
@@ -335,5 +336,9 @@ function animate(time) {
             renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
             renderer.render(scene, camera);
         }
+    }
+
+    if (window.CTPerformanceService && typeof window.CTPerformanceService.recordRenderFrame === "function") {
+        window.CTPerformanceService.recordRenderFrame(renderStart, renderer);
     }
 }

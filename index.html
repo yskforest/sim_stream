@@ -17,6 +17,7 @@
                 <button class="toolbar-btn" data-panel-target="panel-hw-config">HW</button>
                 <button class="toolbar-btn" data-panel-target="panel-3d-config">3D</button>
                 <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
+                <button id="btn-hud-toggle" class="toolbar-btn" onclick="CTPerformanceService.toggleHud()">PERF</button>
             </div>
 
             <div id="ui-panels">
@@ -351,7 +352,14 @@
 
                         <!-- Stream Diagnostics -->
                         <div class="border-t border-gray-700 pt-2 space-y-1.5">
-                            <div class="text-[10px] font-bold text-green-400">Stream Status / Diagnostics</div>
+                            <div class="flex items-center justify-between text-[10px] font-bold text-green-400">
+                                <span>Stream Status / Diagnostics</span>
+                                <span id="diag-stream-fps" class="text-sky-300 font-mono">OFF</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[10px] bg-slate-900/80 p-1.5 rounded border border-slate-700/80">
+                                <div><span class="text-gray-400">Latency:</span> <strong id="diag-stream-latency" class="text-emerald-400 font-mono">-- ms</strong></div>
+                                <div><span class="text-gray-400">Bitrate:</span> <strong id="diag-stream-bitrate" class="text-sky-400 font-mono">-- KB/s</strong></div>
+                            </div>
                             <div class="flex gap-2">
                                 <a href="http://127.0.0.1:8080/" target="_blank" class="flex-1 bg-green-900 hover:bg-green-800 text-green-100 text-center text-[10px] py-1.5 rounded border border-green-700 transition block">
                                     Open Stream Server Info
@@ -567,6 +575,7 @@
                 "./assets/js/core/services/batch-service.js",
                 "./assets/js/core/services/tween-utils.js",
                 "./assets/js/core/services/sequence-runner.js",
+                "./assets/js/core/services/performance-service.js",
                 "./assets/js/adapters/external/protocol-v1.js",
                 "./assets/js/adapters/external/external-gateway.js",
                 "./assets/js/adapters/video/canvas-capturer.js",
