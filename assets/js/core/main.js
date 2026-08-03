@@ -256,6 +256,10 @@ function init() {
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.01;
 
+    if (window.CTFPSControls && typeof window.CTFPSControls.init === "function") {
+        window.CTFPSControls.init(camera, renderer.domElement);
+    }
+
     // --- Default Free View Camera Position & Target ---
     camera.position.set(4, 3, 5);
     controls.target.set(0, 0.5, 0);
@@ -344,6 +348,9 @@ function animate(time) {
 
     if (controls && controls.enabled) {
         controls.update();
+    }
+    if (window.CTFPSControls && typeof window.CTFPSControls.isEnabled === "function" && window.CTFPSControls.isEnabled()) {
+        window.CTFPSControls.update(delta);
     }
 
     var activeStream = window.CTVideoStreamService ? window.CTVideoStreamService.getActiveStream() : null;

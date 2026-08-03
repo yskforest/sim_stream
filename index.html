@@ -333,6 +333,7 @@
                                 class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
                             >
                                 <option value="free" selected>Free View (Interactive Orbit)</option>
+                                <option value="fps">FPS Walkthrough (WASD + Mouse)</option>
                                 <option value="operator">Operator View (Fixed)</option>
                                 <option value="patient">Patient View (Fixed)</option>
                                 <option value="injector">Injector View (Fixed)</option>
@@ -724,6 +725,7 @@
                 "./assets/js/adapters/ui/patient-controller.js",
                 "./assets/js/adapters/ui/ui-controller.js",
                 "./assets/js/view/view-sync.js",
+                "./assets/js/view/fps-controls.js",
                 "./assets/js/view/camera-presets.js",
                 "./assets/js/view/models/mesh-factory.js",
                 "./assets/js/view/models/room-model.js",
@@ -755,5 +757,12 @@
             }
             loadNext(0);
         </script>
+
+        <!-- FPS Controls On-Screen Guide Badge -->
+        <div id="fps-hud-guide" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 border border-indigo-500/70 text-indigo-200 text-xs px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm pointer-events-none z-50 flex items-center gap-2 hidden">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-bold text-white">FPS Walkthrough:</span>
+            <span class="font-mono text-[11px] text-slate-300">[WASD]: Walk | [Mouse Drag]: Look | [Shift]: Fast | [Q/E]: Up/Down</span>
+        </div>
     </body>
 </html>

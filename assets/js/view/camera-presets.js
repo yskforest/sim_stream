@@ -1,10 +1,11 @@
-// カメラ視点プリセットと視点遷移制御
 function setCameraView(viewType) {
     if (!viewType.startsWith("focus_")) {
         hideInfoDialog();
     }
 
     var isFree = (viewType === "free");
+    var isFPS = (viewType === "fps");
+
     var ctrl = window.controls || (typeof controls !== "undefined" ? controls : null);
     if (ctrl) {
         ctrl.enabled = isFree;
@@ -13,13 +14,21 @@ function setCameraView(viewType) {
         ctrl.enablePan = isFree;
     }
 
+    if (window.CTFPSControls) {
+        if (isFPS) {
+            window.CTFPSControls.enable();
+        } else {
+            window.CTFPSControls.disable();
+        }
+    }
+
     var sel = document.getElementById("select-camera-view");
     if (sel && sel.value !== viewType) {
         sel.value = viewType;
     }
 
-    // Free モードへの切替時は現在のカメラ位置・向きを保持したまま自由操作へ移行する
-    if (isFree) return;
+    // Free または FPS モードへの切替時は現在のカメラ位置・向きを保持して自由操作へ移行
+    if (isFree || isFPS) return;
 
     var target = getCameraTarget(viewType);
     if (!target) return;
@@ -27,13 +36,15 @@ function setCameraView(viewType) {
     // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
     new TWEEN.Tween(camera.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
 
-    new TWEEN.Tween(controls.target)
-        .to(target.lookAt, 1000)
-        .easing(TWEEN.Easing.Cubic.Out)
-        .onUpdate(function() {
-            if (window.controls) window.controls.update();
-        })
-        .start();
+    if (ctrl) {
+        new TWEEN.Tween(ctrl.target)
+            .to(target.lookAt, 1000)
+            .easing(TWEEN.Easing.Cubic.Out)
+            .onUpdate(function() {
+                if (window.controls) window.controls.update();
+            })
+            .start();
+    }
 }
 
 function getCameraTarget(type) {
