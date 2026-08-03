@@ -1,0 +1,34 @@
+{
+  "camera": {
+    "width": 1280,
+    "height": 960,
+    "fps": 30,
+    "hfov": 60,
+    "fov": 50,
+    "quality": 0.92,
+    "codec": "h264",
+    "protocol": "rtsp"
+  },
+  "network": {
+    "httpPort": 8080,
+    "rtspPort": 8554,
+    "host": "127.0.0.1"
+  },
+  "graphics": {
+    "quality": "high",
+    "shadows": true,
+    "exposure": 1.05
+  },
+  "hardware": {
+    "defaultDetectorRows": 320,
+    "maxRotorSpeed": 100
+  },
+  "patient": {
+    "defaultModelId": "default_patient",
+    "defaultModelName": "3D Patient (Male Posed 170cm)",
+    "defaultModelPath": "./assets/glb/rp_dennis_posed_004_100k.glb",
+    "defaultPosition": [0, -0.24, 0.45],
+    "defaultRotation": [-97, 0, 0],
+    "targetHeight": 1.7
+  }
+}

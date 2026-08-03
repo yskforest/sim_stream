@@ -328,6 +328,32 @@
         setPanelVisibilityForViewport();
     }
 
+    function applyConfigToUIInputs() {
+        if (!global.CTConfigService) return;
+        var get = global.CTConfigService.get.bind(global.CTConfigService);
+
+        var codecSelect = byId("select-stream-codec");
+        var protoSelect = byId("select-stream-proto");
+        var fpsSelect = byId("select-stream-fps");
+        var qualSelect = byId("select-stream-quality");
+        var widthInput = byId("input-stream-width");
+        var heightInput = byId("input-stream-height");
+        var hfovInput = byId("input-stream-hfov");
+
+        if (codecSelect) codecSelect.value = get("camera.codec", "h264");
+        if (protoSelect) protoSelect.value = get("camera.protocol", "rtsp");
+        if (fpsSelect) fpsSelect.value = String(get("camera.fps", 30));
+        if (qualSelect) qualSelect.value = String(get("camera.quality", 0.92));
+        if (widthInput) widthInput.value = String(get("camera.width", 1280));
+        if (heightInput) heightInput.value = String(get("camera.height", 960));
+        if (hfovInput) hfovInput.value = String(get("camera.hfov", 60));
+
+        var detRows = get("hardware.defaultDetectorRows", 320);
+        if (AppState && AppState.gantry && typeof detRows === "number") {
+            AppState.gantry.detectorRows = detRows;
+        }
+    }
+
     function setupUI() {
         if (isSetup) return;
 
@@ -347,6 +373,7 @@
         UI.selectStreamProto = byId("select-stream-proto");
         UI.streamUrlDisplay = byId("stream-url-display");
 
+        applyConfigToUIInputs();
         applyProfileUIConfig();
         bindPanelControls();
 

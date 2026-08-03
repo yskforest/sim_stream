@@ -1,18 +1,24 @@
 (function attachCameraSim(global) {
+    function getConfig(path, fallback) {
+        return (global.CTConfigService && typeof global.CTConfigService.get === "function")
+            ? global.CTConfigService.get(path, fallback)
+            : fallback;
+    }
+
     var cameraState = {
         position: { x: 0, y: 1.8, z: 3.5 },
         lookAt: { x: 0, y: 1.2, z: 0 },
         virtualPosition: { x: 0, y: 1.8, z: 3.5 },
         virtualLookAt: { x: 0, y: 1.2, z: 0 },
-        fov: 50,
-        hfov: 60,
+        fov: getConfig("camera.fov", 50),
+        hfov: getConfig("camera.hfov", 60),
         mode: "main",
         isStreaming: false,
-        codec: "h264",
-        protocol: "rtsp",
-        fps: 30,
-        width: 1280,
-        height: 960,
+        codec: getConfig("camera.codec", "h264"),
+        protocol: getConfig("camera.protocol", "rtsp"),
+        fps: getConfig("camera.fps", 30),
+        width: getConfig("camera.width", 1280),
+        height: getConfig("camera.height", 960),
         streamUrl: null,
     };
 
@@ -97,8 +103,9 @@
                 });
                 cameraState.streamUrl = streamRes.streamUrl;
             } else {
+                var httpPort = getConfig("network.httpPort", 8080);
                 cameraState.streamUrl =
-                    cameraState.protocol + "://localhost:8080/stream/virtual-camera." + (cameraState.codec === "h264" ? "mp4" : "mjpg");
+                    cameraState.protocol + "://" + getConfig("network.host", "localhost") + ":" + httpPort + "/stream/virtual-camera." + (cameraState.codec === "h264" ? "mp4" : "mjpg");
             }
 
             notifyStateChange();

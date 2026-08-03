@@ -1,15 +1,22 @@
+var getPatientConfig = function (key, fallback) {
+    if (typeof window !== "undefined" && window.CTConfigService && typeof window.CTConfigService.get === "function") {
+        return window.CTConfigService.get("patient." + key, fallback);
+    }
+    return fallback;
+};
+
 const CTModelsConfig = {
     models: [
         {
-            id: "default_patient",
-            name: "3D Patient (Male Posed 170cm)",
-            path: "./assets/glb/rp_dennis_posed_004_100k.glb",
+            id: getPatientConfig("defaultModelId", "default_patient"),
+            name: getPatientConfig("defaultModelName", "3D Patient (Male Posed 170cm)"),
+            path: getPatientConfig("defaultModelPath", "./assets/glb/rp_dennis_posed_004_100k.glb"),
             category: "patient",
             attachTo: "couch",
             transform: {
-                position: [0, -0.24, 0.45], // 天板上の最適中央位置
-                rotation: [-97, 0, 0],   // ユーザー参照画像と100%一致する仰臥位（胸上・背中着地・頭奥・足手前）
-                targetHeight: 1.7       // 身長 170cm (1.7m)
+                position: getPatientConfig("defaultPosition", [0, -0.24, 0.45]),
+                rotation: getPatientConfig("defaultRotation", [-97, 0, 0]),
+                targetHeight: getPatientConfig("targetHeight", 1.7)
             }
         }
     ],

@@ -1,8 +1,21 @@
 const http = require("http");
 const net = require("net");
 const crypto = require("crypto");
-const HTTP_PORT = 8080;
-const RTSP_PORT = 8554;
+const fs = require("fs");
+const path = require("path");
+
+let config = {};
+try {
+    const configPath = path.join(__dirname, "..", "config.json");
+    if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    }
+} catch (e) {
+    console.warn("Failed to load config.json in stream-server, fallback to default ports.", e);
+}
+
+const HTTP_PORT = process.env.HTTP_PORT || (config.network && config.network.httpPort) || 8080;
+const RTSP_PORT = process.env.RTSP_PORT || (config.network && config.network.rtspPort) || 8554;
 const BOUNDARY = "ct_simulator_mjpeg_boundary";
 
 const httpClients = new Set();

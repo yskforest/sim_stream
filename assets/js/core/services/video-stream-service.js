@@ -1,16 +1,24 @@
 (function attachVideoStreamService(global) {
+    function getConfig(path, fallback) {
+        return (global.CTConfigService && typeof global.CTConfigService.get === "function")
+            ? global.CTConfigService.get(path, fallback)
+            : fallback;
+    }
+
     var activeStream = {
         isStreaming: false,
-        codec: "mjpeg",
-        protocol: "http",
-        fps: 30,
+        codec: getConfig("camera.codec", "mjpeg"),
+        protocol: getConfig("camera.protocol", "http"),
+        fps: getConfig("camera.fps", 30),
         streamUrl: null,
         intervalId: null,
     };
 
     function generateStreamUrl(protocol, codec) {
-        var host = (typeof window !== "undefined" && window.location && window.location.hostname) || "localhost";
-        var port = protocol === "rtsp" ? "8554" : "8080";
+        var host = (typeof window !== "undefined" && window.location && window.location.hostname) || getConfig("network.host", "localhost");
+        var rtspPort = getConfig("network.rtspPort", 8554);
+        var httpPort = getConfig("network.httpPort", 8080);
+        var port = protocol === "rtsp" ? rtspPort : httpPort;
         var ext = codec === "h264" ? "mp4" : "mjpg";
         return protocol + "://" + host + ":" + port + "/live/ct-camera." + ext;
     }
@@ -22,13 +30,13 @@
                 clearInterval(activeStream.intervalId);
             }
 
-            activeStream.codec = config.codec || "h264";
-            activeStream.protocol = config.protocol || "rtsp";
-            activeStream.fps = config.fps || 30;
-            activeStream.width = config.width || 1280;
-            activeStream.height = config.height || 960;
-            activeStream.hfov = config.hfov || 60;
-            activeStream.quality = typeof config.quality === "number" ? config.quality : 0.92;
+            activeStream.codec = config.codec || getConfig("camera.codec", "h264");
+            activeStream.protocol = config.protocol || getConfig("camera.protocol", "rtsp");
+            activeStream.fps = config.fps || getConfig("camera.fps", 30);
+            activeStream.width = config.width || getConfig("camera.width", 1280);
+            activeStream.height = config.height || getConfig("camera.height", 960);
+            activeStream.hfov = config.hfov || getConfig("camera.hfov", 60);
+            activeStream.quality = typeof config.quality === "number" ? config.quality : getConfig("camera.quality", 0.92);
             activeStream.mode = config.mode || config.captureMode || "main";
             activeStream.virtualPosition = config.virtualPosition || null;
             activeStream.virtualLookAt = config.virtualLookAt || null;
