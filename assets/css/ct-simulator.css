@@ -103,7 +103,7 @@ body {
 }
 
 .ui-panel.is-hidden {
-    display: none;
+    display: none !important;
 }
 
 .ui-info {

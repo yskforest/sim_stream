@@ -274,21 +274,13 @@
     }
 
     function setPanelVisibilityForViewport() {
-        // 縦長画面でも3D表示領域を確保するため、非表示フラグ付きパネルのみ畳む
-        var mobile = mobileMedia && mobileMedia.matches;
         var panels = document.querySelectorAll(".ui-panel");
-        if (!mobile) {
-            panels.forEach(function (p) {
-                if (!p.classList.contains("is-hidden")) p.style.display = "block";
-            });
-            return;
-        }
         panels.forEach(function (p) {
             if (p.classList.contains("is-hidden")) {
                 p.style.display = "none";
-                return;
+            } else {
+                p.style.display = "block";
             }
-            p.style.display = "block";
         });
     }
 

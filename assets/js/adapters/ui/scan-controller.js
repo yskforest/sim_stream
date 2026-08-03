@@ -40,23 +40,20 @@ function setGantryOpacity(isTranslucent) {
         Meshes.materials.gantry.depthWrite = !isTranslucent;
         Meshes.materials.gantry.needsUpdate = true;
 
-        Meshes.materials.base.transparent = isTranslucent;
-        Meshes.materials.base.opacity = opacity;
-        Meshes.materials.base.depthWrite = !isTranslucent;
-        Meshes.materials.base.needsUpdate = true;
-
         Meshes.materials.tunnel.transparent = isTranslucent;
         Meshes.materials.tunnel.opacity = isTranslucent ? 0.35 : 1.0;
         Meshes.materials.tunnel.transmission = isTranslucent ? 0.9 : 0.0;
         Meshes.materials.tunnel.depthWrite = !isTranslucent;
         Meshes.materials.tunnel.needsUpdate = true;
 
-        Meshes.materials.accessories.forEach(function (mat) {
-            mat.transparent = isTranslucent;
-            mat.opacity = opacity;
-            mat.depthWrite = !isTranslucent;
-            mat.needsUpdate = true;
-        });
+        if (Array.isArray(Meshes.materials.accessories)) {
+            Meshes.materials.accessories.forEach(function (mat) {
+                mat.transparent = isTranslucent;
+                mat.opacity = opacity;
+                mat.depthWrite = !isTranslucent;
+                mat.needsUpdate = true;
+            });
+        }
 
         if (window.AppState) {
             AppState.update("gantry", "isTranslucent", isTranslucent);
