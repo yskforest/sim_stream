@@ -340,13 +340,110 @@
                                 <option value="gantrySide">Gantry Side View (Fixed)</option>
                             </select>
 
+                        <!-- OpenCV Camera Distortion Settings -->
+                        <div class="border-t border-purple-900/50 pt-2 mt-2 space-y-2 bg-purple-950/30 p-2 rounded border border-purple-800/40">
+                            <div class="flex justify-between items-center">
+                                <div class="text-[10px] font-bold text-purple-300 flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 text-purple-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    OpenCV Fisheye Lens Distortion
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer" title="Enable/Disable Camera Lens Distortion">
+                                    <input type="checkbox" id="input-distortion-enable" class="sr-only peer" onchange="toggleFisheye(this.checked)" />
+                                    <div class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
                             <button
                                 id="btn-fisheye-toggle"
                                 onclick="toggleFisheye()"
-                                class="w-full bg-purple-900 hover:bg-purple-800 text-xs py-1.5 rounded border border-purple-700 font-bold"
+                                class="w-full bg-purple-900 hover:bg-purple-800 text-xs py-1.5 rounded border border-purple-700 font-bold transition"
                             >
                                 Toggle Fisheye Lens
                             </button>
+
+                            <div class="space-y-1.5 text-[10px]">
+                                <div>
+                                    <label class="text-gray-400 text-[9px] block mb-0.5">Lens Distortion Preset</label>
+                                    <select
+                                        id="select-distortion-preset"
+                                        onchange="onDistortionPresetChange(this.value)"
+                                        class="w-full bg-gray-800 border border-gray-600 rounded px-1.5 py-1 text-white text-[10px]"
+                                    >
+                                        <option value="standard" selected>Standard Fisheye (k1: 0.20, k2: 0.05)</option>
+                                        <option value="action_cam">Wide Action Cam (k1: 0.12, k2: -0.02)</option>
+                                        <option value="ultra_wide">Ultra-Wide Fisheye (k1: 0.45, k2: 0.18)</option>
+                                        <option value="pincushion">Pincushion / Cushion (k1: -0.15)</option>
+                                        <option value="custom">Custom Parameters...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Polynomial coefficients k1 - k4 -->
+                                <div class="grid grid-cols-2 gap-1.5 pt-1">
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>k1:</span><span id="val-distortion-k1" class="font-mono text-purple-300">0.20</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-k1" min="-0.8" max="0.8" step="0.01" value="0.20" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>k2:</span><span id="val-distortion-k2" class="font-mono text-purple-300">0.05</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-k2" min="-0.5" max="0.5" step="0.01" value="0.05" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>k3:</span><span id="val-distortion-k3" class="font-mono text-purple-300">0.00</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-k3" min="-0.3" max="0.3" step="0.01" value="0.00" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>k4:</span><span id="val-distortion-k4" class="font-mono text-purple-300">0.00</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-k4" min="-0.2" max="0.2" step="0.01" value="0.00" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                </div>
+
+                                <!-- Focal & Center Offset & Zoom -->
+                                <div class="grid grid-cols-2 gap-1.5 pt-1">
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>Focal (fx):</span><span id="val-distortion-fx" class="font-mono text-purple-300">1.00</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-fx" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>Center (cx):</span><span id="val-distortion-cx" class="font-mono text-purple-300">0.50</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-cx" min="0.2" max="0.8" step="0.01" value="0.50" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>Focal (fy):</span><span id="val-distortion-fy" class="font-mono text-purple-300">1.00</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-fy" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-gray-400 text-[9px]">
+                                            <span>Center (cy):</span><span id="val-distortion-cy" class="font-mono text-purple-300">0.50</span>
+                                        </div>
+                                        <input type="range" id="slider-distortion-cy" min="0.2" max="0.8" step="0.01" value="0.50" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                    </div>
+                                </div>
+
+                                <div class="pt-1">
+                                    <div class="flex justify-between text-gray-400 text-[9px]">
+                                        <span>Zoom Scale:</span><span id="val-distortion-zoom" class="font-mono text-purple-300">1.00</span>
+                                    </div>
+                                    <input type="range" id="slider-distortion-zoom" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                </div>
+
+                                <div class="flex justify-end pt-1">
+                                    <button onclick="resetDistortionParamsUI()" class="text-[9px] text-purple-400 hover:text-purple-300 hover:underline">Reset Parameters</button>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="border-t border-gray-700 pt-2 space-y-1">

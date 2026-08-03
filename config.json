@@ -1,80 +1,86 @@
 {
-  // --- 仮想カメラストリーム初期設定 ---
   "camera": {
-    "width": 800, // キャプチャ解像度（横幅 px）
-    "height": 600, // キャプチャ解像度（高さ px）
-    "fps": 30, // 配信フレームレート (FPS)
-    "hfov": 60, // 水平視野角 (水平FOV: 度)
-    "fov": 50, // 垂直視野角 (画角FOV: 度)
-    "quality": 0.92, // 画質圧縮率 (0.1 ~ 1.0)
-    "codec": "h264", // 配信コーデック ("h264" または "mjpeg")
-    "protocol": "rtsp" // 配信プロトコル ("rtsp" または "http")
+    "width": 800,
+    "height": 600,
+    "fps": 30,
+    "hfov": 60,
+    "fov": 50,
+    "quality": 0.92,
+    "codec": "h264",
+    "protocol": "rtsp",
+    "distortion": {
+      "enabled": false,
+      "type": "opencv_fisheye",
+      "k1": 0.1,
+      "k2": 0.05,
+      "k3": 0.0,
+      "k4": 0.0,
+      "fx": 1.0,
+      "fy": 1.0,
+      "cx": 0.5,
+      "cy": 0.5,
+      "zoom": 1.0
+    }
   },
-  // --- ネットワークポート初期設定 ---
   "network": {
-    "httpPort": 8080, // HTTP/MJPEG 配信ポート
-    "rtspPort": 8554, // RTSP/H.264 配信ポート
-    "host": "127.0.0.1" // 配信ホストバインドIP
+    "httpPort": 8080,
+    "rtspPort": 8554,
+    "host": "127.0.0.1"
   },
-  // --- グラフィック・描画クオリティ ---
   "graphics": {
-    "quality": "high", // 品質モード ("high" または "standard")
-    "shadows": true, // リアルタイムシャドウ有効化
-    "exposure": 1.05 // トーンマッピング露光量
+    "quality": "high",
+    "shadows": true,
+    "exposure": 1.05
   },
-  // --- CTハードウェア構造パラメータ ---
   "hardware": {
-    "defaultDetectorRows": 320, // マルチスライス検出器列数
-    "maxRotorSpeed": 100 // 最大回転速度 (rpm)
+    "defaultDetectorRows": 320,
+    "maxRotorSpeed": 100
   },
-  // --- デフォルト患者モデル基本パラメータ ---
   "patient": {
-    "defaultModelId": "patient_dennis", // デフォルトモデル識別ID
-    "defaultModelName": "3D Patient (Dennis Posed)", // UI表示用モデル名
-    "defaultModelPath": "./assets/glb/rp_dennis_posed_004_100k.glb", // GLBモデルファイルの相対パス
+    "defaultModelId": "patient_dennis",
+    "defaultModelName": "3D Patient (Dennis Posed)",
+    "defaultModelPath": "./assets/glb/rp_dennis_posed_004_100k.glb",
     "defaultPosition": [
       0,
       0,
       0.45
-    ], // 初期位置 [X(左右m), Y(高さm), Z(前後m)]
+    ],
     "defaultRotation": [
       -90,
       0,
       0
-    ], // 初期姿勢 [RotX(ピッチ°), RotY(ヨー°), RotZ(ロール°)]
+    ],
     "defaultScale": [
       1.0,
       1.0,
       1.0
-    ], // 初期拡大率 [ScaleX, ScaleY, ScaleZ]
-    "targetHeight": 1.7 // 自動判定用標準身長 (1.7m)
+    ],
+    "targetHeight": 1.7
   },
-  // --- 3Dモデルリストおよび9パラメータ (Pos XYZ, Rot XYZ, Scale XYZ) 設定 ---
   "models": [
     {
       "id": "patient_dennis",
       "name": "Patient: Dennis (Posed 170cm)",
-      "type": "glb", // "glb" (3Dモデル) または "image" (画像板)
-      "path": "./assets/glb/rp_dennis_posed_004_100k.glb", // ファイルパス
-      "category": "patient", // "patient" (患者) または "prop" (その他)
-      "attachTo": "couch", // "couch" (寝台連動) または "floor" (床固定)
-      // === 9パラメータ (9-DOF) トランスフォーム ===
+      "type": "glb",
+      "path": "./assets/glb/rp_dennis_posed_004_100k.glb",
+      "category": "patient",
+      "attachTo": "couch",
       "transform": {
         "position": [
           0,
           -0.22,
           0.45
-        ], // Pos X(左右m), Pos Y(高さ0=床面), Pos Z(前後m)
+        ],
         "rotation": [
           -94,
           0,
           0
-        ], // Rot X(ピッチ°), Rot Y(ヨー°), Rot Z(ロール°)
+        ],
         "scale": [
           1.0,
           1.0,
           1.0
-        ] // Scale X(幅倍率), Scale Y(高さ倍率), Scale Z(奥行倍率)
+        ]
       }
     },
     {
@@ -109,23 +115,22 @@
       "path": "./assets/glb/rp_posed_00178_29.glb",
       "category": "prop",
       "attachTo": "floor",
-      // === 9パラメータ (9-DOF) トランスフォーム ===
       "transform": {
         "position": [
           2,
           0,
           2
-        ], // Pos X(0m), Pos Y(0m床高), Pos Z(0m) 世界座標原点
+        ],
         "rotation": [
           0,
           -90,
           0
-        ], // Rot X(-90°仰向け), Rot Y(0°), Rot Z(0°)
+        ],
         "scale": [
           1.0,
           1.0,
           1.0
-        ] // Scale X(1.0), Scale Y(1.0), Scale Z(1.0)
+        ]
       }
     }
   ]

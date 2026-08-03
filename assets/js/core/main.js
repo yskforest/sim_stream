@@ -1,9 +1,42 @@
 // アプリケーションエントリーポイント — 初期化とレンダーループのみを担当する
 window.isFisheyeEnabled = false;
-window.toggleFisheye = function() {
-    window.isFisheyeEnabled = !window.isFisheyeEnabled;
+window.toggleFisheye = function(enabled) {
+    if (typeof enabled === "boolean") {
+        window.isFisheyeEnabled = enabled;
+    } else {
+        window.isFisheyeEnabled = !window.isFisheyeEnabled;
+    }
+    if (window.AppState && window.AppState.distortion) {
+        window.AppState.distortion.enabled = window.isFisheyeEnabled;
+    }
     var btn = document.getElementById("btn-fisheye-toggle");
-    if (btn) btn.style.backgroundColor = window.isFisheyeEnabled ? "#7e22ce" : "";
+    if (btn) {
+        btn.style.backgroundColor = window.isFisheyeEnabled ? "#7e22ce" : "";
+        btn.textContent = window.isFisheyeEnabled ? "Disable Fisheye Lens" : "Toggle Fisheye Lens";
+    }
+    var mainToggle = document.getElementById("input-distortion-enable");
+    if (mainToggle) mainToggle.checked = window.isFisheyeEnabled;
+};
+
+window.updateCameraDistortion = function(params) {
+    if (!params && window.AppState && window.AppState.distortion) {
+        params = window.AppState.distortion;
+    }
+    if (!params) return;
+
+    if (params.enabled !== undefined) {
+        window.isFisheyeEnabled = !!params.enabled;
+        var btn = document.getElementById("btn-fisheye-toggle");
+        if (btn) btn.style.backgroundColor = window.isFisheyeEnabled ? "#7e22ce" : "";
+    }
+
+    if (fisheyeMesh && fisheyeMesh.material && fisheyeMesh.material.uniforms) {
+        var u = fisheyeMesh.material.uniforms;
+        if (u.uK && params.k1 !== undefined) u.uK.value.set(params.k1 || 0, params.k2 || 0, params.k3 || 0, params.k4 || 0);
+        if (u.uFocal && params.fx !== undefined) u.uFocal.value.set(params.fx !== undefined ? params.fx : 1.0, params.fy !== undefined ? params.fy : 1.0);
+        if (u.uCenter && params.cx !== undefined) u.uCenter.value.set(params.cx !== undefined ? params.cx : 0.5, params.cy !== undefined ? params.cy : 0.5);
+        if (u.uZoom && params.zoom !== undefined) u.uZoom.value = params.zoom || 1.0;
+    }
 };
 window.toggleLaserAlignment = function() {
     if (window.Meshes && window.Meshes.laserGroup) {
@@ -49,6 +82,100 @@ var fisheyeRenderTarget = null;
 var fisheyeCamera = null;
 var fisheyeScene = null;
 var fisheyeMesh = null;
+
+function setupFisheyePipeline(rw, rh) {
+    if (!fisheyeRenderTarget || fisheyeRenderTarget.width !== rw || fisheyeRenderTarget.height !== rh) {
+        if (fisheyeRenderTarget) fisheyeRenderTarget.dispose();
+        fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, {
+            format: THREE.RGBAFormat,
+            samples: 4,
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter
+        });
+    }
+
+    if (!fisheyeScene) {
+        fisheyeScene = new THREE.Scene();
+        fisheyeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        var geo = new THREE.PlaneGeometry(2, 2);
+        var dParams = (window.AppState && window.AppState.distortion) ? window.AppState.distortion : {};
+
+        var mat = new THREE.ShaderMaterial({
+            uniforms: {
+                tDiffuse: { value: null },
+                uK: { value: new THREE.Vector4(dParams.k1 !== undefined ? dParams.k1 : 0.1, dParams.k2 !== undefined ? dParams.k2 : 0.05, dParams.k3 || 0, dParams.k4 || 0) },
+                uFocal: { value: new THREE.Vector2(dParams.fx !== undefined ? dParams.fx : 1.0, dParams.fy !== undefined ? dParams.fy : 1.0) },
+                uCenter: { value: new THREE.Vector2(dParams.cx !== undefined ? dParams.cx : 0.5, dParams.cy !== undefined ? dParams.cy : 0.5) },
+                uZoom: { value: dParams.zoom !== undefined ? dParams.zoom : 1.0 },
+                uAspect: { value: (rw && rh) ? (rw / rh) : (window.innerWidth / window.innerHeight) }
+            },
+            vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }",
+            fragmentShader: [
+                "uniform sampler2D tDiffuse;",
+                "uniform vec4 uK;",
+                "uniform vec2 uFocal;",
+                "uniform vec2 uCenter;",
+                "uniform float uZoom;",
+                "uniform float uAspect;",
+                "varying vec2 vUv;",
+                "",
+                "void main() {",
+                "    vec2 p_dist = (vUv - uCenter) * vec2(uAspect, 1.0) / max(uZoom, 0.01);",
+                "    p_dist.x /= max(uFocal.x, 0.001);",
+                "    p_dist.y /= max(uFocal.y, 0.001);",
+                "",
+                "    float theta_d = length(p_dist);",
+                "",
+                "    if (theta_d < 1e-6) {",
+                "        vec4 texColor = texture2D(tDiffuse, vUv);",
+                "        gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a);",
+                "        return;",
+                "    }",
+                "",
+                "    float theta = theta_d;",
+                "    for (int i = 0; i < 6; i++) {",
+                "        float theta2 = theta * theta;",
+                "        float theta4 = theta2 * theta2;",
+                "        float theta6 = theta4 * theta2;",
+                "        float theta8 = theta4 * theta4;",
+                "",
+                "        float f = theta * (1.0 + uK.x * theta2 + uK.y * theta4 + uK.z * theta6 + uK.w * theta8) - theta_d;",
+                "        float df = 1.0 + 3.0 * uK.x * theta2 + 5.0 * uK.y * theta4 + 7.0 * uK.z * theta6 + 9.0 * uK.w * theta8;",
+                "",
+                "        if (abs(df) > 1e-6) {",
+                "            theta -= f / df;",
+                "        }",
+                "    }",
+                "",
+                "    float safe_theta = clamp(theta, -1.55, 1.55);",
+                "    float r = tan(safe_theta);",
+                "",
+                "    vec2 p_undist = (p_dist / theta_d) * r;",
+                "    p_undist.x *= uFocal.x;",
+                "    p_undist.y *= uFocal.y;",
+                "",
+                "    vec2 uv_src = (p_undist / vec2(uAspect, 1.0)) + uCenter;",
+                "",
+                "    if (uv_src.x < 0.0 || uv_src.x > 1.0 || uv_src.y < 0.0 || uv_src.y > 1.0) {",
+                "        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);",
+                "    } else {",
+                "        vec4 texColor = texture2D(tDiffuse, uv_src);",
+                "        gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a);",
+                "    }",
+                "}"
+            ].join("\n")
+        });
+        fisheyeMesh = new THREE.Mesh(geo, mat);
+        fisheyeScene.add(fisheyeMesh);
+    }
+
+    if (fisheyeMesh && fisheyeMesh.material && fisheyeMesh.material.uniforms) {
+        fisheyeMesh.material.uniforms.tDiffuse.value = fisheyeRenderTarget.texture;
+        if (fisheyeMesh.material.uniforms.uAspect) {
+            fisheyeMesh.material.uniforms.uAspect.value = (rw && rh) ? (rw / rh) : (window.innerWidth / window.innerHeight);
+        }
+    }
+}
 
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
@@ -260,28 +387,7 @@ function animate(time) {
             var dpr = renderer.getPixelRatio();
             var rw = Math.floor(vpW * dpr);
             var rh = Math.floor(vpH * dpr);
-            if (!fisheyeRenderTarget || fisheyeRenderTarget.width !== rw || fisheyeRenderTarget.height !== rh) {
-                if (fisheyeRenderTarget) fisheyeRenderTarget.dispose();
-                fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, {
-                    format: THREE.RGBAFormat,
-                    samples: 4,
-                    minFilter: THREE.LinearFilter,
-                    magFilter: THREE.LinearFilter
-                });
-                if (!fisheyeScene) {
-                    fisheyeScene = new THREE.Scene();
-                    fisheyeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-                    var geo = new THREE.PlaneGeometry(2, 2);
-                    var mat = new THREE.ShaderMaterial({
-                        uniforms: { tDiffuse: { value: null }, strength: { value: 0.25 }, zoom: { value: 0.66 } },
-                        vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }",
-                        fragmentShader: "uniform sampler2D tDiffuse; uniform float strength; uniform float zoom; varying vec2 vUv; void main() { vec2 p = vUv * 2.0 - 1.0; float r2 = dot(p, p); float f = (1.0 + r2 * strength) * zoom; vec2 uv = f * p * 0.5 + 0.5; if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); } else { vec4 texColor = texture2D(tDiffuse, uv); gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a); } }"
-                    });
-                    fisheyeMesh = new THREE.Mesh(geo, mat);
-                    fisheyeScene.add(fisheyeMesh);
-                }
-                fisheyeMesh.material.uniforms.tDiffuse.value = fisheyeRenderTarget.texture;
-            }
+            setupFisheyePipeline(rw, rh);
             
             renderer.setRenderTarget(fisheyeRenderTarget);
             renderer.setViewport(0, 0, rw, rh);
@@ -310,28 +416,7 @@ function animate(time) {
             var dpr = renderer.getPixelRatio();
             var rw = Math.floor(window.innerWidth * dpr);
             var rh = Math.floor(window.innerHeight * dpr);
-            if (!fisheyeRenderTarget || fisheyeRenderTarget.width !== rw || fisheyeRenderTarget.height !== rh) {
-                if (fisheyeRenderTarget) fisheyeRenderTarget.dispose();
-                fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, {
-                    format: THREE.RGBAFormat,
-                    samples: 4,
-                    minFilter: THREE.LinearFilter,
-                    magFilter: THREE.LinearFilter
-                });
-                if (!fisheyeScene) {
-                    fisheyeScene = new THREE.Scene();
-                    fisheyeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-                    var geo = new THREE.PlaneGeometry(2, 2);
-                    var mat = new THREE.ShaderMaterial({
-                        uniforms: { tDiffuse: { value: null }, strength: { value: 0.25 }, zoom: { value: 0.66 } },
-                        vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }",
-                        fragmentShader: "uniform sampler2D tDiffuse; uniform float strength; uniform float zoom; varying vec2 vUv; void main() { vec2 p = vUv * 2.0 - 1.0; float r2 = dot(p, p); float f = (1.0 + r2 * strength) * zoom; vec2 uv = f * p * 0.5 + 0.5; if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); } else { vec4 texColor = texture2D(tDiffuse, uv); gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a); } }"
-                    });
-                    fisheyeMesh = new THREE.Mesh(geo, mat);
-                    fisheyeScene.add(fisheyeMesh);
-                }
-                fisheyeMesh.material.uniforms.tDiffuse.value = fisheyeRenderTarget.texture;
-            }
+            setupFisheyePipeline(rw, rh);
             
             renderer.setRenderTarget(fisheyeRenderTarget);
             renderer.setViewport(0, 0, rw, rh);

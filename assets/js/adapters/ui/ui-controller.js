@@ -475,4 +475,86 @@
 
     global.updateStateMonitor = updateStateMonitor;
     global.renderBatchUI = renderBatchUI;
+
+    var DISTORTION_PRESETS = {
+        standard: { k1: 0.20, k2: 0.05, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.00 },
+        action_cam: { k1: 0.12, k2: -0.02, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.05 },
+        ultra_wide: { k1: 0.45, k2: 0.18, k3: 0.05, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 0.90 },
+        pincushion: { k1: -0.15, k2: 0.00, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.00 }
+    };
+
+    global.onDistortionParamInput = function onDistortionParamInput() {
+        var k1 = parseFloat(byId("slider-distortion-k1").value) || 0;
+        var k2 = parseFloat(byId("slider-distortion-k2").value) || 0;
+        var k3 = parseFloat(byId("slider-distortion-k3").value) || 0;
+        var k4 = parseFloat(byId("slider-distortion-k4").value) || 0;
+        var fx = parseFloat(byId("slider-distortion-fx").value) || 1.0;
+        var fy = parseFloat(byId("slider-distortion-fy").value) || 1.0;
+        var cx = parseFloat(byId("slider-distortion-cx").value) || 0.5;
+        var cy = parseFloat(byId("slider-distortion-cy").value) || 0.5;
+        var zoom = parseFloat(byId("slider-distortion-zoom").value) || 1.0;
+
+        updateText("val-distortion-k1", k1.toFixed(2));
+        updateText("val-distortion-k2", k2.toFixed(2));
+        updateText("val-distortion-k3", k3.toFixed(2));
+        updateText("val-distortion-k4", k4.toFixed(2));
+        updateText("val-distortion-fx", fx.toFixed(2));
+        updateText("val-distortion-fy", fy.toFixed(2));
+        updateText("val-distortion-cx", cx.toFixed(2));
+        updateText("val-distortion-cy", cy.toFixed(2));
+        updateText("val-distortion-zoom", zoom.toFixed(2));
+
+        var presetSelect = byId("select-distortion-preset");
+        if (presetSelect) presetSelect.value = "custom";
+
+        if (global.AppState && global.AppState.distortion) {
+            var d = global.AppState.distortion;
+            d.k1 = k1; d.k2 = k2; d.k3 = k3; d.k4 = k4;
+            d.fx = fx; d.fy = fy; d.cx = cx; d.cy = cy;
+            d.zoom = zoom;
+        }
+
+        if (typeof global.updateCameraDistortion === "function") {
+            global.updateCameraDistortion();
+        }
+    };
+
+    global.onDistortionPresetChange = function onDistortionPresetChange(presetKey) {
+        var p = DISTORTION_PRESETS[presetKey];
+        if (!p) return;
+
+        updateValue("slider-distortion-k1", p.k1);
+        updateValue("slider-distortion-k2", p.k2);
+        updateValue("slider-distortion-k3", p.k3);
+        updateValue("slider-distortion-k4", p.k4);
+        updateValue("slider-distortion-fx", p.fx);
+        updateValue("slider-distortion-fy", p.fy);
+        updateValue("slider-distortion-cx", p.cx);
+        updateValue("slider-distortion-cy", p.cy);
+        updateValue("slider-distortion-zoom", p.zoom);
+
+        updateText("val-distortion-k1", p.k1.toFixed(2));
+        updateText("val-distortion-k2", p.k2.toFixed(2));
+        updateText("val-distortion-k3", p.k3.toFixed(2));
+        updateText("val-distortion-k4", p.k4.toFixed(2));
+        updateText("val-distortion-fx", p.fx.toFixed(2));
+        updateText("val-distortion-fy", p.fy.toFixed(2));
+        updateText("val-distortion-cx", p.cx.toFixed(2));
+        updateText("val-distortion-cy", p.cy.toFixed(2));
+        updateText("val-distortion-zoom", p.zoom.toFixed(2));
+
+        if (global.AppState && global.AppState.distortion) {
+            Object.assign(global.AppState.distortion, p);
+        }
+
+        if (typeof global.updateCameraDistortion === "function") {
+            global.updateCameraDistortion();
+        }
+    };
+
+    global.resetDistortionParamsUI = function resetDistortionParamsUI() {
+        var presetSelect = byId("select-distortion-preset");
+        if (presetSelect) presetSelect.value = "standard";
+        global.onDistortionPresetChange("standard");
+    };
 })(window);

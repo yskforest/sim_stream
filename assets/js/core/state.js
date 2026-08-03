@@ -23,6 +23,18 @@ const AppState = {
     patientOffset: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 },
     useGlbPatient: true,
     customGlbModels: [],
+    distortion: {
+        enabled: false,
+        k1: 0.1,
+        k2: 0.05,
+        k3: 0.0,
+        k4: 0.0,
+        fx: 1.0,
+        fy: 1.0,
+        cx: 0.5,
+        cy: 0.5,
+        zoom: 1.0
+    },
 
     listeners: [],
     subscribe(callback) {
