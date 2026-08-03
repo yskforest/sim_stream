@@ -59,6 +59,16 @@ const CTModelsConfig = {
     },
 
     getAllModels() {
+        if (typeof window !== "undefined" && window.CTConfigService && typeof window.CTConfigService.get === "function") {
+            var configModels = window.CTConfigService.get("models", null);
+            if (Array.isArray(configModels)) {
+                configModels.forEach(function (m) {
+                    if (m && m.id && m.path) {
+                        CTModelsConfig.registerModel(m);
+                    }
+                });
+            }
+        }
         return [...this.models];
     }
 };

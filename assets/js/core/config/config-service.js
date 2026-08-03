@@ -61,7 +61,10 @@
                     if (!response.ok) {
                         throw new Error("Failed to load config file: " + response.statusText);
                     }
-                    return response.json();
+                    return response.text().then(function (text) {
+                        var cleanText = text.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*/g, "$1");
+                        return JSON.parse(cleanText);
+                    });
                 })
                 .then(function (data) {
                     deepMerge(configData, data);

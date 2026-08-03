@@ -91,7 +91,7 @@ async function spawnCustomGlbFromInput() {
 function _updatePatientTransform(key, valStr) {
     if (!window.AppState) return;
     if (!window.AppState.patientOffset) {
-        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
     }
     if (!key) return syncAllPatientTransformUI();
     
@@ -105,7 +105,8 @@ function _updatePatientTransform(key, valStr) {
     if (window.CTModelRegistry) {
         window.CTModelRegistry.updateInstanceTransform("patient_primary", {
             position: [po.x, po.y, po.z],
-            rotation: [po.rotX, po.rotY, po.rotZ]
+            rotation: [po.rotX, po.rotY, po.rotZ],
+            scale: [po.scaleX, po.scaleY, po.scaleZ]
         });
     }
 }
@@ -123,11 +124,11 @@ function onPatientPosInputChange(key) {
 function syncAllPatientTransformUI() {
     if (!window.AppState || !window.AppState.patientOffset) return;
     var po = window.AppState.patientOffset;
-    var keys = ["x", "y", "z", "rotX", "rotY", "rotZ"];
+    var keys = ["x", "y", "z", "rotX", "rotY", "rotZ", "scaleX", "scaleY", "scaleZ"];
     keys.forEach(function (k) {
         var input = document.getElementById("input-patient-pos-" + k);
         var slider = document.getElementById("slider-patient-pos-" + k);
-        var val = po[k];
+        var val = typeof po[k] === "number" ? po[k] : (k.startsWith("scale") ? 1.0 : 0);
         if (input) input.value = k.startsWith("rot") ? val.toFixed(0) : val.toFixed(2);
         if (slider) slider.value = String(val);
     });
@@ -135,14 +136,15 @@ function syncAllPatientTransformUI() {
 
 function resetPatientPositionUI() {
     if (!window.AppState) return;
-    window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+    window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
     syncAllPatientTransformUI();
 
     var po = window.AppState.patientOffset;
     if (window.CTModelRegistry) {
         window.CTModelRegistry.updateInstanceTransform("patient_primary", {
             position: [po.x, po.y, po.z],
-            rotation: [po.rotX, po.rotY, po.rotZ]
+            rotation: [po.rotX, po.rotY, po.rotZ],
+            scale: [po.scaleX, po.scaleY, po.scaleZ]
         });
     }
 }

@@ -337,29 +337,35 @@ function buildCTScanner() {
     async function loadPatientGlb() {
         try {
             if (window.CTModelRegistry) {
-                const defaultId = (window.CTModelsConfig && typeof window.CTModelsConfig.getDefaultPatientId === "function")
-                    ? window.CTModelsConfig.getDefaultPatientId()
-                    : null;
-                const instance = await window.CTModelRegistry.spawnModelInstance(
-                    AppState.patientModelId || defaultId,
-                    { instanceId: "patient_primary", attachTo: "couch", visible: AppState.patientVisible }
-                );
-                patientGroup.visible = AppState.patientVisible;
+                const allModels = (window.CTModelsConfig && typeof window.CTModelsConfig.getAllModels === "function")
+                    ? window.CTModelsConfig.getAllModels()
+                    : [];
 
-                // スポーン直後の実際の初期トランスフォーム（Y位置補正等を含む）を AppState および UI にロード
-                if (instance && instance.transform && window.AppState) {
-                    const pos = instance.transform.position || [0, -0.1, 0.45];
-                    const rot = instance.transform.rotation || [-90, 0, 0];
-                    window.AppState.patientOffset = {
-                        x: pos[0],
-                        y: pos[1],
-                        z: pos[2],
-                        rotX: rot[0],
-                        rotY: rot[1],
-                        rotZ: rot[2]
-                    };
-                    if (typeof window.syncAllPatientTransformUI === "function") {
-                        window.syncAllPatientTransformUI();
+                for (let i = 0; i < allModels.length; i++) {
+                    const modelDef = allModels[i];
+                    const isPrimary = (modelDef.category === "patient" || i === 0);
+                    const instId = isPrimary ? "patient_primary" : `inst_${modelDef.id}`;
+                    
+                    const instance = await window.CTModelRegistry.spawnModelInstance(
+                        modelDef.id,
+                        { instanceId: instId, attachTo: modelDef.attachTo || "couch", visible: true }
+                    );
+
+                    if (isPrimary && instance && instance.transform && window.AppState) {
+                        patientGroup.visible = AppState.patientVisible;
+                        const pos = instance.transform.position || [0, -0.1, 0.45];
+                        const rot = instance.transform.rotation || [-90, 0, 0];
+                        window.AppState.patientOffset = {
+                            x: pos[0],
+                            y: pos[1],
+                            z: pos[2],
+                            rotX: rot[0],
+                            rotY: rot[1],
+                            rotZ: rot[2]
+                        };
+                        if (typeof window.syncAllPatientTransformUI === "function") {
+                            window.syncAllPatientTransformUI();
+                        }
                     }
                 }
             }

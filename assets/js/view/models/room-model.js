@@ -27,6 +27,78 @@ function buildRoom() {
         grid.material.transparent = true;
     }
     scene.add(grid);
+
+    // --- 世界座標原点 (0,0,0) 極太 3D XYZ 軸矢印 (Thick 3D Mesh Arrows - Always On Top) ---
+    const axesGroup = new THREE.Group();
+    axesGroup.position.set(0, 0.005, 0);
+    axesGroup.renderOrder = 9999;
+
+    const totalLen = 1.0;     // 軸の全高 1.0m
+    const headLen = 0.22;     // 矢印ヘッド長 22cm
+    const shaftLen = totalLen - headLen; // 幹の長さ 78cm
+    const shaftRadius = 0.022; // 幹の太さ (直径 4.4cm)
+    const headRadius = 0.065;  // コーンヘッド太さ (直径 13cm)
+
+    function createThickAxisArrow(colorHex, dirVector) {
+        const arrowGroup = new THREE.Group();
+        arrowGroup.renderOrder = 9999;
+
+        const mat = new THREE.MeshBasicMaterial({
+            color: colorHex,
+            depthTest: false,
+            depthWrite: false,
+            transparent: true
+        });
+
+        // 1. 幹 (Shaft Cylinder)
+        const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLen, 16);
+        shaftGeo.translate(0, shaftLen / 2, 0);
+        const shaftMesh = new THREE.Mesh(shaftGeo, mat);
+        shaftMesh.renderOrder = 9999;
+
+        // 2. 矢印頭 (Cone Head)
+        const headGeo = new THREE.ConeGeometry(headRadius, headLen, 24);
+        headGeo.translate(0, shaftLen + headLen / 2, 0);
+        const headMesh = new THREE.Mesh(headGeo, mat);
+        headMesh.renderOrder = 9999;
+
+        arrowGroup.add(shaftMesh);
+        arrowGroup.add(headMesh);
+
+        // 方向ベクトルに合わせて回転設定
+        if (dirVector.x === 1) {
+            arrowGroup.rotation.z = -Math.PI / 2; // X軸 (右方向)
+        } else if (dirVector.z === 1) {
+            arrowGroup.rotation.x = Math.PI / 2;  // Z軸 (手前/奥方向)
+        } // Y軸はデフォルトで上向き
+
+        return arrowGroup;
+    }
+
+    // X軸: 赤 (Red)
+    const arrowX = createThickAxisArrow(0xef4444, new THREE.Vector3(1, 0, 0));
+    // Y軸: 緑 (Green)
+    const arrowY = createThickAxisArrow(0x22c55e, new THREE.Vector3(0, 1, 0));
+    // Z軸: 青 (Blue)
+    const arrowZ = createThickAxisArrow(0x3b82f6, new THREE.Vector3(0, 0, 1));
+
+    axesGroup.add(arrowX);
+    axesGroup.add(arrowY);
+    axesGroup.add(arrowZ);
+
+    scene.add(axesGroup);
+
+    if (typeof window !== "undefined") {
+        if (!window.Meshes) window.Meshes = {};
+        window.Meshes.worldAxesGroup = axesGroup;
+    }
+}
+
+function toggleWorldAxes() {
+    var meshesObj = (typeof window !== "undefined" && window.Meshes) || (typeof Meshes !== "undefined" ? Meshes : null);
+    if (meshesObj && meshesObj.worldAxesGroup) {
+        meshesObj.worldAxesGroup.visible = !meshesObj.worldAxesGroup.visible;
+    }
 }
 
 function createRoundedBox(width, height, depth, radius, material) {

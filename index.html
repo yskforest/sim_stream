@@ -300,6 +300,13 @@
                             Show X-Ray Beam
                         </button>
                         <button
+                            id="btn-axes-toggle"
+                            onclick="toggleWorldAxes()"
+                            class="w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 font-bold text-amber-400"
+                        >
+                            Toggle XYZ Axes (Origin)
+                        </button>
+                        <button
                             id="btn-patient-toggle"
                             onclick="togglePatient()"
                             class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
@@ -404,9 +411,9 @@
                     </div>
                 </section>
 
-                <section id="panel-patient-config" class="ui-panel panel-right panel-bottom pointer-events-auto is-hidden">
+                <section id="panel-patient-config" class="ui-panel panel-left panel-mid pointer-events-auto is-hidden">
                     <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">Patient Model & Position</h3>
+                        <h3 class="text-xs font-bold text-gray-300">Model & Patient Config</h3>
                         <div class="panel-actions">
                             <button class="panel-action" data-panel-action="collapse">_</button
                             ><button class="panel-action" data-panel-action="hide">×</button>
@@ -414,7 +421,7 @@
                     </header>
                     <div class="ui-panel-body space-y-2">
                         <div>
-                            <div class="text-[10px] font-bold text-blue-300 mb-1">GLB Model Selection</div>
+                            <div class="text-[10px] font-bold text-blue-300 mb-1">Select Active Model</div>
                             <select
                                 id="select-patient-glb"
                                 onchange="changePatientGlbModel(this.value)"
@@ -422,13 +429,13 @@
                             ></select>
                         </div>
 
-                        <!-- Patient Position & 3-Axis Rotation Controls -->
+                        <!-- 9-Parameter Transform Controls (Pos, Rot, Scale) -->
                         <div class="bg-gray-900/80 p-2 rounded border border-gray-700 space-y-1.5 text-[10px]">
                             <div class="flex justify-between items-center text-gray-300 font-bold mb-1 border-b border-gray-700 pb-1">
-                                <span>Patient Transform (6-DOF)</span>
+                                <span>Model Transform (9-DOF)</span>
                                 <button onclick="resetPatientPositionUI()" class="text-[9px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset</button>
                             </div>
-                            <div class="text-[9px] text-blue-300 font-bold">Translation (XYZ)</div>
+                            <div class="text-[9px] text-blue-300 font-bold">Translation (Pos XYZ)</div>
                             <div>
                                 <div class="flex justify-between items-center text-gray-400 mb-0.5">
                                     <span>Pos X:</span>
@@ -460,7 +467,7 @@
                                 <input type="range" id="slider-patient-pos-z" min="-3" max="3" step="0.01" value="0.45" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('z')" />
                             </div>
 
-                            <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">Rotation (XYZ)</div>
+                            <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">Rotation (Rot XYZ)</div>
                             <div>
                                 <div class="flex justify-between items-center text-gray-400 mb-0.5">
                                     <span>Rot X (Pitch):</span>
@@ -491,21 +498,54 @@
                                 </div>
                                 <input type="range" id="slider-patient-pos-rotZ" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotZ')" />
                             </div>
+
+                            <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">Scale (Scale XYZ)</div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Scale X:</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-scaleX" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('scaleX')" />
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-scaleX" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('scaleX')" />
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Scale Y:</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-scaleY" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('scaleY')" />
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-scaleY" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('scaleY')" />
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Scale Z:</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-scaleZ" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('scaleZ')" />
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-scaleZ" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('scaleZ')" />
+                            </div>
                         </div>
 
-                        <div class="flex gap-1">
-                            <input
-                                type="text"
-                                id="input-add-glb-path"
-                                placeholder="assets/glb/new_model.glb"
-                                class="flex-1 bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white"
-                            />
-                            <button
-                                onclick="spawnCustomGlbFromInput()"
-                                class="bg-blue-700 hover:bg-blue-600 text-xs px-2 py-1 rounded font-bold"
-                            >
-                                + Spawn
-                            </button>
+                        <!-- Dynamically Load GLB / Image File -->
+                        <div class="space-y-1 text-[10px]">
+                            <div class="text-gray-400 font-bold">Load GLB or Image Path</div>
+                            <div class="flex gap-1">
+                                <input
+                                    type="text"
+                                    id="input-add-glb-path"
+                                    placeholder="./assets/glb/filename.glb or image.png"
+                                    class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white flex-1 text-[10px]"
+                                />
+                                <button
+                                    onclick="spawnCustomGlbFromInput()"
+                                    class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-2 py-1 rounded text-[10px]"
+                                >
+                                    Load
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
