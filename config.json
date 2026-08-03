@@ -26,7 +26,7 @@
   "patient": {
     "defaultModelId": "default_patient",
     "defaultModelName": "3D Patient (Male Posed 170cm)",
-    "defaultModelPath": "./assets/glb/rp_dennis_posed_004_100k.glb",
+    "defaultModelPath": "./assets/glb/rp_posed_00178_29.glb",
     "defaultPosition": [0, -0.24, 0.45],
     "defaultRotation": [-97, 0, 0],
     "targetHeight": 1.7

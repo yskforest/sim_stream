@@ -10,7 +10,7 @@ const CTModelsConfig = {
         {
             id: getPatientConfig("defaultModelId", "default_patient"),
             name: getPatientConfig("defaultModelName", "3D Patient (Male Posed 170cm)"),
-            path: getPatientConfig("defaultModelPath", "./assets/glb/rp_dennis_posed_004_100k.glb"),
+            path: getPatientConfig("defaultModelPath", "./assets/glb/rp_posed_00178_29.glb"),
             category: "patient",
             attachTo: "couch",
             transform: {

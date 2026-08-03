@@ -93,7 +93,7 @@ function init() {
     }
 
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(renderer.domElement);
 
     // --- Procedural IBL Environment Map Generation ---
@@ -124,9 +124,15 @@ function init() {
     }
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    window.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.01;
+
+    // --- Default Free View Camera Position & Target ---
+    camera.position.set(4, 3, 5);
+    controls.target.set(0, 0.5, 0);
+    controls.update();
 
     // --- High-Quality Realistic Medical Lighting ---
     var hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x334155, 0.55);
@@ -209,7 +215,9 @@ function animate(time) {
         });
     }
 
-    controls.update();
+    if (controls && controls.enabled) {
+        controls.update();
+    }
 
     var activeStream = window.CTVideoStreamService ? window.CTVideoStreamService.getActiveStream() : null;
     if (activeStream && activeStream.isStreaming && activeStream.mode === "main") {

@@ -15,7 +15,9 @@
                 <button class="toolbar-btn" data-panel-target="panel-console">Console</button>
                 <button class="toolbar-btn" data-panel-target="panel-monitor">Monitor</button>
                 <button class="toolbar-btn" data-panel-target="panel-hw-config">HW</button>
-                <button class="toolbar-btn" data-panel-target="panel-3d-config">3D</button>
+                <button class="toolbar-btn" data-panel-target="panel-3d-config">3D View</button>
+                <button class="toolbar-btn" data-panel-target="panel-camera-stream">Stream</button>
+                <button class="toolbar-btn" data-panel-target="panel-patient-config">Patient</button>
                 <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
                 <button id="btn-hud-toggle" class="toolbar-btn" onclick="CTPerformanceService.toggleHud()">PERF</button>
             </div>
@@ -213,9 +215,9 @@
                     </div>
                 </section>
 
-                <section id="panel-3d-config" class="ui-panel panel-right panel-bottom pointer-events-auto is-hidden">
+                <section id="panel-3d-config" class="ui-panel panel-right panel-top pointer-events-auto is-hidden">
                     <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">3D Controls</h3>
+                        <h3 class="text-xs font-bold text-gray-300">3D View Controls</h3>
                         <div class="panel-actions">
                             <button class="panel-action" data-panel-action="collapse">_</button
                             ><button class="panel-action" data-panel-action="hide">×</button>
@@ -249,44 +251,6 @@
                             </optgroup>
                         </select>
 
-                        <div class="grid grid-cols-2 gap-2">
-                            <button
-                                onclick="setCameraView('free')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Free
-                            </button>
-                            <button
-                                onclick="setCameraView('operator')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Operator
-                            </button>
-                            <button
-                                onclick="setCameraView('patient')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Patient
-                            </button>
-                            <button
-                                onclick="setCameraView('injector')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Injector
-                            </button>
-                            <button
-                                onclick="setCameraView('gantryTop')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Gantry Top
-                            </button>
-                            <button
-                                onclick="setCameraView('gantrySide')"
-                                class="bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
-                            >
-                                Gantry Side
-                            </button>
-                        </div>
                         <div class="flex gap-2">
                             <button
                                 id="btn-gantry-opaque"
@@ -336,137 +300,50 @@
                             Show X-Ray Beam
                         </button>
                         <button
-                            id="btn-fisheye-toggle"
-                            onclick="toggleFisheye()"
-                            class="w-full bg-purple-900 hover:bg-purple-800 text-xs py-1.5 rounded border border-purple-700"
-                        >
-                            Toggle Fisheye Lens
-                        </button>
-                        <button
                             id="btn-patient-toggle"
                             onclick="togglePatient()"
                             class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
                         >
                             Hide Patient
                         </button>
+                    </div>
+                </section>
 
-                        <!-- Stream Diagnostics -->
-                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
-                            <div class="flex items-center justify-between text-[10px] font-bold text-green-400">
-                                <span>Stream Status / Diagnostics</span>
-                                <span id="diag-stream-fps" class="text-sky-300 font-mono">OFF</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-1 text-[10px] bg-slate-900/80 p-1.5 rounded border border-slate-700/80">
-                                <div><span class="text-gray-400">Latency:</span> <strong id="diag-stream-latency" class="text-emerald-400 font-mono">-- ms</strong></div>
-                                <div><span class="text-gray-400">Bitrate:</span> <strong id="diag-stream-bitrate" class="text-sky-400 font-mono">-- KB/s</strong></div>
-                            </div>
-                            <div class="flex gap-2">
-                                <a href="http://127.0.0.1:8080/" target="_blank" class="flex-1 bg-green-900 hover:bg-green-800 text-green-100 text-center text-[10px] py-1.5 rounded border border-green-700 transition block">
-                                    Open Stream Server Info
-                                </a>
-                            </div>
-                            <div class="text-[9px] text-gray-400 bg-gray-900/50 p-1.5 rounded border border-gray-700 break-all leading-tight">
-                                <span class="text-blue-300 font-bold">HTTP MJPEG:</span> http://127.0.0.1:8080/live/ct-camera.mjpg<br/>
-                                <span class="text-yellow-300 font-bold">RTSP (VLC):</span> rtsp://127.0.0.1:8554/live/ct-camera.mp4
-                            </div>
+                <section id="panel-camera-stream" class="ui-panel panel-right panel-mid pointer-events-auto is-hidden">
+                    <header class="ui-panel-header">
+                        <h3 class="text-xs font-bold text-gray-300">Virtual Camera Stream & Diag</h3>
+                        <div class="panel-actions">
+                            <button class="panel-action" data-panel-action="collapse">_</button
+                            ><button class="panel-action" data-panel-action="hide">×</button>
                         </div>
-
-                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
-                            <div class="text-[10px] font-bold text-blue-300">GLB Model & Position Settings</div>
+                    </header>
+                    <div class="ui-panel-body space-y-2">
+                        <div class="space-y-1.5">
+                            <div class="text-[10px] font-bold text-blue-300">Camera Position / Mode</div>
                             <select
-                                id="select-patient-glb"
-                                onchange="changePatientGlbModel(this.value)"
+                                id="select-camera-view"
+                                onchange="setCameraView(this.value)"
                                 class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
-                            ></select>
+                            >
+                                <option value="free" selected>Free View (Interactive Orbit)</option>
+                                <option value="operator">Operator View (Fixed)</option>
+                                <option value="patient">Patient View (Fixed)</option>
+                                <option value="injector">Injector View (Fixed)</option>
+                                <option value="gantryTop">Gantry Top View (Fixed)</option>
+                                <option value="gantrySide">Gantry Side View (Fixed)</option>
+                            </select>
 
-                            <!-- Patient Position & 3-Axis Rotation Controls -->
-                            <div class="bg-gray-900/80 p-2 rounded border border-gray-700 space-y-1.5 text-[10px]">
-                                <div class="flex justify-between items-center text-gray-300 font-bold mb-1 border-b border-gray-700 pb-1">
-                                    <span>Patient Transform (6-DOF)</span>
-                                    <button onclick="resetPatientPositionUI()" class="text-[9px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset</button>
-                                </div>
-                                <div class="text-[9px] text-blue-300 font-bold">Translation (XYZ)</div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos X:</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-x" value="0.00" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('x')" />
-                                            <span>m</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-x" min="-2" max="2" step="0.01" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('x')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos Y:</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-y" value="-0.10" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('y')" />
-                                            <span>m</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-y" min="-2" max="2" step="0.01" value="-0.1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('y')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos Z:</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-z" value="0.45" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('z')" />
-                                            <span>m</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-z" min="-3" max="3" step="0.01" value="0.45" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('z')" />
-                                </div>
-
-                                <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">Rotation (XYZ)</div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot X (Pitch):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-rotX" value="-90" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotX')" />
-                                            <span>°</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-rotX" min="-180" max="180" step="1" value="-90" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotX')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot Y (Yaw):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-rotY" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotY')" />
-                                            <span>°</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-rotY" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotY')" />
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot Z (Roll):</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" id="input-patient-pos-rotZ" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotZ')" />
-                                            <span>°</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" id="slider-patient-pos-rotZ" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotZ')" />
-                                </div>
-                            </div>
-
-                            <div class="flex gap-1">
-                                <input
-                                    type="text"
-                                    id="input-add-glb-path"
-                                    placeholder="assets/glb/new_model.glb"
-                                    class="flex-1 bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white"
-                                />
-                                <button
-                                    onclick="spawnCustomGlbFromInput()"
-                                    class="bg-blue-700 hover:bg-blue-600 text-xs px-2 py-1 rounded font-bold"
-                                >
-                                    + Spawn
-                                </button>
-                            </div>
+                            <button
+                                id="btn-fisheye-toggle"
+                                onclick="toggleFisheye()"
+                                class="w-full bg-purple-900 hover:bg-purple-800 text-xs py-1.5 rounded border border-purple-700 font-bold"
+                            >
+                                Toggle Fisheye Lens
+                            </button>
                         </div>
+
                         <div class="border-t border-gray-700 pt-2 space-y-1">
-                            <div class="text-[10px] font-bold text-gray-400">Virtual Camera Stream</div>
+                            <div class="text-[10px] font-bold text-gray-400">Stream Controls</div>
                             <div class="flex gap-1 text-[10px]">
                                 <select id="select-stream-codec" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
                                     <option value="mjpeg">MJPEG</option>
@@ -502,7 +379,133 @@
                             </div>
                             <button id="btn-camera-stream-toggle" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs py-1 rounded font-bold">Start Stream</button>
                             <div id="stream-url-display" class="text-[9px] font-mono text-indigo-300 truncate hidden"></div>
+                        </div>
 
+                        <!-- Stream Diagnostics -->
+                        <div class="border-t border-gray-700 pt-2 space-y-1.5">
+                            <div class="flex items-center justify-between text-[10px] font-bold text-green-400">
+                                <span>Stream Status / Diagnostics</span>
+                                <span id="diag-stream-fps" class="text-sky-300 font-mono">OFF</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[10px] bg-slate-900/80 p-1.5 rounded border border-slate-700/80">
+                                <div><span class="text-gray-400">Latency:</span> <strong id="diag-stream-latency" class="text-emerald-400 font-mono">-- ms</strong></div>
+                                <div><span class="text-gray-400">Bitrate:</span> <strong id="diag-stream-bitrate" class="text-sky-400 font-mono">-- KB/s</strong></div>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="http://127.0.0.1:8080/" target="_blank" class="flex-1 bg-green-900 hover:bg-green-800 text-green-100 text-center text-[10px] py-1.5 rounded border border-green-700 transition block">
+                                    Open Stream Server Info
+                                </a>
+                            </div>
+                            <div class="text-[9px] text-gray-400 bg-gray-900/50 p-1.5 rounded border border-gray-700 break-all leading-tight">
+                                <span class="text-blue-300 font-bold">HTTP MJPEG:</span> http://127.0.0.1:8080/live/ct-camera.mjpg<br/>
+                                <span class="text-yellow-300 font-bold">RTSP (VLC):</span> rtsp://127.0.0.1:8554/live/ct-camera.mp4
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="panel-patient-config" class="ui-panel panel-right panel-bottom pointer-events-auto is-hidden">
+                    <header class="ui-panel-header">
+                        <h3 class="text-xs font-bold text-gray-300">Patient Model & Position</h3>
+                        <div class="panel-actions">
+                            <button class="panel-action" data-panel-action="collapse">_</button
+                            ><button class="panel-action" data-panel-action="hide">×</button>
+                        </div>
+                    </header>
+                    <div class="ui-panel-body space-y-2">
+                        <div>
+                            <div class="text-[10px] font-bold text-blue-300 mb-1">GLB Model Selection</div>
+                            <select
+                                id="select-patient-glb"
+                                onchange="changePatientGlbModel(this.value)"
+                                class="w-full bg-gray-800 text-white text-xs p-1.5 rounded border border-gray-600"
+                            ></select>
+                        </div>
+
+                        <!-- Patient Position & 3-Axis Rotation Controls -->
+                        <div class="bg-gray-900/80 p-2 rounded border border-gray-700 space-y-1.5 text-[10px]">
+                            <div class="flex justify-between items-center text-gray-300 font-bold mb-1 border-b border-gray-700 pb-1">
+                                <span>Patient Transform (6-DOF)</span>
+                                <button onclick="resetPatientPositionUI()" class="text-[9px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset</button>
+                            </div>
+                            <div class="text-[9px] text-blue-300 font-bold">Translation (XYZ)</div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Pos X:</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-x" value="0.00" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('x')" />
+                                        <span>m</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-x" min="-2" max="2" step="0.01" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('x')" />
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Pos Y:</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-y" value="-0.10" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('y')" />
+                                        <span>m</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-y" min="-2" max="2" step="0.01" value="-0.1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('y')" />
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Pos Z:</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-z" value="0.45" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('z')" />
+                                        <span>m</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-z" min="-3" max="3" step="0.01" value="0.45" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('z')" />
+                            </div>
+
+                            <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">Rotation (XYZ)</div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Rot X (Pitch):</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-rotX" value="-90" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotX')" />
+                                        <span>°</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-rotX" min="-180" max="180" step="1" value="-90" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotX')" />
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Rot Y (Yaw):</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-rotY" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotY')" />
+                                        <span>°</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-rotY" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotY')" />
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center text-gray-400 mb-0.5">
+                                    <span>Rot Z (Roll):</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" id="input-patient-pos-rotZ" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotZ')" />
+                                        <span>°</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-patient-pos-rotZ" min="-180" max="180" step="1" value="0" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotZ')" />
+                            </div>
+                        </div>
+
+                        <div class="flex gap-1">
+                            <input
+                                type="text"
+                                id="input-add-glb-path"
+                                placeholder="assets/glb/new_model.glb"
+                                class="flex-1 bg-gray-900 border border-gray-700 text-xs px-2 py-1 rounded text-white"
+                            />
+                            <button
+                                onclick="spawnCustomGlbFromInput()"
+                                class="bg-blue-700 hover:bg-blue-600 text-xs px-2 py-1 rounded font-bold"
+                            >
+                                + Spawn
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -600,10 +603,16 @@
                 s.src = scripts[idx];
                 s.onload = () => {
                     if (scripts[idx].includes("config-service.js") && window.CTConfigService) {
-                        window.CTConfigService.loadConfig().then(() => loadNext(idx + 1));
+                        window.CTConfigService.loadConfig()
+                            .catch(err => console.warn("Config load error:", err))
+                            .finally(() => loadNext(idx + 1));
                     } else {
                         loadNext(idx + 1);
                     }
+                };
+                s.onerror = () => {
+                    console.error("Failed to load script:", scripts[idx]);
+                    loadNext(idx + 1);
                 };
                 document.body.appendChild(s);
             }

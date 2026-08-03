@@ -4,10 +4,36 @@ function setCameraView(viewType) {
         hideInfoDialog();
     }
 
-    // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
-    new TWEEN.Tween(camera.position).to(getCameraTarget(viewType).pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    var isFree = (viewType === "free");
+    var ctrl = window.controls || (typeof controls !== "undefined" ? controls : null);
+    if (ctrl) {
+        ctrl.enabled = isFree;
+        ctrl.enableRotate = isFree;
+        ctrl.enableZoom = isFree;
+        ctrl.enablePan = isFree;
+    }
 
-    new TWEEN.Tween(controls.target).to(getCameraTarget(viewType).lookAt, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    var sel = document.getElementById("select-camera-view");
+    if (sel && sel.value !== viewType) {
+        sel.value = viewType;
+    }
+
+    // Free モードへの切替時は現在のカメラ位置・向きを保持したまま自由操作へ移行する
+    if (isFree) return;
+
+    var target = getCameraTarget(viewType);
+    if (!target) return;
+
+    // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
+    new TWEEN.Tween(camera.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+
+    new TWEEN.Tween(controls.target)
+        .to(target.lookAt, 1000)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onUpdate(function() {
+            if (window.controls) window.controls.update();
+        })
+        .start();
 }
 
 function getCameraTarget(type) {
