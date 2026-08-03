@@ -148,7 +148,7 @@
 
                 <section id="panel-hw-config" class="ui-panel panel-left panel-mid pointer-events-auto is-hidden">
                     <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">HW設定</h3>
+                        <h3 class="text-xs font-bold text-gray-300">HW Settings</h3>
                         <div class="panel-actions">
                             <button class="panel-action" data-panel-action="collapse">_</button
                             ><button class="panel-action" data-panel-action="hide">×</button>
@@ -215,7 +215,7 @@
 
                 <section id="panel-3d-config" class="ui-panel panel-right panel-bottom pointer-events-auto is-hidden">
                     <header class="ui-panel-header">
-                        <h3 class="text-xs font-bold text-gray-300">3D表示/操作</h3>
+                        <h3 class="text-xs font-bold text-gray-300">3D Controls</h3>
                         <div class="panel-actions">
                             <button class="panel-action" data-panel-action="collapse">_</button
                             ><button class="panel-action" data-panel-action="hide">×</button>
@@ -227,7 +227,7 @@
                             onchange="handleFocusChange(this.value)"
                             class="w-full bg-gray-800 text-white text-xs p-2 rounded border border-gray-600"
                         >
-                            <option value="" disabled selected>フォーカス対象を選択...</option>
+                            <option value="" disabled selected>Select Focus Target...</option>
                             <optgroup label="CT Room Components">
                                 <option value="Injector">Injector</option>
                                 <option value="Gantry">CT Gantry</option>
@@ -382,13 +382,13 @@
                             <!-- Patient Position & 3-Axis Rotation Controls -->
                             <div class="bg-gray-900/80 p-2 rounded border border-gray-700 space-y-1.5 text-[10px]">
                                 <div class="flex justify-between items-center text-gray-300 font-bold mb-1 border-b border-gray-700 pb-1">
-                                    <span>Patient Transform (数値入力 & 6軸操作)</span>
+                                    <span>Patient Transform (6-DOF)</span>
                                     <button onclick="resetPatientPositionUI()" class="text-[9px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset</button>
                                 </div>
-                                <div class="text-[9px] text-blue-300 font-bold">平行移動 (XYZ)</div>
+                                <div class="text-[9px] text-blue-300 font-bold">Translation (XYZ)</div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos X (左右):</span>
+                                        <span>Pos X:</span>
                                         <div class="flex items-center gap-1">
                                             <input type="number" id="input-patient-pos-x" value="0.00" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('x')" />
                                             <span>m</span>
@@ -398,7 +398,7 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos Y (高さ):</span>
+                                        <span>Pos Y:</span>
                                         <div class="flex items-center gap-1">
                                             <input type="number" id="input-patient-pos-y" value="-0.10" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('y')" />
                                             <span>m</span>
@@ -408,7 +408,7 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Pos Z (前後):</span>
+                                        <span>Pos Z:</span>
                                         <div class="flex items-center gap-1">
                                             <input type="number" id="input-patient-pos-z" value="0.45" step="0.01" min="-5" max="5" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('z')" />
                                             <span>m</span>
@@ -417,10 +417,10 @@
                                     <input type="range" id="slider-patient-pos-z" min="-3" max="3" step="0.01" value="0.45" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('z')" />
                                 </div>
 
-                                <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">3軸回転 (Rot XYZ)</div>
+                                <div class="text-[9px] text-blue-300 font-bold pt-1 border-t border-gray-800">Rotation (XYZ)</div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot X (ピッチ):</span>
+                                        <span>Rot X (Pitch):</span>
                                         <div class="flex items-center gap-1">
                                             <input type="number" id="input-patient-pos-rotX" value="-90" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotX')" />
                                             <span>°</span>
@@ -430,7 +430,7 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot Y (ヨー):</span>
+                                        <span>Rot Y (Yaw):</span>
                                         <div class="flex items-center gap-1">
                                             <input type="number" id="input-patient-pos-rotY" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotY')" />
                                             <span>°</span>
@@ -440,7 +440,7 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-400 mb-0.5">
-                                        <span>Rot Z (ロール):</span>
+                                        <span>Rot Z (Roll):</span>
                                         <div class="flex items-center gap-1">
                                             <input type="number" id="input-patient-pos-rotZ" value="0" step="1" min="-360" max="360" class="w-16 bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotZ')" />
                                             <span>°</span>
