@@ -1,7 +1,7 @@
 # CT Simulator 外部コマンドインターフェース仕様書 (v1)
 
 ## 1. 概要
-本仕様書は、外部コンソールアプリケーション等から `window.CTExternalGateway` を介して仮想HW（ガントリ、寝台、インジェクタ、全体シミュレータ）を遠隔制御および状態監視するための通信プロトコル仕様です。
+本仕様書は、外部コンソールアプリケーション等から `window.CTExternalGateway` を介して仮想HW（ガントリ、寝台、インジェクタ、全体シミュレータ、仮想カメラ）を遠隔制御および状態監視するための通信プロトコル仕様です。
 
 ### 1.1 通信シーケンス (UML)
 
@@ -99,12 +99,16 @@ sequenceDiagram
 | **`injector`**<br>(インジェクタ部) | `setA` | `value: number` | A剤（造影剤）注入量の設定 |
 | | `setB` | `value: number` | B剤（生理食塩水）注入量の設定 |
 | | `getState` | なし | インジェクタの現在状態を取得 |
-| **`simulator`**<br>(全体制御) | `setPatientVisible` | `value: boolean` | 患者モデルの表示 (`true`) / 非表示 (`false`) |
+| **`simulator`**<br>(全体・モデル制御) | `setPatientVisible` | `value: boolean` | 患者モデルの表示 (`true`) / 非表示 (`false`) |
+| | `setPatientModel` | `modelId: string` | 表示するアクティブ患者GLBモデルIDを指定 |
+| | `setPatientPosition` | `x?: number, y?: number, z?: number, rotX?: number, rotY?: number, rotZ?: number` | 患者モデルの9-DOFトランスフォーム（位置・角度）を変更 |
+| | `loadGlbModel` | `id: string, path: string, attachTo?: string, position?: Array, rotation?: Array, scale?: Array` | GLB 3Dモデルを動的に読み込んでアタッチ |
 | | `getState` | なし | 全体の現在状態を取得 |
-| **`camera`**<br>(仮想カメラ・映像配信) | `startStream` | `codec: string` (`'h264'` \| `'mjpeg'`),<br>`protocol: string` (`'rtsp'` \| `'http'`),<br>`fps?: number` | 仮想カメラ映像のエンコードストリーミング配信を開始 |
+| **`camera`**<br>(仮想カメラ・歪曲・配信) | `startStream` | `codec: string` (`'h264'` \| `'mjpeg'`),<br>`protocol: string` (`'rtsp'` \| `'http'`),<br>`fps?: number` | 仮想カメラ映像のエンコードストリーミング配信を開始 |
 | | `stopStream` | なし | 映像ストリーミング配信を停止 |
 | | `getStreamUrl` | なし | 現在配信中のストリーミングURLを取得 |
-| | `getState` | なし | カメラおよび配信状態を取得 |
+| | `setDistortion` | `enabled?: boolean, k1?: number, k2?: number, k3?: number, k4?: number, fx?: number, fy?: number, cx?: number, cy?: number, zoom?: number` | OpenCV 魚眼カメラ歪曲パラメータを動的更新 |
+| | `getState` | なし | カメラおよび配信・歪曲状態を取得 |
 
 ---
 
@@ -139,7 +143,23 @@ const res2 = window.CTExternalGateway.send({
   params: { value: 65 }
 });
 
-// 3. リアルタイム状態監視の開始
+// 3. カメラ魚眼レンズ歪曲の設定 (OpenCV Fisheye)
+const res3 = window.CTExternalGateway.send({
+  requestId: 'req-003',
+  target: 'camera',
+  action: 'setDistortion',
+  params: { enabled: true, k1: 0.20, k2: 0.05, fx: 1.0, fy: 1.0, cx: 0.5, cy: 0.5, zoom: 1.0 }
+});
+
+// 4. 患者モデル位置・姿態調整
+const res4 = window.CTExternalGateway.send({
+  requestId: 'req-004',
+  target: 'simulator',
+  action: 'setPatientPosition',
+  params: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 }
+});
+
+// 5. リアルタイム状態監視の開始
 const unsubscribe = window.CTExternalGateway.subscribe((event) => {
   if (event.success) {
     console.log('[状態更新通知]', event.payload);

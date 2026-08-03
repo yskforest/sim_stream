@@ -132,6 +132,7 @@
                 if (action === "startStream") return withLog(command, global.CameraSim.startStream(params));
                 if (action === "stopStream") return withLog(command, global.CameraSim.stopStream());
                 if (action === "getStreamUrl") return withLog(command, global.CameraSim.getStreamUrl());
+                if (action === "setDistortion") return withLog(command, global.CameraSim.setDistortion(params));
                 if (action === "getState")
                     return withLog(command, {
                         success: true,

@@ -125,6 +125,18 @@
         getStreamUrl: function getStreamUrl() {
             return { success: true, streamUrl: cameraState.streamUrl, isStreaming: cameraState.isStreaming };
         },
+        setDistortion: function setDistortion(params) {
+            params = params || {};
+            var appState = global.AppState || (global.CTStore ? global.CTStore.getState() : null);
+            if (appState && appState.distortion) {
+                Object.assign(appState.distortion, params);
+            }
+            if (typeof global.updateCameraDistortion === "function") {
+                global.updateCameraDistortion(params);
+            }
+            notifyStateChange();
+            return { success: true, distortion: appState ? appState.distortion : params };
+        },
     };
 
     global.CameraSim = cameraSim;

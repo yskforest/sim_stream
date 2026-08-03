@@ -3,7 +3,7 @@
 ## 1. 設計原則
 - **UIと外部I/Fの同一化**: UI操作および外部APIからの制御は、すべて単一の `Command Bus` 経路を経由して同一のロジックで実行する。
 - **ドメインの独立性**: 仮想HWシミュレータ（Domain）と表示部（Presentation: 3D描画 / UIパネル）を完全に分離し、相互参照を排除する。
-- **設定と実装の分離**: 検出器列数や回転速度制限などの機種差分は `ProfileService`（設定層）に切り出し、HWロジックと分離する。
+- **設定と実装の分離**: 検出器列数や回転速度制限などの機種差分は `ProfileService`（設定層）および `CTModelsConfig` / `CTModelRegistry`（モデル管理層）に切り出し、HWロジックと分離する。
 - **単一状態管理 (Single Source of Truth)**: 全システム状態を `AppState` に一元管理し、`CTStore` の Pub/Sub 機構により画面・3Dモデルへ変更を伝播する。
 
 ---
@@ -17,6 +17,7 @@ flowchart TB
     subgraph Presentation["Presentation Layer (表示層)"]
         UIPanels["UI Panels (HTML/CSS)"]
         View3D["Three.js 3D View / WebGL Canvas"]
+        DistortionPass["OpenCV Fisheye Distortion Pass\n(GLSL ShaderMaterial + Gamma 2.2)"]
     end
 
     subgraph Adapter["Adapter Layer (接続層)"]
@@ -31,6 +32,7 @@ flowchart TB
         LogService["CTCommandLogService"]
         SeqService["CTSequenceService"]
         VideoStreamService["VideoStreamService"]
+        ModelRegistry["CTModelRegistryService"]
     end
 
     subgraph Domain["Domain & State Layer (ドメイン・状態層)"]
@@ -39,8 +41,9 @@ flowchart TB
         Injector["InjectorSim"]
         Camera["CameraSim (Virtual Camera)"]
         Store["CTStore"]
-        State["AppState"]
+        State["AppState (distortion, patientOffset, etc.)"]
         Profile["CTProfileService"]
+        ModelsConfig["CTModelsConfig"]
     end
 
     %% 接続関係
@@ -55,16 +58,19 @@ flowchart TB
     CommandBus -->|Control| Injector
     CommandBus -->|Control stream/params| Camera
     CommandBus -->|Control stream| VideoStreamService
+    CommandBus -->|Manage models| ModelRegistry
     CommandBus -->|dispatch| Store
     CommandBus -->|add log| LogService
 
+    View3D -->|Render Scene to RenderTarget| DistortionPass
+    DistortionPass -->|Render Distorted Frame| View3D
     VideoStreamService -->|Frame capture| View3D
     VideoStreamService -->|Encode & Stream| StreamGateway
     StreamGateway -->|RTSP / HTTP Stream| ExtClient["External Monitor / Player"]
 
     Store -->|Manages| State
     State -.->|Notify change| UIPanels
-    State -.->|Update models/camera| View3D
+    State -.->|Update models/camera/distortion| View3D
 ```
 
 ---
@@ -94,6 +100,9 @@ classDiagram
         +renderBatchQueue()
         +renderMonitor()
         +renderCommandLog()
+        +onDistortionParamInput()
+        +onDistortionPresetChange(presetKey)
+        +resetDistortionParamsUI()
     }
 
     class CTCommandBus {
@@ -108,8 +117,6 @@ classDiagram
         +setField(key, value) Object
     }
 
-
-
     class CouchSim {
         +moveToY(value) Object
         +moveToZ(value) Object
@@ -121,135 +128,34 @@ classDiagram
     }
 
     class CameraSim {
-        +setTransform(position, lookAt)
-        +setFov(fov)
+        +startStream(params) Object
+        +stopStream() Object
+        +getStreamUrl() Object
+        +setDistortion(params) Object
         +getState() Object
     }
 
-    class VideoStreamService {
-        +start(config) Object
-        +stop() Object
-        +getStatus() Object
+    class CTModelRegistryService {
+        +init(modelsConfig)
+        +spawnModelInstance(id, options)
+        +updateInstanceTransform(id, transform)
+        +removeInstance(id)
     }
 
-    class StreamGateway {
-        +broadcastFrame(frameData)
-        +subscribeFrames(listener) Function
-    }
-
-    class CTStore {
-        +bindState(state)
-        +getState() AppState
-        +dispatch(command) Object
-        +subscribe(listener) Function
-    }
-
-    class AppState {
-        +gantry Object
-        +couch Object
-        +injector Object
-        +camera Object
-        +patientVisible boolean
-        +update(scope, key, value)
-        +subscribe(listener)
-        +notify()
-    }
-
-    class CTCommandLogService {
-        +add(entry)
-        +list() Array
-        +clear()
-        +subscribe(listener) Function
-        +exportJson() String
-    }
-
-    class CTSequenceService {
-        +setCancelRequested(value) Object
-        +setActiveBatchIndex(value) Object
-        +setCurrentScanMode(value) Object
-        +setCountdown(value) Object
-        +resetInitialHardwareState()
-        +finalizeState(defaultMode)
-    }
-
-    class CTModelsConfig {
-        +defaultPatientId String
-        +models Array
-        +registerModel(modelDef) Boolean
-        +getModel(id) Object
-        +getAllModels() Array
-    }
-
-    class CTModelRegistry {
-        +loadGLTF(path) Promise
-        +spawnModelInstance(modelId, options) Promise
-        +removeInstance(instanceId) Boolean
-        +setInstanceVisibility(instanceId, visible)
-        +updateInstanceTransform(instanceId, transform)
-        +getAllInstances() Array
-    }
-
-    CTExternalGateway ..> CTProtocolV1 : uses
-    CTExternalGateway ..> CTCommandBus : delegates to
-    UIController ..> CTCommandBus : delegates to
-    CTCommandBus --> GantrySim : invokes
-    CTCommandBus --> CouchSim : invokes
-    CTCommandBus --> InjectorSim : invokes
-    CTCommandBus --> CameraSim : invokes
-    CTCommandBus --> VideoStreamService : invokes
-    VideoStreamService --> StreamGateway : delegates
-    CTCommandBus --> CTStore : dispatches
-    CTCommandBus --> CTCommandLogService : logs
-    CTStore --> AppState : manages
-    CTSequenceService ..> CTCommandBus : delegates to
-    CTModelRegistry ..> CTModelsConfig : reads config
-    CameraSim --> VideoStreamService : delegates stream
+    CTExternalGateway ..> CTCommandBus : execute
+    UIController ..> CTCommandBus : execute
+    CTCommandBus ..> GantrySim : invoke
+    CTCommandBus ..> CouchSim : invoke
+    CTCommandBus ..> InjectorSim : invoke
+    CTCommandBus ..> CameraSim : invoke
+    CTCommandBus ..> CTModelRegistryService : invoke
 ```
 
 ---
 
-## 4. 制御フローとシーケンス
+## 4. コントロールフローとシーケンス図
 
-### 4.1 外部APIからのコマンド実行シーケンス
-
-外部コンソール（JavaScript / Console App）から `CTExternalGateway` 経由でコマンドが発行され、状態が更新されるまでの流れです。
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor ExtApp as 外部コンソール/Client
-    participant ExtGateway as CTExternalGateway
-    participant Protocol as CTProtocolV1
-    participant Bus as CTCommandBus
-    participant HW as GantrySim / CouchSim / InjectorSim
-    participant Store as CTStore / AppState
-    participant Log as CTCommandLogService
-    participant UI as UI Panel / 3D View
-
-    ExtApp->>ExtGateway: send(command)
-    ExtGateway->>Protocol: validateCommand(command)
-    Protocol-->>ExtGateway: { valid: true }
-    ExtGateway->>Bus: execute(normalizedCommand)
-    
-    alt ターゲットがHWシミュレータ
-        Bus->>HW: moveToZ(val) / setScanning(bool)
-        HW->>Store: state.update(scope, key, val)
-        Store->>UI: notify() / Pub-Sub更新
-        HW-->>Bus: { success: true, state }
-    else ターゲットがストア直接変更
-        Bus->>Store: dispatch({ type: "set", ... })
-        Store->>UI: notify() / Pub-Sub更新
-        Store-->>Bus: { success: true, state }
-    end
-
-    Bus->>Log: add({ source: "external", command, result })
-    Bus-->>ExtGateway: result
-    ExtGateway->>Protocol: buildSuccess(requestId, payload)
-    Protocol-->>ExtGateway: Response Envelope
-    ExtGateway-->>ExtApp: Response Envelope
-```
-
-### 4.2 UI操作からのコマンド実行シーケンス
+### 4.1 UI操作シーケンス (コンソール/操作画面)
 
 操作画面（UIパネル）上のボタンクリックやスライダー操作からコマンドが発行される流れです。
 
@@ -273,6 +179,30 @@ sequenceDiagram
     UIController->>UIPanel: 画面表示更新 (モニタ数値)
     Store->>UI: 3Dモデル位置アニメーション更新
     Bus-->>UIController: { success: true }
+```
+
+### 4.2 外部API操作シーケンス (遠隔制御)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as 外部コンソール / Client
+    participant Gateway as CTExternalGateway
+    participant Protocol as CTProtocolV1
+    participant Bus as CTCommandBus
+    participant HW as GantrySim
+    participant Store as CTStore / AppState
+
+    Client->>Gateway: send({ requestId: "req-101", target: "gantry", action: "setScanning", params: { value: true } })
+    Gateway->>Protocol: validateCommand(command)
+    Protocol-->>Gateway: { valid: true }
+    Gateway->>Bus: execute(command)
+    Bus->>HW: setScanning(true)
+    HW->>Store: update("gantry", "isScanning", true)
+    Bus-->>Gateway: { success: true, state }
+    Gateway->>Protocol: buildSuccess(requestId, payload)
+    Protocol-->>Gateway: Response Envelope
+    Gateway-->>Client: Response Envelope
 ```
 
 ### 4.3 仮想カメラ映像配信シーケンス (カメラストリーミング)
@@ -308,9 +238,31 @@ sequenceDiagram
 
 ---
 
-## 5. 状態管理と状態遷移 (ステートマシン図)
+## 5. カメラ歪曲シェーダーパイプライン設計
 
-### 5.1 ガントリ (GantrySim) スキャン動作のステートマシン
+### 5.1 数学モデル（OpenCV Fisheye / Kannala-Brandt モデル）
+標準のピンホールカメラ像 $(x, y)$ と魚眼歪曲像 $(x_d, y_d)$ の関係：
+$$\theta = \arctan(r), \quad r = \sqrt{x^2 + y^2}$$
+$$\theta_d = \theta (1 + k_1 \theta^2 + k_2 \theta^4 + k_3 \theta^6 + k_4 \theta^8)$$
+
+ポストプロセス GLSL フラグメントシェーダーでは、画面の歪曲画素 $(u, v)$ から逆算するため、ニュートン・ラフソン法（Newton-Raphson method, 6回反復）で $\theta$ を解きます：
+$$f(\theta) = \theta (1 + k_1 \theta^2 + k_2 \theta^4 + k_3 \theta^6 + k_4 \theta^8) - \theta_d = 0$$
+
+解いた $\theta$ から理想的なピンホール半径 $r = \tan(\theta)$ を求め、元画像テクスチャ座標 $uv_{\text{src}}$ を参照します。
+
+### 5.2 ガンマ補正 (sRGB Gamma 2.2 Transfer)
+Three.js の `WebGLRenderTarget` 内のフレームバッファは線形色空間（Linear Color Space）で記録されているため、シェーダー出力時にガンマ補正を適用します：
+```glsl
+vec4 texColor = texture2D(tDiffuse, uv_src);
+gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a);
+```
+これにより、魚眼レンズ歪曲適用時も通常描画と同等の正しく明るい発色を実現します。
+
+---
+
+## 6. 状態管理と状態遷移 (ステートマシン図 & AppState)
+
+### 6.1 ガントリ (GantrySim) スキャン動作のステートマシン
 
 ガントリスキャンの内部状態および制御ルールを図示します。
 
@@ -335,7 +287,7 @@ stateDiagram-v2
     Scanning --> Idle : setScanning(false)
 ```
 
-### 5.2 仮想カメラ映像配信のステートマシン
+### 6.2 仮想カメラ映像配信のステートマシン
 
 ```mermaid
 stateDiagram-v2
@@ -355,23 +307,42 @@ stateDiagram-v2
     Error --> Stopped : Reset
 ```
 
+### 6.3 状態管理 (`AppState` スキーマ)
+
+全コンポーネントが参照・更新する単一状態オブジェクト `AppState` の構造定義：
+
+| プロパティパス | 型 | 初期値 | 説明 |
+| :--- | :--- | :--- | :--- |
+| `gantry.isScanning` | `boolean` | `false` | スキャン中フラグ |
+| `gantry.rotorSpeed` | `number` | `0` | 架台回転速度 (rpm) |
+| `gantry.detectorRows` | `number` | `320` | マルチスライス検出器列数 |
+| `gantry.xrayVisible` | `boolean` | `false` | X線ビーム表示フラグ |
+| `couch.y` | `number` | `0` | 寝台上下位置 (%) |
+| `couch.z` | `number` | `0` | 寝台前後位置 (%) |
+| `injector.a` | `number` | `0` | 造影剤残量 (%) |
+| `injector.b` | `number` | `0` | 生理食塩水残量 (%) |
+| `patientVisible` | `boolean` | `true` | 患者モデル表示フラグ |
+| `patientModelId` | `string` | `"patient_dennis"` | アクティブな患者GLBモデルID |
+| `patientOffset` | `object` | `{ x:0, y:-0.1, z:0.45, rotX:-90, rotY:0, rotZ:0 }` | 患者モデルの9-DOFトランスフォーム |
+| `distortion` | `object` | `{ enabled:false, k1:0.1, k2:0.05, k3:0, k4:0, fx:1, fy:1, cx:0.5, cy:0.5, zoom:1 }` | OpenCV魚眼カメラ歪曲パラメータ |
+
 ---
 
-## 6. 実装ディレクトリとモジュール構成
+## 7. 実装ディレクトリとモジュール構成
 
 ソースコードのディレクトリ構成とモジュールの対応関係です。
 
 ```text
 assets/js/
   ├── core/                           # ドメイン・アプリケーションコア
-  │   ├── main.js                     # アプリケーション基盤エントリーポイント
+  │   ├── main.js                     # アプリケーション基盤エントリーポイント & ポストプロセス歪曲シェーダー
   │   ├── state.js                    # AppState (状態管理実体)
   │   ├── store.js                    # CTStore (AppStateへのアクセサーラッパー)
   │   ├── hw/                         # 仮想HWドメインシミュレータ
   │   │   ├── gantry-sim.js           # ガントリ制御ロジック
   │   │   ├── couch-sim.js            # 寝台制御ロジック
   │   │   ├── injector-sim.js         # インジェクタ制御ロジック
-  │   │   └── camera-sim.js           # 仮想カメラ制御ロジック
+  │   │   └── camera-sim.js           # 仮想カメラ・歪曲制御ロジック
   │   ├── commands/
   │   │   └── command-bus.js          # コマンドバス（UI/外部共通の実行経路）
   │   ├── config/
@@ -386,7 +357,7 @@ assets/js/
   │       └── profile-service.js      # 機種差分プロファイルサービス
   ├── adapters/                       # 外部接続・UIアダプター
   │   ├── ui/
-  │   │   └── ui-controller.js        # DOMイベントハンドラ・画面同期
+  │   │   └── ui-controller.js        # DOMイベントハンドラ・画面同期・歪曲UIハンドラ
   │   ├── external/
   │   │   ├── protocol-v1.js          # 通信プロトコル検証・レスポンス生成
   │   │   └── external-gateway.js     # 外部公開API Gateway (window.CTExternalGateway)
@@ -403,22 +374,22 @@ assets/js/
 
 ---
 
-## 7. UI構成・表示仕様
+## 8. UI構成・表示仕様
 
-### 7.1 パネル構成と役割
+### 8.1 パネル構成と役割
 操作画面は以下の5パネルで構成され、将来実コンソール画面へ接続する際にも各パネル単位で容易に換装できる設計としています。
 
 - **Console (`panel-console`)**: スキャン開始/停止、バッチ編集、シーケンス実行
 - **HW STATE MONITOR (`panel-monitor`)**: ガントリ・寝台・インジェクタ・直近結果表示
 - **HW設定 (`panel-hw-config`)**: Detector Rows、Couch Y/Z、Injector A/B 設定
-- **3D表示・操作 (`panel-3d-config`)**: フォーカス、カメラ、透過、X線、患者表示、カメラ配信設定
+- **3D表示・操作 (`panel-3d-config`)**: フォーカス、カメラ、透過、X線、患者表示、患者モデル選択/9-DOF、カメラ歪曲設定、カメラ配信設定
 - **Command Log (`panel-command-log`)**: コマンド実行履歴表示
 
 ---
 
-## 8. 仮想カメラ映像配信アーキテクチャ詳細
+## 9. 仮想カメラ映像配信アーキテクチャ詳細
 
-### 8.1 配信方式とプロトコル構成
+### 9.1 配信方式とプロトコル構成
 
 | 方式 | コーデック | 通信プロトコル | 技術スタック・伝送方式 |
 | :--- | :--- | :--- | :--- |
@@ -428,9 +399,11 @@ assets/js/
 
 ---
 
-## 9. 検証方針
+## 10. 検証方針
 - **構文チェック**: `node --check`
 - **外部I/Fプロトコル検証**: `node scripts/verify-external-interface.js`
 - **映像配信検証**:
   - MJPEG over HTTP ストリームのブラウザ再生確認
   - RTSP ストリーム (VLC メディアプレイヤー / ffmpeg での受信確認)
+- **カメラ歪曲検証**:
+  - OpenCV Fisheye パラメータ計算と sRGB ガンマ 2.2 補正後のレンダリング結果の目視およびキャプチャ確認
