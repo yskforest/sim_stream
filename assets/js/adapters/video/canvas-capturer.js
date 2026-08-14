@@ -45,14 +45,19 @@
             var canvas = getCanvasElement();
             if (!canvas) return null;
 
+            // バックプレッシャー制御：前フレームの Blob 変換が完了していない場合は即時スキップ
+            if (capturer.isProcessingBlob) {
+                return lastFrameData;
+            }
+
             width = width || 1280;
             height = height || 960;
-            quality = typeof quality === "number" ? quality : 0.92;
+            quality = typeof quality === "number" ? quality : 0.85;
             mode = mode || capturer.mode || "main";
 
             try {
                 if (mode === "main") {
-                    // 【main モード】画面ビューポートに黒帯（レターボックス/ピラーボックス）を挿入し、配信映像は3D表示領域をクロップして指定解像度・アス比で送信
+                    // 【main モード】画面ビューポートのキャプチャとクロップ
                     if (!capturer.offscreenCanvas) {
                         capturer.offscreenCanvas = document.createElement("canvas");
                         capturer.offscreenCtx = capturer.offscreenCanvas.getContext("2d");
@@ -80,18 +85,16 @@
                         ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, width, height);
                     }
 
-                    if (!capturer.isProcessingBlob) {
-                        capturer.isProcessingBlob = true;
-                        var captureStart = performance.now();
-                        capturer.offscreenCanvas.toBlob(function (blob) {
-                            var captureMs = performance.now() - captureStart;
-                            capturer.lastCaptureLatencyMs = captureMs;
-                            lastFrameData = blob;
-                            capturer.isProcessingBlob = false;
-                        }, "image/jpeg", quality);
-                    }
+                    capturer.isProcessingBlob = true;
+                    var captureStart = performance.now();
+                    capturer.offscreenCanvas.toBlob(function (blob) {
+                        var captureMs = performance.now() - captureStart;
+                        capturer.lastCaptureLatencyMs = captureMs;
+                        if (blob) lastFrameData = blob;
+                        capturer.isProcessingBlob = false;
+                    }, "image/jpeg", quality);
                 } else if (mode === "virtual" && global.renderer && global.scene && typeof THREE !== "undefined") {
-                    // 【virtual モード】独立した仮想カメラと WebGLRenderTarget を使って二次レンダリング
+                    // 【virtual モード】独立仮想カメラによるマルチターゲットレンダリング
                     if (!capturer.virtualCamera) {
                         capturer.virtualCamera = new THREE.PerspectiveCamera();
                     }
@@ -139,43 +142,35 @@
                     global.renderer.readRenderTargetPixels(capturer.renderTarget, 0, 0, width, height, capturer.pixelBuffer);
                     global.renderer.setRenderTarget(null);
 
-                    var src = capturer.pixelBuffer;
-                    var dst = capturer.imageData.data;
-                    var rowLength = width * 4;
-
-                    var dstIdx = 0;
-                    for (var y = height - 1; y >= 0; y--) {
-                        var srcIdx = y * rowLength;
-                        var endIdx = srcIdx + rowLength;
-                        while (srcIdx < endIdx) {
-                            dst[dstIdx++] = SRGB_LUT[src[srcIdx++]];
-                            dst[dstIdx++] = SRGB_LUT[src[srcIdx++]];
-                            dst[dstIdx++] = SRGB_LUT[src[srcIdx++]];
-                            dst[dstIdx++] = 255;
-                            srcIdx++;
-                        }
+                    // 高速 TypedArray Uint32 メモリブロック転送（上下反転処理）
+                    var src32 = new Uint32Array(capturer.pixelBuffer.buffer);
+                    var dst32 = new Uint32Array(capturer.imageData.data.buffer);
+                    for (var y = 0; y < height; y++) {
+                        var srcRow = (height - 1 - y) * width;
+                        var dstRow = y * width;
+                        dst32.set(src32.subarray(srcRow, srcRow + width), dstRow);
                     }
 
                     capturer.offscreenCtx.putImageData(capturer.imageData, 0, 0);
 
-                    if (!capturer.isProcessingBlob) {
-                        capturer.isProcessingBlob = true;
-                        capturer.offscreenCanvas.toBlob(function (blob) {
-                            lastFrameData = blob;
-                            capturer.isProcessingBlob = false;
-                        }, "image/jpeg", quality);
-                    }
+                    capturer.isProcessingBlob = true;
+                    var vCaptureStart = performance.now();
+                    capturer.offscreenCanvas.toBlob(function (blob) {
+                        var captureMs = performance.now() - vCaptureStart;
+                        capturer.lastCaptureLatencyMs = captureMs;
+                        if (blob) lastFrameData = blob;
+                        capturer.isProcessingBlob = false;
+                    }, "image/jpeg", quality);
                 } else {
-                    if (!capturer.isProcessingBlob) {
-                        capturer.isProcessingBlob = true;
-                        canvas.toBlob(function (blob) {
-                            lastFrameData = blob;
-                            capturer.isProcessingBlob = false;
-                        }, "image/jpeg", quality);
-                    }
+                    capturer.isProcessingBlob = true;
+                    canvas.toBlob(function (blob) {
+                        if (blob) lastFrameData = blob;
+                        capturer.isProcessingBlob = false;
+                    }, "image/jpeg", quality);
                 }
             } catch (e) {
                 console.error("CanvasCapturer Error:", e);
+                capturer.isProcessingBlob = false;
                 lastFrameData = null;
             }
             return lastFrameData;

@@ -20,6 +20,7 @@
                 <button class="toolbar-btn" data-panel-target="panel-patient-config">Patient</button>
                 <button class="toolbar-btn" data-panel-target="panel-command-log">Log</button>
                 <button id="btn-hud-toggle" class="toolbar-btn" onclick="CTPerformanceService.toggleHud()">PERF</button>
+                <button id="btn-eco-toggle" class="toolbar-btn bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 font-bold border border-emerald-500/50" onclick="toggleEcoMode()" title="Toggle Eco Mode (Lower GPU/CPU load)">ECO</button>
             </div>
 
             <div id="ui-panels">
@@ -469,8 +470,8 @@
                                 <span class="text-gray-400 ml-1">Qual:</span>
                                 <select id="select-stream-quality" class="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-white flex-1">
                                     <option value="0.7">70%</option>
-                                    <option value="0.85">85%</option>
-                                    <option value="0.92" selected>92% (High)</option>
+                                    <option value="0.85" selected>85%</option>
+                                    <option value="0.92">92% (High)</option>
                                     <option value="0.98">98% (Max)</option>
                                 </select>
                             </div>

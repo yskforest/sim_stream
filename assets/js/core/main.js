@@ -64,6 +64,37 @@ window.toggleWaterPhantom = function() {
         }
     }
 };
+window.isEcoModeEnabled = false;
+window.renderDemandCount = 60;
+
+window.requestRenderFrame = function(count) {
+    window.renderDemandCount = Math.max(window.renderDemandCount || 0, typeof count === "number" ? count : 15);
+};
+
+window.toggleEcoMode = function(enabled) {
+    if (typeof enabled === "boolean") {
+        window.isEcoModeEnabled = enabled;
+    } else {
+        window.isEcoModeEnabled = !window.isEcoModeEnabled;
+    }
+    var btn = document.getElementById("btn-eco-toggle");
+    if (btn) {
+        if (window.isEcoModeEnabled) {
+            btn.className = "toolbar-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold border border-emerald-400";
+            btn.textContent = "ECO: ON";
+        } else {
+            btn.className = "toolbar-btn bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 font-bold border border-emerald-500/50";
+            btn.textContent = "ECO";
+        }
+    }
+    if (window.isEcoModeEnabled) {
+        window.setGraphicsQuality("eco");
+    } else {
+        window.setGraphicsQuality("high");
+    }
+    window.requestRenderFrame(30);
+};
+
 window.setGraphicsQuality = function(mode) {
     if (!window.renderer) return;
     if (mode === "high") {
@@ -72,11 +103,18 @@ window.setGraphicsQuality = function(mode) {
             window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
             window.renderer.toneMappingExposure = 1.05;
         }
+        window.renderer.shadowMap.enabled = true;
+    } else if (mode === "eco" || mode === "low") {
+        window.renderer.setPixelRatio(0.85);
+        window.renderer.toneMapping = THREE.NoToneMapping;
+        window.renderer.shadowMap.enabled = false;
     } else {
         window.renderer.setPixelRatio(1.0);
         window.renderer.toneMapping = THREE.NoToneMapping;
+        window.renderer.shadowMap.enabled = true;
     }
     window.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (window.requestRenderFrame) window.requestRenderFrame(10);
 };
 var fisheyeRenderTarget = null;
 var fisheyeCamera = null;
@@ -133,7 +171,7 @@ function setupFisheyePipeline(rw, rh) {
                 "    }",
                 "",
                 "    float theta = theta_d;",
-                "    for (int i = 0; i < 6; i++) {",
+                "    for (int i = 0; i < 4; i++) {",
                 "        float theta2 = theta * theta;",
                 "        float theta4 = theta2 * theta2;",
                 "        float theta6 = theta4 * theta2;",
@@ -221,6 +259,8 @@ function init() {
 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     container.appendChild(renderer.domElement);
 
     // --- Procedural IBL Environment Map Generation ---
@@ -255,9 +295,29 @@ function init() {
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.01;
+    controls.addEventListener("change", function() {
+        window.requestRenderFrame(15);
+        if (renderer && renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+    });
 
     if (window.CTFPSControls && typeof window.CTFPSControls.init === "function") {
         window.CTFPSControls.init(camera, renderer.domElement);
+    }
+
+    if (typeof window !== "undefined") {
+        window.addEventListener("pointerdown", function() { window.requestRenderFrame(30); });
+        window.addEventListener("mousemove", function() {
+            if (controls && controls.state !== -1) {
+                window.requestRenderFrame(10);
+            }
+        });
+    }
+
+    if (window.AppState && typeof window.AppState.subscribe === "function") {
+        window.AppState.subscribe(function() {
+            window.requestRenderFrame(20);
+            if (renderer && renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+        });
     }
 
     // --- Default Free View Camera Position & Target ---
@@ -312,6 +372,7 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
+    window.requestRenderFrame(15);
 }
 
 function animate(time) {
@@ -328,7 +389,9 @@ function animate(time) {
     }
     var delta = typeof clock.getDelta === "function" ? clock.getDelta() : 0.016;
 
+    var isRotorMoving = false;
     if (Meshes.rotor && AppState.gantry.rotorSpeed > 0) {
+        isRotorMoving = true;
         var radPerSec = (AppState.gantry.rotorSpeed * Math.PI * 2) / 60;
         Meshes.rotor.rotation.z += radPerSec * delta;
         AppState.gantry.angle = Meshes.rotor.rotation.z % (Math.PI * 2);
@@ -338,7 +401,7 @@ function animate(time) {
         mixer.update(delta);
     }
 
-    if (Meshes.serverLeds) {
+    if (Meshes.serverLeds && (isRotorMoving || window.renderDemandCount > 0)) {
         Meshes.serverLeds.forEach(function (mat) {
             if (Math.random() > 0.85) {
                 mat.opacity = Math.random();
@@ -354,6 +417,24 @@ function animate(time) {
     }
 
     var activeStream = window.CTVideoStreamService ? window.CTVideoStreamService.getActiveStream() : null;
+    var isStreaming = activeStream && activeStream.isStreaming;
+    var isFpsControlsActive = window.CTFPSControls && typeof window.CTFPSControls.isEnabled === "function" && window.CTFPSControls.isEnabled();
+
+    var isDynamic = isStreaming || isRotorMoving || isFpsControlsActive || (window.renderDemandCount > 0);
+
+    if (window.renderDemandCount > 0) {
+        window.renderDemandCount--;
+    }
+
+    if (!isDynamic) {
+        // 静止時は描画計算をスキップして CPU/GPU 負荷をカット
+        return;
+    }
+
+    if (isRotorMoving) {
+        renderer.shadowMap.needsUpdate = true;
+    }
+
     if (activeStream && activeStream.isStreaming && activeStream.mode === "main") {
         var targetAspect = activeStream.width / activeStream.height;
         camera.aspect = targetAspect;

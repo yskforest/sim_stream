@@ -48,6 +48,9 @@
 
         if (isWsConnected && ws && ws.readyState === WebSocket.OPEN) {
             try {
+                if (ws.bufferedAmount > 128 * 1024) {
+                    return; // バッファが過大な場合はフレームをドロップ
+                }
                 ws.send(frameData);
                 var wsLatency = performance.now() - sendStart;
                 recordMetrics(wsLatency);
