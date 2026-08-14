@@ -1,137 +1,304 @@
-// スキャンシーケンス自動実行エンジン
-var isSequenceRunning = false;
+// CT 3D Simulator - Sequence Runner & Batch Management Service
+(function attachSequenceRunner(global) {
+    "use strict";
 
-function stopAutoSequence() {
-    if (!isSequenceRunning) return;
-    CTSequenceService.setCancelRequested(true);
-}
+    function wait(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
+    }
 
-async function runAutoSequence() {
-    if (isSequenceRunning) return;
-    isSequenceRunning = true;
-    CTSequenceService.setCancelRequested(false);
-
-    CTSequenceService.resetInitialHardwareState();
-    if (AppState.gantry.xrayVisible) toggleXRay();
-    if (AppState.gantry.isScanning) toggleScan();
-
-    await tweenPromise(AppState.couch, { y: 80 }, 2000);
-
-    var seq = AppState.gantry.scanSequence;
-
-    for (var i = 0; i < seq.length; i++) {
-        if (AppState.gantry.cancelRequested) break;
-
-        var batch = seq[i];
-        var mode = batch.mode;
-        var delay = batch.delay || 0;
-        var isSyncTarget = AppState.gantry.injectorSyncIndex === i;
-
-        CTSequenceService.setActiveBatchIndex(i);
-        CTSequenceService.setCurrentScanMode(mode);
-
-        if (delay > 0) {
-            for (var d = delay; d > 0; d--) {
-                if (AppState.gantry.cancelRequested) break;
-                CTSequenceService.setCountdown(d);
-                await wait(1000);
+    function tweenPromise(target, to, duration, easing) {
+        return new Promise(function (resolve) {
+            if (typeof TWEEN === "undefined") {
+                for (var k in to) {
+                    if (Object.prototype.hasOwnProperty.call(to, k)) {
+                        target[k] = to[k];
+                    }
+                }
+                if (global.AppState && typeof global.AppState.notify === "function") {
+                    global.AppState.notify();
+                }
+                resolve();
+                return;
             }
-            CTSequenceService.setCountdown(0);
-        }
 
-        if (AppState.gantry.cancelRequested) break;
+            new TWEEN.Tween(target)
+                .to(to, duration)
+                .easing(easing || TWEEN.Easing.Quadratic.InOut)
+                .onUpdate(function () {
+                    if (global.AppState && typeof global.AppState.notify === "function") {
+                        global.AppState.notify();
+                    }
+                })
+                .onComplete(resolve)
+                .start();
+        });
+    }
 
-        if (isSyncTarget) {
-            tweenPromise(AppState.injector, { a: 100 }, 4000);
-        }
+    var isSequenceRunning = false;
 
-        var isScano = mode === "scano" || mode === "dual_scano";
-        var isVolume = mode === "volume" || mode === "dynamic" || mode === "real_prep";
-        var isHelicalLike = mode === "helical" || mode === "3d_landmark";
+    var runner = {
+        isRunning: function () {
+            return isSequenceRunning;
+        },
 
-        if (isScano) {
-            // Topogram系: 回転を止めた状態で寝台を移動しながら照射
-            new TWEEN.Tween(Meshes.rotor.rotation).to({ z: 0 }, 1000).start();
-            await wait(1000);
-            if (AppState.gantry.cancelRequested) break;
-
-            await tweenPromise(AppState.couch, { z: 80 }, 1500);
-            if (AppState.gantry.cancelRequested) break;
-
-            toggleXRay();
-            await tweenPromise(AppState.couch, { z: 20 }, 4000, TWEEN.Easing.Linear.None);
-            if (AppState.gantry.xrayVisible) toggleXRay();
-        } else {
-            if (!AppState.gantry.isScanning) {
-                toggleScan();
-                await wait(2000);
+        // --- Batch Queue Management ---
+        setInjectorSync: function (index) {
+            var state = global.AppState;
+            if (!state || !state.gantry) return;
+            var current = state.gantry.injectorSyncIndex;
+            var newVal = current === index ? -1 : index;
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({
+                    source: "ui-console",
+                    target: "gantry",
+                    action: "setField",
+                    params: { key: "injectorSyncIndex", value: newVal },
+                });
             }
-            if (AppState.gantry.cancelRequested) break;
+        },
 
-            if (isHelicalLike) {
-                // Helical系: 回転＋寝台送りで連続照射
-                await tweenPromise(AppState.couch, { z: 80 }, 1500);
-                if (AppState.gantry.cancelRequested) break;
+        addScanBatch: function () {
+            var state = global.AppState;
+            if (!state || !state.gantry) return;
+            if (state.gantry.scanSequence.length >= 6 || isSequenceRunning) return;
 
-                toggleXRay();
-                await tweenPromise(AppState.couch, { z: 20 }, 5000, TWEEN.Easing.Linear.None);
-                if (AppState.gantry.xrayVisible) toggleXRay();
-            } else if (isVolume) {
-                // Volume系: 固定位置に近い状態で一定時間照射
-                await tweenPromise(AppState.couch, { z: 70 }, 1500);
-                if (AppState.gantry.cancelRequested) break;
+            var newSeq = state.gantry.scanSequence.concat([{ mode: "helical", delay: 0 }]);
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({
+                    source: "ui-console",
+                    target: "gantry",
+                    action: "setField",
+                    params: { key: "scanSequence", value: newSeq },
+                });
+            }
+        },
 
-                toggleXRay();
-                await wait(4000);
-                if (AppState.gantry.xrayVisible) toggleXRay();
-            } else if (mode === "axial") {
-                // Axial系: ステップ移動と短時間照射を繰り返す
-                await tweenPromise(AppState.couch, { z: 80 }, 1500);
-                if (AppState.gantry.cancelRequested) break;
+        removeScanBatch: function (index) {
+            var state = global.AppState;
+            if (!state || !state.gantry) return;
+            if (state.gantry.scanSequence.length <= 1 || isSequenceRunning) return;
 
-                var steps = 4;
-                var startZ = 80;
-                var endZ = 20;
-                var stepDist = (startZ - endZ) / steps;
+            var newSeq = state.gantry.scanSequence.slice();
+            newSeq.splice(index, 1);
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({
+                    source: "ui-console",
+                    target: "gantry",
+                    action: "setField",
+                    params: { key: "scanSequence", value: newSeq },
+                });
+            }
+        },
 
-                for (var step = 0; step < steps; step++) {
-                    if (AppState.gantry.cancelRequested) break;
-                    toggleXRay();
-                    await wait(1000);
-                    if (AppState.gantry.xrayVisible) toggleXRay();
+        updateBatchData: function (index, key, value) {
+            var state = global.AppState;
+            if (!state || !state.gantry) return;
 
-                    if (step < steps - 1 && !AppState.gantry.cancelRequested) {
-                        var nextZ = startZ - stepDist * (step + 1);
-                        await tweenPromise(AppState.couch, { z: nextZ }, 800, TWEEN.Easing.Quadratic.InOut);
-                        await wait(200);
+            var newSeq = state.gantry.scanSequence.slice();
+            if (!newSeq[index]) return;
+
+            var updated = Object.assign({}, newSeq[index]);
+            updated[key] = value;
+            newSeq[index] = updated;
+
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({
+                    source: "ui-console",
+                    target: "gantry",
+                    action: "setField",
+                    params: { key: "scanSequence", value: newSeq },
+                });
+
+                if (key === "mode") {
+                    if (typeof global.showInfoDialog === "function") {
+                        global.showInfoDialog(value);
+                    }
+                    if (index === 0) {
+                        global.CTCommandBus.execute({
+                            source: "ui-console",
+                            target: "gantry",
+                            action: "setField",
+                            params: { key: "currentScanMode", value: value },
+                        });
                     }
                 }
             }
-        }
+        },
 
-        await wait(1000);
-    }
+        // --- Sequence Execution ---
+        stopAutoSequence: function () {
+            if (!isSequenceRunning) return;
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({
+                    source: "ui-console",
+                    target: "gantry",
+                    action: "setField",
+                    params: { key: "cancelRequested", value: true },
+                });
+            }
+        },
 
-    // Ensure beam is turned off before sequence shutdown.
-    if (AppState.gantry.xrayVisible) {
-        toggleXRay();
-    }
+        runAutoSequence: async function () {
+            var state = global.AppState;
+            if (!state || !state.gantry || isSequenceRunning) return;
 
-    CTSequenceService.setActiveBatchIndex(-1);
-    CTSequenceService.setCountdown(0);
+            isSequenceRunning = true;
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({
+                    source: "ui-console",
+                    target: "gantry",
+                    action: "setField",
+                    params: { key: "cancelRequested", value: false },
+                });
+                global.CTCommandBus.execute({ source: "ui-console", target: "couch", action: "moveY", params: { value: 0 } });
+                global.CTCommandBus.execute({ source: "ui-console", target: "couch", action: "moveZ", params: { value: 0 } });
+                global.CTCommandBus.execute({ source: "ui-console", target: "injector", action: "setA", params: { value: 0 } });
+            }
 
-    if (AppState.gantry.isScanning) {
-        toggleScan();
-        await wait(2000);
-    }
+            if (state.gantry.xrayVisible && typeof global.toggleXRay === "function") global.toggleXRay();
+            if (state.gantry.isScanning && typeof global.toggleScan === "function") global.toggleScan();
 
-    await tweenPromise(AppState.couch, { z: 0 }, 2000);
-    await tweenPromise(AppState.couch, { y: 0 }, 2000);
+            await tweenPromise(state.couch, { y: 80 }, 2000);
 
-    CTSequenceService.setCurrentScanMode(AppState.gantry.scanSequence[0].mode);
-    CTSequenceService.setCancelRequested(false);
+            var seq = state.gantry.scanSequence;
 
-    isSequenceRunning = false;
-    // 実行後にバッチUIの状態を再描画する
-    renderBatchUI();
-}
+            for (var i = 0; i < seq.length; i++) {
+                if (state.gantry.cancelRequested) break;
+
+                var batch = seq[i];
+                var mode = batch.mode;
+                var delay = batch.delay || 0;
+                var isSyncTarget = state.gantry.injectorSyncIndex === i;
+
+                if (global.CTCommandBus) {
+                    global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "activeBatchIndex", value: i } });
+                    global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "currentScanMode", value: mode } });
+                }
+
+                if (delay > 0) {
+                    for (var d = delay; d > 0; d--) {
+                        if (state.gantry.cancelRequested) break;
+                        if (global.CTCommandBus) {
+                            global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "countdown", value: d } });
+                        }
+                        await wait(1000);
+                    }
+                    if (global.CTCommandBus) {
+                        global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "countdown", value: 0 } });
+                    }
+                }
+
+                if (state.gantry.cancelRequested) break;
+
+                if (isSyncTarget) {
+                    tweenPromise(state.injector, { a: 100 }, 4000);
+                }
+
+                var isScano = mode === "scano" || mode === "dual_scano";
+                var isVolume = mode === "volume" || mode === "dynamic" || mode === "real_prep";
+                var isHelicalLike = mode === "helical" || mode === "3d_landmark";
+
+                if (isScano) {
+                    if (global.Meshes && global.Meshes.rotor) {
+                        new TWEEN.Tween(global.Meshes.rotor.rotation).to({ z: 0 }, 1000).start();
+                    }
+                    await wait(1000);
+                    if (state.gantry.cancelRequested) break;
+
+                    await tweenPromise(state.couch, { z: 80 }, 1500);
+                    if (state.gantry.cancelRequested) break;
+
+                    if (typeof global.toggleXRay === "function") global.toggleXRay();
+                    await tweenPromise(state.couch, { z: 20 }, 4000, typeof TWEEN !== "undefined" ? TWEEN.Easing.Linear.None : null);
+                    if (state.gantry.xrayVisible && typeof global.toggleXRay === "function") global.toggleXRay();
+                } else {
+                    if (!state.gantry.isScanning && typeof global.toggleScan === "function") {
+                        global.toggleScan();
+                        await wait(2000);
+                    }
+                    if (state.gantry.cancelRequested) break;
+
+                    if (isHelicalLike) {
+                        await tweenPromise(state.couch, { z: 80 }, 1500);
+                        if (state.gantry.cancelRequested) break;
+
+                        if (typeof global.toggleXRay === "function") global.toggleXRay();
+                        await tweenPromise(state.couch, { z: 20 }, 5000, typeof TWEEN !== "undefined" ? TWEEN.Easing.Linear.None : null);
+                        if (state.gantry.xrayVisible && typeof global.toggleXRay === "function") global.toggleXRay();
+                    } else if (isVolume) {
+                        await tweenPromise(state.couch, { z: 70 }, 1500);
+                        if (state.gantry.cancelRequested) break;
+
+                        if (typeof global.toggleXRay === "function") global.toggleXRay();
+                        await wait(4000);
+                        if (state.gantry.xrayVisible && typeof global.toggleXRay === "function") global.toggleXRay();
+                    } else if (mode === "axial") {
+                        await tweenPromise(state.couch, { z: 80 }, 1500);
+                        if (state.gantry.cancelRequested) break;
+
+                        var steps = 4;
+                        var startZ = 80;
+                        var endZ = 20;
+                        var stepDist = (startZ - endZ) / steps;
+
+                        for (var step = 0; step < steps; step++) {
+                            if (state.gantry.cancelRequested) break;
+                            if (typeof global.toggleXRay === "function") global.toggleXRay();
+                            await wait(1000);
+                            if (state.gantry.xrayVisible && typeof global.toggleXRay === "function") global.toggleXRay();
+
+                            if (step < steps - 1 && !state.gantry.cancelRequested) {
+                                var nextZ = startZ - stepDist * (step + 1);
+                                await tweenPromise(state.couch, { z: nextZ }, 800);
+                                await wait(200);
+                            }
+                        }
+                    }
+                }
+
+                await wait(1000);
+            }
+
+            if (state.gantry.xrayVisible && typeof global.toggleXRay === "function") {
+                global.toggleXRay();
+            }
+
+            if (global.CTCommandBus) {
+                global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "activeBatchIndex", value: -1 } });
+                global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "countdown", value: 0 } });
+            }
+
+            if (state.gantry.isScanning && typeof global.toggleScan === "function") {
+                global.toggleScan();
+                await wait(2000);
+            }
+
+            await tweenPromise(state.couch, { z: 0 }, 2000);
+            await tweenPromise(state.couch, { y: 0 }, 2000);
+
+            if (global.CTCommandBus) {
+                var firstMode = (state.gantry.scanSequence[0] && state.gantry.scanSequence[0].mode) || "scano";
+                global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "currentScanMode", value: firstMode } });
+                global.CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "cancelRequested", value: false } });
+            }
+
+            isSequenceRunning = false;
+            if (typeof global.renderBatchUI === "function") {
+                global.renderBatchUI();
+            }
+        },
+    };
+
+    // Backward compatible globals for UI button inline onclicks
+    global.CTSequenceRunner = runner;
+    global.addScanBatch = runner.addScanBatch;
+    global.removeScanBatch = runner.removeScanBatch;
+    global.updateBatchData = runner.updateBatchData;
+    global.setInjectorSync = runner.setInjectorSync;
+    global.runAutoSequence = runner.runAutoSequence;
+    global.stopAutoSequence = runner.stopAutoSequence;
+    global.tweenPromise = tweenPromise;
+    global.wait = wait;
+})(typeof window !== "undefined" ? window : this);

@@ -384,5 +384,6 @@ function buildCTScanner() {
     Meshes.tabletopGroup = tabletopGroup;
 
     ctGroup.add(couchGroup);
-    scene.add(ctGroup);
+    var targetScene = (typeof scene !== "undefined" && scene) ? scene : window.scene;
+    if (targetScene) targetScene.add(ctGroup);
 }

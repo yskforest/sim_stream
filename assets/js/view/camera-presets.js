@@ -27,23 +27,33 @@ function setCameraView(viewType) {
         sel.value = viewType;
     }
 
-    // Free または FPS モードへの切替時は現在のカメラ位置・向きを保持して自由操作へ移行
-    if (isFree || isFPS) return;
+    // FPS モードへの切替時は自由歩行操作へ移行
+    if (isFPS) return;
 
     var target = getCameraTarget(viewType);
     if (!target) return;
 
-    // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
-    new TWEEN.Tween(camera.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    var cam = window.camera || (typeof camera !== "undefined" ? camera : null);
+    if (!cam) return;
 
-    if (ctrl) {
-        new TWEEN.Tween(ctrl.target)
-            .to(target.lookAt, 1000)
-            .easing(TWEEN.Easing.Cubic.Out)
-            .onUpdate(function() {
-                if (window.controls) window.controls.update();
-            })
-            .start();
+    // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
+    if (typeof TWEEN !== "undefined") {
+        new TWEEN.Tween(cam.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+        if (ctrl) {
+            new TWEEN.Tween(ctrl.target)
+                .to(target.lookAt, 1000)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .onUpdate(function() {
+                    if (ctrl) ctrl.update();
+                })
+                .start();
+        }
+    } else {
+        cam.position.copy(target.pos);
+        if (ctrl) {
+            ctrl.target.copy(target.lookAt);
+            ctrl.update();
+        }
     }
 }
 

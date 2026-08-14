@@ -1,4 +1,6 @@
 (function attachUIController(global) {
+    "use strict";
+
     var isSetup = false;
     var unsubscribers = [];
     var mobileMedia = null;
@@ -36,7 +38,6 @@
     }
 
     function executeCommand(source, target, action, valueOrParams) {
-        // UI入力値の単一値/オブジェクト差を吸収してコマンドバスへ統一形式で渡す
         var params =
             typeof valueOrParams === "object" && valueOrParams !== null ? valueOrParams : { value: valueOrParams };
 
@@ -95,8 +96,12 @@
             updateClass("btn-xray-toggle", "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition");
         }
 
-        if (Meshes.xrayBeam) Meshes.xrayBeam.material.opacity = gantry.xrayVisible ? 0.35 : 0.0;
-        if (Meshes.patientGroup) Meshes.patientGroup.visible = state.patientVisible;
+        if (Meshes && Meshes.xrayBeam && Meshes.xrayBeam.material) {
+            Meshes.xrayBeam.material.opacity = gantry.xrayVisible ? 0.35 : 0.0;
+        }
+        if (Meshes && Meshes.patientGroup) {
+            Meshes.patientGroup.visible = state.patientVisible;
+        }
 
         if (state.patientVisible) {
             updateText("btn-patient-toggle", "Hide Patient");
@@ -130,6 +135,65 @@
         applyStateToMeshes(state);
     }
 
+    function applyStateToMeshes(state) {
+        if (!state) return;
+        var meshes = (typeof window !== "undefined" && window.Meshes) ? window.Meshes : (typeof Meshes !== "undefined" ? Meshes : null);
+        if (!meshes) return;
+
+        // UI上の0-100%を、プロファイル定義の実空間座標へ変換する
+        var yRange = (global.CTProfileService && typeof global.CTProfileService.getCouchWorldRange === "function")
+            ? global.CTProfileService.getCouchWorldRange("y")
+            : { min: 0.45, max: 0.95 };
+        var couchY_min = yRange.min;
+        var couchY_max = yRange.max;
+        var targetY = couchY_min + (couchY_max - couchY_min) * (state.couch.y / 100);
+
+        if (meshes.tabletopGroup) meshes.tabletopGroup.position.y = targetY;
+
+        if (meshes.bellows && Array.isArray(meshes.bellows)) {
+            var baseTop = 0.2;
+            var totalBellowsHeight = targetY - baseTop - 0.02;
+            var partHeight = totalBellowsHeight / meshes.bellows.length;
+
+            meshes.bellows.forEach(function (mesh, index) {
+                mesh.scale.y = partHeight / 0.1;
+                mesh.position.y = index * partHeight + partHeight / 2;
+            });
+        }
+
+        var zRange = (global.CTProfileService && typeof global.CTProfileService.getCouchWorldRange === "function")
+            ? global.CTProfileService.getCouchWorldRange("z")
+            : { min: 2.6, max: -1.0 };
+        var couchZ_min = zRange.min;
+        var couchZ_max = zRange.max;
+        if (meshes.tabletopGroup) {
+            meshes.tabletopGroup.position.z = couchZ_min + (couchZ_max - couchZ_min) * (state.couch.z / 100);
+        }
+
+        if (meshes.detectorGroup && meshes.xrayBeam) {
+            var maxRows = (global.CTProfileService && typeof global.CTProfileService.getDetectorRowsMax === "function")
+                ? global.CTProfileService.getDetectorRowsMax()
+                : 320;
+            var ratio = state.gantry.detectorRows / maxRows;
+            meshes.detectorGroup.scale.z = ratio;
+            var baseBeamZScale = (global.CTProfileService && typeof global.CTProfileService.getBeamZScaleAtMax === "function")
+                ? global.CTProfileService.getBeamZScaleAtMax()
+                : 0.16;
+            meshes.xrayBeam.scale.z = baseBeamZScale * ratio;
+        }
+
+        function updateSyringe(fluidMesh, plungerMesh, percent) {
+            var r = Math.max(0.01, 1.0 - percent / 100);
+            if (fluidMesh) fluidMesh.scale.y = r;
+            if (plungerMesh) plungerMesh.position.y = 0.15 - 0.3 * (percent / 100);
+        }
+
+        if (meshes.injector) {
+            updateSyringe(meshes.injector.fluidA, meshes.injector.plungerA, state.injector.a);
+            updateSyringe(meshes.injector.fluidB, meshes.injector.plungerB, state.injector.b);
+        }
+    }
+
     function updateLastCommandMonitor() {
         if (!global.CTCommandLogService) return;
         var logs = global.CTCommandLogService.list();
@@ -148,23 +212,23 @@
 
         src.innerText = last.source || "-";
         var ok = last.result && last.result.success === true;
-        res.innerText = ok ? "success" : "fail";
-        err.innerText = ok ? "-" : last.result && last.result.error ? last.result.error : "UNKNOWN_ERROR";
+        res.innerText = ok ? "OK" : "FAIL";
+        res.className = ok ? "text-green-400 font-mono" : "text-red-400 font-mono";
+        err.innerText = ok ? "-" : (last.result && last.result.error ? last.result.error : "ERROR");
     }
 
     function updateStateMonitor() {
-        var rpm = Math.round(AppState.gantry.rotorSpeed);
-        updateText("monitor-rpm", rpm + " rpm");
-        updateStyle("monitor-rpm-bar", "width", (rpm / 100) * 100 + "%");
-        updateText("monitor-mode", AppState.gantry.currentScanMode.replace(/_/g, " ").toUpperCase());
-        updateText("monitor-rows", AppState.gantry.detectorRows);
+        var gantry = AppState.gantry;
+        var rpm = Math.round(gantry.rotorSpeed);
 
-        if (AppState.gantry.isScanning) {
+        updateText("monitor-rpm", rpm + " rpm");
+        updateStyle("monitor-rpm-bar", "width", (rpm / 3) + "%");
+        updateText("monitor-mode", gantry.currentScanMode ? gantry.currentScanMode.toUpperCase() : "SCANO");
+        updateText("monitor-rows", String(gantry.detectorRows));
+
+        if (gantry.isScanning) {
             updateText("status-badge", "SCANNING");
-            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse");
-        } else if (rpm > 0) {
-            updateText("status-badge", "SPINNING");
-            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/50");
+            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/60 text-green-400 border border-green-500/50 animate-pulse");
         } else {
             updateText("status-badge", "STANDBY");
             updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300");
@@ -206,6 +270,7 @@
 
     function renderBatchUI() {
         var container = byId("batch-container");
+        if (!container) return;
         var seq = AppState.gantry.scanSequence;
         var activeIdx = AppState.gantry.activeBatchIndex;
         var syncIdx = AppState.gantry.injectorSyncIndex;
@@ -252,7 +317,7 @@
             </div>`;
         }).join("");
 
-        Array.from(container.children).forEach(function(card, idx) {
+        Array.from(container.children || []).forEach(function(card, idx) {
             var delBtn = card.querySelector(".btn-del");
             if(delBtn) delBtn.onclick = function() { removeScanBatch(idx); };
             var sel = card.querySelector(".sel-mode");
@@ -281,7 +346,7 @@
     }
 
     function bindPanelControls() {
-        // Modern sidebar tab/dock navigation is managed by initModernNavigation()
+        // Managed by initModernNavigation()
     }
 
     function applyConfigToUIInputs() {
@@ -296,18 +361,63 @@
         var heightInput = byId("input-stream-height");
         var hfovInput = byId("input-stream-hfov");
 
-        if (codecSelect) codecSelect.value = get("camera.codec", "h264");
-        if (protoSelect) protoSelect.value = get("camera.protocol", "rtsp");
-        if (fpsSelect) fpsSelect.value = String(get("camera.fps", 30));
-        if (qualSelect) qualSelect.value = String(get("camera.quality", 0.92));
-        if (widthInput) widthInput.value = String(get("camera.width", 1280));
-        if (heightInput) heightInput.value = String(get("camera.height", 960));
-        if (hfovInput) hfovInput.value = String(get("camera.hfov", 60));
+        if (codecSelect) codecSelect.value = get("camera.videoStream.codec", "h264");
+        if (protoSelect) protoSelect.value = get("camera.videoStream.protocol", "rtsp");
+        if (fpsSelect) fpsSelect.value = String(get("camera.videoStream.fps", 30));
+        if (qualSelect) qualSelect.value = String(get("camera.videoStream.quality", 0.8));
+        if (widthInput) widthInput.value = String(get("camera.resolution.width", 1280));
+        if (heightInput) heightInput.value = String(get("camera.resolution.height", 720));
+        if (hfovInput) hfovInput.value = String(get("camera.fov.horizontal", 70));
 
-        var detRows = get("hardware.defaultDetectorRows", 320);
-        if (AppState && AppState.gantry && typeof detRows === "number") {
-            AppState.gantry.detectorRows = detRows;
+        var distEnabled = get("camera.distortion.enabled", false);
+        var distToggle = byId("input-distortion-enable");
+        if (distToggle) distToggle.checked = distEnabled;
+
+        var k1 = get("camera.distortion.k1", 0.20);
+        var k2 = get("camera.distortion.k2", 0.05);
+        var k3 = get("camera.distortion.k3", 0.00);
+        var k4 = get("camera.distortion.k4", 0.00);
+        var fx = get("camera.distortion.fx", 1.00);
+        var fy = get("camera.distortion.fy", 1.00);
+        var cx = get("camera.distortion.cx", 0.50);
+        var cy = get("camera.distortion.cy", 0.50);
+        var zoom = get("camera.distortion.zoom", 1.00);
+
+        updateValue("slider-distortion-k1", k1);
+        updateValue("slider-distortion-k2", k2);
+        updateValue("slider-distortion-k3", k3);
+        updateValue("slider-distortion-k4", k4);
+        updateValue("slider-distortion-fx", fx);
+        updateValue("slider-distortion-fy", fy);
+        updateValue("slider-distortion-cx", cx);
+        updateValue("slider-distortion-cy", cy);
+        updateValue("slider-distortion-zoom", zoom);
+
+        updateText("val-distortion-k1", Number(k1).toFixed(2));
+        updateText("val-distortion-k2", Number(k2).toFixed(2));
+        updateText("val-distortion-k3", Number(k3).toFixed(2));
+        updateText("val-distortion-k4", Number(k4).toFixed(2));
+        updateText("val-distortion-fx", Number(fx).toFixed(2));
+        updateText("val-distortion-fy", Number(fy).toFixed(2));
+        updateText("val-distortion-cx", Number(cx).toFixed(2));
+        updateText("val-distortion-cy", Number(cy).toFixed(2));
+        updateText("val-distortion-zoom", Number(zoom).toFixed(2));
+
+        if (global.AppState && global.AppState.distortion) {
+            global.AppState.distortion.enabled = distEnabled;
+            global.AppState.distortion.k1 = k1;
+            global.AppState.distortion.k2 = k2;
+            global.AppState.distortion.k3 = k3;
+            global.AppState.distortion.k4 = k4;
+            global.AppState.distortion.fx = fx;
+            global.AppState.distortion.fy = fy;
+            global.AppState.distortion.cx = cx;
+            global.AppState.distortion.cy = cy;
+            global.AppState.distortion.zoom = zoom;
         }
+
+        var qualModeSelect = byId("select-graphics-quality");
+        if (qualModeSelect) qualModeSelect.value = get("graphics.quality", "high");
     }
 
     function setupUI() {
@@ -318,107 +428,129 @@
         UI.sliderRotorSpeed = byId("slider-rotor-speed");
         UI.sliderInjectA = byId("slider-inject-a");
         UI.sliderInjectB = byId("slider-inject-b");
-        UI.btnScanToggle = byId("btn-scan-toggle");
-        UI.btnXrayToggle = byId("btn-xray-toggle");
         UI.selectDetectorRows = byId("select-detector-rows");
-        UI.btnPatientToggle = byId("btn-patient-toggle");
         UI.commandLogList = byId("command-log-list");
         UI.btnClearCommandLog = byId("btn-clear-command-log");
-        UI.btnCameraStreamToggle = byId("btn-camera-stream-toggle");
-        UI.selectStreamCodec = byId("select-stream-codec");
-        UI.selectStreamProto = byId("select-stream-proto");
-        UI.streamUrlDisplay = byId("stream-url-display");
 
-        applyConfigToUIInputs();
         applyProfileUIConfig();
-        bindPanelControls();
+        applyConfigToUIInputs();
+        initModernNavigation();
 
-        if (UI.btnCameraStreamToggle) {
-            UI.btnCameraStreamToggle.addEventListener("click", function () {
-                if (global.CameraSim) {
-                    var state = global.CameraSim.getState();
-                    if (state.isStreaming) {
-                        executeConsoleCommand("camera", "stopStream");
-                    } else {
-                        var codec = UI.selectStreamCodec ? UI.selectStreamCodec.value : "mjpeg";
-                        var proto = UI.selectStreamProto ? UI.selectStreamProto.value : "http";
-                        var fpsSelect = byId("select-stream-fps");
-                        var qualSelect = byId("select-stream-quality");
-                        var widthInput = byId("input-stream-width");
-                        var heightInput = byId("input-stream-height");
-                        var hfovInput = byId("input-stream-hfov");
+        function addListener(target, eventName, handler) {
+            if (!target) return;
+            target.addEventListener(eventName, handler);
+            unsubscribers.push(function () {
+                target.removeEventListener(eventName, handler);
+            });
+        }
 
-                        var fps = fpsSelect ? parseInt(fpsSelect.value, 10) : 30;
-                        var quality = qualSelect ? parseFloat(qualSelect.value) : 0.92;
-                        var width = widthInput ? parseInt(widthInput.value, 10) : 1280;
-                        var height = heightInput ? parseInt(heightInput.value, 10) : 960;
-                        var hfov = hfovInput ? parseInt(hfovInput.value, 10) : 60;
+        addListener(UI.sliderCouchY, "input", function (e) {
+            executeConsoleCommand("couch", "moveY", parseFloat(e.target.value));
+        });
+        addListener(UI.sliderCouchZ, "input", function (e) {
+            executeConsoleCommand("couch", "moveZ", parseFloat(e.target.value));
+        });
+        addListener(UI.sliderRotorSpeed, "input", function (e) {
+            executeConsoleCommand("gantry", "setRotorSpeed", parseFloat(e.target.value));
+        });
+        addListener(UI.sliderInjectA, "input", function (e) {
+            executeConsoleCommand("injector", "setA", parseFloat(e.target.value));
+        });
+        addListener(UI.sliderInjectB, "input", function (e) {
+            executeConsoleCommand("injector", "setB", parseFloat(e.target.value));
+        });
+        addListener(UI.selectDetectorRows, "change", function (e) {
+            executeConsoleCommand("gantry", "setField", {
+                key: "detectorRows",
+                value: parseInt(e.target.value, 10),
+            });
+        });
 
-                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: fps, quality: quality, width: width, height: height, hfov: hfov });
-                    }
+        if (UI.btnClearCommandLog) {
+            addListener(UI.btnClearCommandLog, "click", function () {
+                if (global.CTCommandLogService) global.CTCommandLogService.clear();
+                renderCommandLog();
+            });
+        }
+
+        var streamCodec = byId("select-stream-codec");
+        var streamProto = byId("select-stream-proto");
+        var streamFps = byId("select-stream-fps");
+        var streamQual = byId("select-stream-quality");
+        var streamW = byId("input-stream-width");
+        var streamH = byId("input-stream-height");
+        var streamHfov = byId("input-stream-hfov");
+
+        function updateStreamConfig() {
+            if (global.CameraSim) {
+                global.CameraSim.updateStreamConfig({
+                    codec: streamCodec ? streamCodec.value : "h264",
+                    protocol: streamProto ? streamProto.value : "rtsp",
+                    fps: streamFps ? parseInt(streamFps.value, 10) : 30,
+                    quality: streamQual ? parseFloat(streamQual.value) : 0.8,
+                    resolution: {
+                        width: streamW ? parseInt(streamW.value, 10) : 1280,
+                        height: streamH ? parseInt(streamH.value, 10) : 720,
+                    },
+                    hfov: streamHfov ? parseFloat(streamHfov.value) : 70,
+                });
+            }
+        }
+
+        addListener(streamCodec, "change", updateStreamConfig);
+        addListener(streamProto, "change", updateStreamConfig);
+        addListener(streamFps, "change", updateStreamConfig);
+        addListener(streamQual, "change", updateStreamConfig);
+        addListener(streamW, "change", updateStreamConfig);
+        addListener(streamH, "change", updateStreamConfig);
+        addListener(streamHfov, "change", updateStreamConfig);
+
+        var distEnableToggle = byId("input-distortion-enable");
+        if (distEnableToggle) {
+            addListener(distEnableToggle, "change", function (e) {
+                toggleFisheye(e.target.checked);
+            });
+        }
+
+        var distPresetSelect = byId("select-distortion-preset");
+        if (distPresetSelect) {
+            addListener(distPresetSelect, "change", function (e) {
+                if (e.target.value !== "custom") {
+                    global.onDistortionPresetChange(e.target.value);
                 }
             });
         }
 
-        UI.sliderCouchY.addEventListener("input", function (e) {
-            executeConsoleCommand("couch", "moveY", parseFloat(e.target.value));
-        });
-        UI.sliderCouchZ.addEventListener("input", function (e) {
-            executeConsoleCommand("couch", "moveZ", parseFloat(e.target.value));
-        });
-        UI.sliderInjectA.addEventListener("input", function (e) {
-            executeConsoleCommand("injector", "setA", parseFloat(e.target.value));
-        });
-        UI.sliderInjectB.addEventListener("input", function (e) {
-            executeConsoleCommand("injector", "setB", parseFloat(e.target.value));
-        });
-        UI.selectDetectorRows.addEventListener("change", function (e) {
-            executeConsoleCommand("gantry", "setDetectorRows", parseInt(e.target.value, 10));
+        var distSliders = ["k1", "k2", "k3", "k4", "fx", "fy", "cx", "cy", "zoom"];
+        distSliders.forEach(function (key) {
+            var slider = byId("slider-distortion-" + key);
+            if (slider) {
+                addListener(slider, "input", global.onDistortionParamInput);
+            }
         });
 
-        if (UI.btnClearCommandLog && global.CTCommandLogService) {
-            UI.btnClearCommandLog.addEventListener("click", function () {
-                global.CTCommandLogService.clear();
+        var unsubscribeState = AppState.subscribe(function (state) {
+            syncInteractiveState(state);
+            updateStateMonitor();
+            renderBatchUI();
+        });
+        unsubscribers.push(unsubscribeState);
+
+        if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
+            var unsubscribeLog = global.CTCommandLogService.subscribe(function () {
                 renderCommandLog();
                 updateLastCommandMonitor();
             });
+            unsubscribers.push(unsubscribeLog);
         }
 
+        syncInteractiveState(AppState);
+        updateStateMonitor();
         renderBatchUI();
         renderCommandLog();
-        unsubscribers.push(AppState.subscribe(syncInteractiveState));
-        var lastBatchState = "";
-        unsubscribers.push(AppState.subscribe(function () {
-            updateStateMonitor();
-            var currentState = JSON.stringify([
-                AppState.gantry.scanSequence, 
-                AppState.gantry.activeBatchIndex, 
-                AppState.gantry.injectorSyncIndex, 
-                AppState.gantry.countdown, 
-                AppState.gantry.isScanning,
-                AppState.gantry.cancelRequested
-            ]);
-            if (currentState !== lastBatchState) {
-                lastBatchState = currentState;
-                renderBatchUI();
-            }
-        }));
+        updatePatientGlbSelectOptions();
+        syncAllPatientTransformUI();
 
-        if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
-            unsubscribers.push(
-                global.CTCommandLogService.subscribe(function () {
-                    renderCommandLog();
-                    updateLastCommandMonitor();
-                }),
-            );
-        }
-
-
-        if (typeof global.syncAllPatientTransformUI === "function") {
-            global.syncAllPatientTransformUI();
-        }
-
-        initModernNavigation();
         isSetup = true;
     }
 
@@ -535,6 +667,257 @@
         }
     }
 
+    // --- Scan & X-Ray & Opacity Controls (formerly scan-controller.js) ---
+    function toggleScan() {
+        var isScan = !AppState.gantry.isScanning;
+        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setScanning", params: { value: isScan } });
+
+        if (typeof TWEEN !== "undefined") {
+            new TWEEN.Tween(AppState.gantry)
+                .to({ rotorSpeed: isScan ? 100 : 0 }, 2000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onUpdate(function () { AppState.notify(); })
+                .start();
+        }
+    }
+
+    function setScanMode(mode) {
+        CTCommandBus.execute({
+            source: "ui-console",
+            target: "gantry",
+            action: "setField",
+            params: { key: "scanMode", value: mode },
+        });
+    }
+
+    function toggleXRay() {
+        var isVisible = !AppState.gantry.xrayVisible;
+        CTCommandBus.execute({
+            source: "ui-console",
+            target: "gantry",
+            action: "setXrayVisible",
+            params: { value: isVisible },
+        });
+
+        if (isVisible) setGantryOpacity(true);
+    }
+
+    function setGantryOpacity(isTranslucent) {
+        if (Meshes.materials) {
+            var opacity = isTranslucent ? 0.2 : 1.0;
+
+            if (Meshes.materials.gantry) {
+                Meshes.materials.gantry.transparent = isTranslucent;
+                Meshes.materials.gantry.opacity = opacity;
+                Meshes.materials.gantry.depthWrite = !isTranslucent;
+                Meshes.materials.gantry.needsUpdate = true;
+            }
+
+            if (Meshes.materials.tunnel) {
+                Meshes.materials.tunnel.transparent = isTranslucent;
+                Meshes.materials.tunnel.opacity = isTranslucent ? 0.35 : 1.0;
+                Meshes.materials.tunnel.transmission = isTranslucent ? 0.9 : 0.0;
+                Meshes.materials.tunnel.depthWrite = !isTranslucent;
+                Meshes.materials.tunnel.needsUpdate = true;
+            }
+
+            if (Array.isArray(Meshes.materials.accessories)) {
+                Meshes.materials.accessories.forEach(function (mat) {
+                    mat.transparent = isTranslucent;
+                    mat.opacity = opacity;
+                    mat.depthWrite = !isTranslucent;
+                    mat.needsUpdate = true;
+                });
+            }
+
+            if (window.AppState) {
+                AppState.update("gantry", "isTranslucent", isTranslucent);
+            }
+        }
+    }
+
+    // --- Patient Model & 9-DOF Transform Controls (formerly patient-controller.js) ---
+    function togglePatient() {
+        CTCommandBus.execute({
+            source: "ui-console",
+            target: "simulator",
+            action: "setPatientVisible",
+            params: { value: !AppState.patientVisible },
+        });
+    }
+
+    async function changePatientGlbModel(modelId) {
+        AppState.patientModelId = modelId;
+        if (window.CTModelRegistry && window.Meshes && window.Meshes.patientGroup) {
+            while (Meshes.patientGroup.children.length > 0) {
+                Meshes.patientGroup.remove(Meshes.patientGroup.children[0]);
+            }
+            var instance = await CTModelRegistry.spawnModelInstance(modelId, {
+                instanceId: "patient_primary",
+                attachTo: "couch",
+                visible: AppState.patientVisible
+            });
+            var obj = instance.sceneObject;
+            Meshes.patientGroup.add(obj);
+            Meshes.patientGroup.visible = AppState.patientVisible;
+
+            if (instance && instance.transform && window.AppState) {
+                var pos = instance.transform.position || [0, -0.1, 0.45];
+                var rot = instance.transform.rotation || [-90, 0, 0];
+                window.AppState.patientOffset = {
+                    x: pos[0], y: pos[1], z: pos[2],
+                    rotX: rot[0], rotY: rot[1], rotZ: rot[2]
+                };
+                syncAllPatientTransformUI();
+            }
+        }
+    }
+
+    function updatePatientGlbSelectOptions() {
+        if (typeof document === "undefined") return;
+        var selectEl = byId("select-patient-glb");
+        if (!selectEl) return;
+
+        var models = (window.CTModelsConfig && typeof window.CTModelsConfig.getAllModels === "function")
+            ? window.CTModelsConfig.getAllModels()
+            : [];
+
+        selectEl.innerHTML = "";
+        models.forEach(function (m) {
+            var opt = document.createElement("option");
+            opt.value = m.id;
+            opt.textContent = m.name || (m.id + " (" + (m.path || "").split("/").pop() + ")");
+            if (window.AppState && window.AppState.patientModelId === m.id) {
+                opt.selected = true;
+            }
+            selectEl.appendChild(opt);
+        });
+    }
+
+    async function spawnCustomGlbFromInput() {
+        var inputEl = byId("input-add-glb-path");
+        if (!inputEl || !inputEl.value.trim()) return;
+        var path = inputEl.value.trim();
+        var modelId = path.split("/").pop().replace(".glb", "") || "custom_glb";
+
+        if (window.CTModelsConfig) {
+            window.CTModelsConfig.registerModel({
+                id: modelId,
+                name: "Custom GLB: " + modelId,
+                path: path,
+                category: "patient",
+                attachTo: "couch"
+            });
+            updatePatientGlbSelectOptions();
+        }
+
+        try {
+            await CTModelRegistry.spawnModelInstance(modelId, { path: path, attachTo: "couch" });
+            alert("Successfully spawned model: " + modelId);
+            inputEl.value = "";
+        } catch (err) {
+            alert("Failed to load GLB from path: " + path);
+        }
+    }
+
+    function _updatePatientTransform(key, valStr) {
+        if (!window.AppState) return;
+        if (!window.AppState.patientOffset) {
+            window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
+        }
+        if (!key) return syncAllPatientTransformUI();
+
+        var val = parseFloat(valStr);
+        if (isNaN(val)) return;
+
+        window.AppState.patientOffset[key] = val;
+        syncAllPatientTransformUI();
+
+        var po = window.AppState.patientOffset;
+        if (window.CTModelRegistry) {
+            window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+                position: [po.x, po.y, po.z],
+                rotation: [po.rotX, po.rotY, po.rotZ],
+                scale: [po.scaleX, po.scaleY, po.scaleZ]
+            });
+        }
+    }
+
+    function onPatientPosSliderChange(key) {
+        var el = byId("slider-patient-pos-" + key);
+        if (el) _updatePatientTransform(key, el.value);
+    }
+
+    function onPatientPosInputChange(key) {
+        var el = byId("input-patient-pos-" + key);
+        if (el) _updatePatientTransform(key, el.value);
+    }
+
+    function syncAllPatientTransformUI() {
+        if (!window.AppState || !window.AppState.patientOffset) return;
+        var po = window.AppState.patientOffset;
+        var keys = ["x", "y", "z", "rotX", "rotY", "rotZ", "scaleX", "scaleY", "scaleZ"];
+        keys.forEach(function (k) {
+            var input = byId("input-patient-pos-" + k);
+            var slider = byId("slider-patient-pos-" + k);
+            var val = typeof po[k] === "number" ? po[k] : (k.startsWith("scale") ? 1.0 : 0);
+            if (input) input.value = k.startsWith("rot") ? val.toFixed(0) : val.toFixed(2);
+            if (slider) slider.value = String(val);
+        });
+    }
+
+    function resetPatientPositionUI() {
+        if (!window.AppState) return;
+        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
+        syncAllPatientTransformUI();
+
+        var po = window.AppState.patientOffset;
+        if (window.CTModelRegistry) {
+            window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+                position: [po.x, po.y, po.z],
+                rotation: [po.rotX, po.rotY, po.rotZ],
+                scale: [po.scaleX, po.scaleY, po.scaleZ]
+            });
+        }
+    }
+
+    // --- Info Dialog Controls (formerly dialog-controller.js) ---
+    function showInfoDialog(key) {
+        if (!key || key === "none") return;
+        var dialog = byId("info-dialog");
+        var titleElem = byId("info-dialog-title");
+        var descElem = byId("info-dialog-desc");
+        if (!dialog || !titleElem || !descElem) return;
+
+        var text = (global.Descriptions && global.Descriptions[key]) || "Description not found.";
+        var lines = text.split("\n\n");
+        titleElem.innerText = lines[0];
+        descElem.innerText = lines[1] || "";
+
+        dialog.classList.remove("hidden");
+        dialog.classList.remove("opacity-0");
+    }
+
+    function hideInfoDialog() {
+        var dialog = byId("info-dialog");
+        if (dialog) dialog.classList.add("hidden");
+        var focusSelect = byId("select-focus");
+        if (focusSelect) focusSelect.value = "";
+    }
+
+    function handleFocusChange(value) {
+        if (!value) return;
+        if (value === "XrayTube" || value === "Detector") {
+            setGantryOpacity(true);
+        } else if (value === "Gantry" || value === "TouchPanel") {
+            setGantryOpacity(false);
+        }
+        if (typeof global.setCameraView === "function") {
+            global.setCameraView("focus_" + value);
+        }
+        showInfoDialog(value);
+    }
+
     function teardownUI() {
         while (unsubscribers.length > 0) {
             var off = unsubscribers.pop();
@@ -543,31 +926,6 @@
         isSetup = false;
     }
 
-    global.CTUIController = {
-        setup: setupUI,
-        teardown: teardownUI,
-        renderBatchQueue: renderBatchUI,
-        renderMonitor: updateStateMonitor,
-        renderCommandLog: renderCommandLog,
-        switchLeftTab: switchLeftTab,
-        switchRightTab: switchRightTab,
-        switchDockTab: switchDockTab,
-        toggleLeftSidebar: toggleLeftSidebar,
-        toggleRightSidebar: toggleRightSidebar,
-        toggleBottomDock: toggleBottomDock,
-        setConsoleMockMode: setConsoleMockMode,
-    };
-
-    global.switchLeftTab = switchLeftTab;
-    global.switchRightTab = switchRightTab;
-    global.switchDockTab = switchDockTab;
-    global.toggleLeftSidebar = toggleLeftSidebar;
-    global.toggleRightSidebar = toggleRightSidebar;
-    global.toggleBottomDock = toggleBottomDock;
-    global.setConsoleMockMode = setConsoleMockMode;
-    global.updateStateMonitor = updateStateMonitor;
-    global.renderBatchUI = renderBatchUI;
-
     var DISTORTION_PRESETS = {
         standard: { k1: 0.20, k2: 0.05, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.00 },
         action_cam: { k1: 0.12, k2: -0.02, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.05 },
@@ -575,7 +933,7 @@
         pincushion: { k1: -0.15, k2: 0.00, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.00 }
     };
 
-    global.onDistortionParamInput = function onDistortionParamInput() {
+    function onDistortionParamInput() {
         var k1 = parseFloat(byId("slider-distortion-k1").value) || 0;
         var k2 = parseFloat(byId("slider-distortion-k2").value) || 0;
         var k3 = parseFloat(byId("slider-distortion-k3").value) || 0;
@@ -609,9 +967,9 @@
         if (typeof global.updateCameraDistortion === "function") {
             global.updateCameraDistortion();
         }
-    };
+    }
 
-    global.onDistortionPresetChange = function onDistortionPresetChange(presetKey) {
+    function onDistortionPresetChange(presetKey) {
         var p = DISTORTION_PRESETS[presetKey];
         if (!p) return;
 
@@ -642,11 +1000,54 @@
         if (typeof global.updateCameraDistortion === "function") {
             global.updateCameraDistortion();
         }
-    };
+    }
 
-    global.resetDistortionParamsUI = function resetDistortionParamsUI() {
+    function resetDistortionParamsUI() {
         var presetSelect = byId("select-distortion-preset");
         if (presetSelect) presetSelect.value = "standard";
-        global.onDistortionPresetChange("standard");
+        onDistortionPresetChange("standard");
+    }
+
+    global.CTUIController = {
+        setup: setupUI,
+        teardown: teardownUI,
+        renderBatchQueue: renderBatchUI,
+        renderMonitor: updateStateMonitor,
+        renderCommandLog: renderCommandLog,
+        switchLeftTab: switchLeftTab,
+        switchRightTab: switchRightTab,
+        switchDockTab: switchDockTab,
+        toggleLeftSidebar: toggleLeftSidebar,
+        toggleRightSidebar: toggleRightSidebar,
+        toggleBottomDock: toggleBottomDock,
+        setConsoleMockMode: setConsoleMockMode,
     };
-})(window);
+
+    global.switchLeftTab = switchLeftTab;
+    global.switchRightTab = switchRightTab;
+    global.switchDockTab = switchDockTab;
+    global.toggleLeftSidebar = toggleLeftSidebar;
+    global.toggleRightSidebar = toggleRightSidebar;
+    global.toggleBottomDock = toggleBottomDock;
+    global.setConsoleMockMode = setConsoleMockMode;
+    global.updateStateMonitor = updateStateMonitor;
+    global.renderBatchUI = renderBatchUI;
+    global.toggleScan = toggleScan;
+    global.setScanMode = setScanMode;
+    global.toggleXRay = toggleXRay;
+    global.setGantryOpacity = setGantryOpacity;
+    global.togglePatient = togglePatient;
+    global.changePatientGlbModel = changePatientGlbModel;
+    global.updatePatientGlbSelectOptions = updatePatientGlbSelectOptions;
+    global.spawnCustomGlbFromInput = spawnCustomGlbFromInput;
+    global.onPatientPosSliderChange = onPatientPosSliderChange;
+    global.onPatientPosInputChange = onPatientPosInputChange;
+    global.syncAllPatientTransformUI = syncAllPatientTransformUI;
+    global.resetPatientPositionUI = resetPatientPositionUI;
+    global.showInfoDialog = showInfoDialog;
+    global.hideInfoDialog = hideInfoDialog;
+    global.handleFocusChange = handleFocusChange;
+    global.onDistortionParamInput = onDistortionParamInput;
+    global.onDistortionPresetChange = onDistortionPresetChange;
+    global.resetDistortionParamsUI = resetDistortionParamsUI;
+})(typeof window !== "undefined" ? window : this);

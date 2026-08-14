@@ -20,22 +20,26 @@
             ws.onclose = function () {
                 isWsConnected = false;
                 ws = null;
-                setTimeout(connectWebSocket, 3000);
             };
             ws.onerror = function () {
                 isWsConnected = false;
+                serverAvailable = false;
             };
         } catch (e) {
             isWsConnected = false;
+            serverAvailable = false;
         }
     }
-    connectWebSocket();
 
     function sendFrameToServer(frameData) {
         if (!frameData) return;
 
         var sendStart = performance.now();
         var blobSize = frameData.size || frameData.byteLength || 0;
+
+        if (!ws && !isWsConnected) {
+            connectWebSocket();
+        }
 
         function recordMetrics(latencyMs) {
             if (global.CTPerformanceService) {

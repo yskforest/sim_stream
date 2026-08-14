@@ -80,14 +80,12 @@ const Descriptions = {
     real_prep: "Real Prep Mode\n\nリアルタイムプレップモード。",
 };
 const UI = (typeof window !== "undefined" && window.UI) || {};
-const Meshes = (typeof window !== "undefined" && window.Meshes) || {};
-let scene, camera, renderer, controls, mixer, clock;
+window.UI = UI;
+window.Meshes = (typeof window !== "undefined" && window.Meshes) || {};
 
 if (window.CTStore) {
     window.CTStore.bindState(AppState);
 }
 if (typeof window !== "undefined") {
     window.AppState = AppState;
-    window.UI = UI;
-    window.Meshes = Meshes;
 }
