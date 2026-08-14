@@ -89,7 +89,7 @@
       "type": "image",
       "path": "./assets/image/20180129131124.png",
       "category": "prop",
-      "attachTo": "fllor",
+      "attachTo": "floor",
       "transform": {
         "position": [
           0,

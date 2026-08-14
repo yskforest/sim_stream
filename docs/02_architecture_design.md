@@ -3,8 +3,9 @@
 ## 1. 設計原則
 - **UIと外部I/Fの同一化**: UI操作および外部APIからの制御は、すべて単一の `Command Bus` 経路を経由して同一のロジックで実行する。
 - **ドメインの独立性**: 仮想HWシミュレータ（Domain）と表示部（Presentation: 3D描画 / UIパネル）を完全に分離し、相互参照を排除する。
-- **設定と実装の分離**: 検出器列数や回転速度制限などの機種差分は `ProfileService`（設定層）および `CTModelsConfig` / `CTModelRegistry`（モデル管理層）に切り出し、HWロジックと分離する。
+- **設定と実装の分離**: 検出器列数や回転速度制限などの機種差分は `ProfileService`（設定層）および `CTConfigService` / `CTModelsConfig` / `CTModelRegistry`（設定・モデル管理層）に切り出し、HWロジックと分離する。
 - **単一状態管理 (Single Source of Truth)**: 全システム状態を `AppState` に一元管理し、`CTStore` の Pub/Sub 機構により画面・3Dモデルへ変更を伝播する。
+- **エコモード・省電力レンダリング**: 画面静止時は再描画処理をスキップし、状態変化やカメラ操作時のみ要求ベース（Demand-driven）で描画を実行する。
 
 ---
 
@@ -14,23 +15,32 @@
 
 ```mermaid
 flowchart TB
+    subgraph Config["Configuration Layer (設定層)"]
+        ConfigFile["config.json (External Config)"]
+        ConfigSvc["CTConfigService"]
+        ConfigFile -->|Fetch & Parse JSON| ConfigSvc
+    end
+
     subgraph Presentation["Presentation Layer (表示層)"]
         UIPanels["UI Panels (HTML/CSS)"]
+        FPSGuide["FPS HUD Guide Badge"]
         View3D["Three.js 3D View / WebGL Canvas"]
+        FPSCtrl["CTFPSControls (WASD / Mouse Drag)"]
         DistortionPass["OpenCV Fisheye Distortion Pass\n(GLSL ShaderMaterial + Gamma 2.2)"]
     end
 
     subgraph Adapter["Adapter Layer (接続層)"]
-        UIAdapter["UIController"]
+        UIAdapter["UIController / ScanController / PatientController"]
         ExtGateway["CTExternalGateway"]
         Protocol["CTProtocolV1"]
         StreamGateway["StreamGateway (HTTP/RTSP Adapter)"]
+        CanvasCap["CanvasCapturer (Main / Virtual Offscreen)"]
     end
 
     subgraph Application["Application Layer (応用層)"]
         CommandBus["CTCommandBus"]
         LogService["CTCommandLogService"]
-        SeqService["CTSequenceService"]
+        SeqService["CTSequenceService / BatchService"]
         VideoStreamService["VideoStreamService"]
         ModelRegistry["CTModelRegistryService"]
     end
@@ -42,12 +52,17 @@ flowchart TB
         Camera["CameraSim (Virtual Camera)"]
         Store["CTStore"]
         State["AppState (distortion, patientOffset, etc.)"]
-        Profile["CTProfileService"]
+        Profile["CTProfileService / DefaultProfile"]
         ModelsConfig["CTModelsConfig"]
     end
 
     %% 接続関係
+    ConfigSvc -.->|Initialize defaults| ModelsConfig
+    ConfigSvc -.->|Initialize parameters| Camera
+    ConfigSvc -.->|Initialize network ports| StreamGateway
+
     UIPanels -->|DOM Events| UIAdapter
+    FPSCtrl -->|Update camera| View3D
     UIAdapter -->|execute command| CommandBus
     ExtGateway -->|validate| Protocol
     ExtGateway -->|execute command| CommandBus
@@ -56,20 +71,21 @@ flowchart TB
     CommandBus -->|Control| Gantry
     CommandBus -->|Control| Couch
     CommandBus -->|Control| Injector
-    CommandBus -->|Control stream/params| Camera
+    CommandBus -->|Control stream/params/distortion| Camera
     CommandBus -->|Control stream| VideoStreamService
-    CommandBus -->|Manage models| ModelRegistry
+    CommandBus -->|Manage models & 9-DOF| ModelRegistry
     CommandBus -->|dispatch| Store
     CommandBus -->|add log| LogService
 
     View3D -->|Render Scene to RenderTarget| DistortionPass
     DistortionPass -->|Render Distorted Frame| View3D
-    VideoStreamService -->|Frame capture| View3D
+    VideoStreamService -->|Capture frames| CanvasCap
+    CanvasCap -->|Read Pixels / Blob| View3D
     VideoStreamService -->|Encode & Stream| StreamGateway
     StreamGateway -->|RTSP / HTTP Stream| ExtClient["External Monitor / Player"]
 
     Store -->|Manages| State
-    State -.->|Notify change| UIPanels
+    State -.->|Notify change & Demand render| UIPanels
     State -.->|Update models/camera/distortion| View3D
 ```
 
@@ -105,6 +121,21 @@ classDiagram
         +resetDistortionParamsUI()
     }
 
+    class CTFPSControls {
+        +init(camera, domElement)
+        +update(delta)
+        +enable()
+        +disable()
+        +isEnabled() Boolean
+    }
+
+    class CTConfigService {
+        +loadConfig(url) Promise
+        +get(path, defaultValue) Any
+        +getAll() Object
+        +isReady() Boolean
+    }
+
     class CTCommandBus {
         +execute(command) Object
     }
@@ -115,16 +146,19 @@ classDiagram
         +setXrayVisible(boolean) Object
         +setRotorSpeed(number) Object
         +setField(key, value) Object
+        +getState() Object
     }
 
     class CouchSim {
         +moveToY(value) Object
         +moveToZ(value) Object
+        +getState() Object
     }
 
     class InjectorSim {
         +setContrastA(value) Object
         +setSalineB(value) Object
+        +getState() Object
     }
 
     class CameraSim {
@@ -132,12 +166,16 @@ classDiagram
         +stopStream() Object
         +getStreamUrl() Object
         +setDistortion(params) Object
+        +setTransform(position, lookAt) Object
+        +setVirtualTransform(position, lookAt) Object
+        +setFov(fov) Object
+        +setHFov(hfov) Object
         +getState() Object
     }
 
     class CTModelRegistryService {
         +init(modelsConfig)
-        +spawnModelInstance(id, options)
+        +spawnModelInstance(id, options) Promise
         +updateInstanceTransform(id, transform)
         +removeInstance(id)
     }
@@ -157,8 +195,6 @@ classDiagram
 
 ### 4.1 UI操作シーケンス (コンソール/操作画面)
 
-操作画面（UIパネル）上のボタンクリックやスライダー操作からコマンドが発行される流れです。
-
 ```mermaid
 sequenceDiagram
     autonumber
@@ -177,7 +213,7 @@ sequenceDiagram
     HW->>Store: update("couch", "z", 65)
     Store->>UIController: Subscriber Notification (State Change)
     UIController->>UIPanel: 画面表示更新 (モニタ数値)
-    Store->>UI: 3Dモデル位置アニメーション更新
+    Store->>UI: 3Dモデル位置アニメーション更新 & requestRenderFrame()
     Bus-->>UIController: { success: true }
 ```
 
@@ -207,8 +243,6 @@ sequenceDiagram
 
 ### 4.3 仮想カメラ映像配信シーケンス (カメラストリーミング)
 
-`target: "camera"`, `action: "startStream"` が実行されてから動画ストリームが送出されるまでのシーケンスです。
-
 ```mermaid
 sequenceDiagram
     autonumber
@@ -229,8 +263,8 @@ sequenceDiagram
     Gateway-->>Client: Response Envelope
 
     loop フレームキャプチャ＆配信ループ (例: 30 FPS)
-        StreamSvc->>Canvas: captureFrame() / MediaRecorder Chunk
-        Canvas-->>StreamSvc: Raw Frame / Encoded Chunk
+        StreamSvc->>Canvas: captureFrame() / Blob 変換 (バックプレッシャー制御)
+        Canvas-->>StreamSvc: Encoded Frame Blob
         StreamSvc->>StreamGw: publish(chunk)
         StreamGw-->>Client: RTSP / HTTP Stream Data
     end
@@ -263,8 +297,6 @@ gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a);
 ## 6. 状態管理と状態遷移 (ステートマシン図 & AppState)
 
 ### 6.1 ガントリ (GantrySim) スキャン動作のステートマシン
-
-ガントリスキャンの内部状態および制御ルールを図示します。
 
 ```mermaid
 stateDiagram-v2
@@ -307,69 +339,114 @@ stateDiagram-v2
     Error --> Stopped : Reset
 ```
 
-### 6.3 状態管理 (`AppState` スキーマ)
+### 6.3 状態管理 (`AppState` スキーマ完全版)
 
-全コンポーネントが参照・更新する単一状態オブジェクト `AppState` の構造定義：
+全コンポーネントが参照・更新する単一状態オブジェクト `AppState` の完全構造定義：
 
 | プロパティパス | 型 | 初期値 | 説明 |
 | :--- | :--- | :--- | :--- |
 | `gantry.isScanning` | `boolean` | `false` | スキャン中フラグ |
 | `gantry.rotorSpeed` | `number` | `0` | 架台回転速度 (rpm) |
+| `gantry.angle` | `number` | `0` | 架台現在回転角度 (radian) |
 | `gantry.detectorRows` | `number` | `320` | マルチスライス検出器列数 |
 | `gantry.xrayVisible` | `boolean` | `false` | X線ビーム表示フラグ |
-| `couch.y` | `number` | `0` | 寝台上下位置 (%) |
-| `couch.z` | `number` | `0` | 寝台前後位置 (%) |
+| `gantry.isTranslucent` | `boolean` | `false` | ガントリカバー透過表示フラグ |
+| `gantry.scanSequence` | `Array` | `[{mode:"scano",...}]` | 登録されたスキャンシーケンスリスト |
+| `gantry.activeBatchIndex`| `number` | `-1` | 現在実行中のバッチインデックス |
+| `gantry.currentScanMode` | `string` | `"scano"` | 現在選択されているスキャンモード |
+| `gantry.injectorSyncIndex`| `number`| `-1` | インジェクタ連動スキャンステップ |
+| `gantry.countdown` | `number` | `0` | スキャン開始前カウントダウン秒 |
+| `gantry.cancelRequested`| `boolean` | `false` | スキャン中止要求フラグ |
+| `couch.y` | `number` | `0` | 寝台上下位置 (mm / %) |
+| `couch.z` | `number` | `0` | 寝台前後位置 (mm / %) |
 | `injector.a` | `number` | `0` | 造影剤残量 (%) |
 | `injector.b` | `number` | `0` | 生理食塩水残量 (%) |
 | `patientVisible` | `boolean` | `true` | 患者モデル表示フラグ |
 | `patientModelId` | `string` | `"patient_dennis"` | アクティブな患者GLBモデルID |
-| `patientOffset` | `object` | `{ x:0, y:-0.1, z:0.45, rotX:-90, rotY:0, rotZ:0 }` | 患者モデルの9-DOFトランスフォーム |
-| `distortion` | `object` | `{ enabled:false, k1:0.1, k2:0.05, k3:0, k4:0, fx:1, fy:1, cx:0.5, cy:0.5, zoom:1 }` | OpenCV魚眼カメラ歪曲パラメータ |
+| `useGlbPatient` | `boolean` | `true` | GLB患者モデル使用フラグ |
+| `customGlbModels` | `Array` | `[]` | 動的追加されたカスタムモデル一覧 |
+| `patientOffset.x/y/z` | `number` | `0, -0.1, 0.45` | 患者モデルの位置 (Position XYZ) |
+| `patientOffset.rotX/Y/Z` | `number` | `-90, 0, 0` | 患者モデルの回転角 (Rotation XYZ 度) |
+| `patientOffset.scaleX/Y/Z`| `number` | `1.0, 1.0, 1.0` | 患者モデルの拡大縮小率 (Scale XYZ) |
+| `distortion.enabled` | `boolean` | `false` | 魚眼歪曲エフェクト有効フラグ |
+| `distortion.k1..k4` | `number` | `0.1, 0.05, 0, 0` | Kannala-Brandt 歪曲係数 |
+| `distortion.fx, fy` | `number` | `1.0, 1.0` | 焦点距離スケーリング係数 |
+| `distortion.cx, cy` | `number` | `0.5, 0.5` | 光学中心オフセット |
+| `distortion.zoom` | `number` | `1.0` | 視野ズーム係数 |
 
 ---
 
 ## 7. 実装ディレクトリとモジュール構成
 
-ソースコードのディレクトリ構成とモジュールの対応関係です。
+ソースコードの完全なディレクトリ構成とモジュールの対応関係です。
 
 ```text
-assets/js/
-  ├── core/                           # ドメイン・アプリケーションコア
-  │   ├── main.js                     # アプリケーション基盤エントリーポイント & ポストプロセス歪曲シェーダー
-  │   ├── state.js                    # AppState (状態管理実体)
-  │   ├── store.js                    # CTStore (AppStateへのアクセサーラッパー)
-  │   ├── hw/                         # 仮想HWドメインシミュレータ
-  │   │   ├── gantry-sim.js           # ガントリ制御ロジック
-  │   │   ├── couch-sim.js            # 寝台制御ロジック
-  │   │   ├── injector-sim.js         # インジェクタ制御ロジック
-  │   │   └── camera-sim.js           # 仮想カメラ・歪曲制御ロジック
-  │   ├── commands/
-  │   │   └── command-bus.js          # コマンドバス（UI/外部共通の実行経路）
-  │   ├── config/
-  │   │   └── models-config.js        # 3Dモデル定義・登録管理
-  │   ├── services/
-  │   │   ├── sequence-service.js     # バッチシーケンス実行制御
-  │   │   ├── command-log-service.js  # コマンド実行ログ管理
-  │   │   ├── model-registry.js       # GLTFモデルローダ・インスタンス管理
-  │   │   └── video-stream-service.js # 映像ストリーミング制御サービス
-  │   └── profile/
-  │       ├── default-profile.js      # 標準HWプロファイル
-  │       └── profile-service.js      # 機種差分プロファイルサービス
-  ├── adapters/                       # 外部接続・UIアダプター
-  │   ├── ui/
-  │   │   └── ui-controller.js        # DOMイベントハンドラ・画面同期・歪曲UIハンドラ
-  │   ├── external/
-  │   │   ├── protocol-v1.js          # 通信プロトコル検証・レスポンス生成
-  │   │   └── external-gateway.js     # 外部公開API Gateway (window.CTExternalGateway)
-  │   └── video/                      # 映像配信アダプター
-  │       ├── canvas-capturer.js      # Canvasフレームキャプチャ・エンコーダー
-  │       └── stream-gateway.js       # RTSP / HTTP ストリーミング転送アダプター
-  └── view/models/                    # Presentation (Three.js 3D表現)
-      ├── room-model.js               # 検査室・壁・床
-      ├── gantry-model.js             # ガントリ3Dモデル
-      ├── injector-model.js           # インジェクタ3Dモデル
-      ├── control-room-model.js       # 操作室
-      └── server-rack-model.js        # サーバーラック
+ct-3d-sim/
+  ├── config.json                     # ルート外部設定ファイル (カメラ/モデル/ネットワーク)
+  ├── index.html                      # メインHTML・UIパネル構造・スクリプトローダー
+  ├── .gitattributes                  # LFS追跡および改行コード定義
+  ├── assets/
+  │   ├── css/
+  │   │   └── ct-simulator.css        # シミュレータ専用スタイルシート
+  │   ├── glb/                        # 3Dモデルアセット (Git LFS管理)
+  │   │   ├── rp_dennis_posed_004_100k.glb
+  │   │   └── rp_posed_00178_29.glb
+  │   ├── image/                      # 看板・テクスチャ画像 (Git LFS管理)
+  │   │   └── 20180129131124.png
+  │   └── js/
+  │       ├── core/                   # ドメイン・アプリケーションコア
+  │       │   ├── main.js             # 3Dシーン初期化、レンダリングループ、Eco-Mode、歪曲パイプライン
+  │       │   ├── state.js            # AppState (状態実体 & 説明文マッピング)
+  │       │   ├── store.js            # CTStore (AppStateアクセサー & Pub/Sub)
+  │       │   ├── hw/                 # 仮想HWドメインシミュレータ
+  │       │   │   ├── gantry-sim.js   # ガントリ制御ロジック
+  │       │   │   ├── couch-sim.js    # 寝台制御ロジック
+  │       │   │   ├── injector-sim.js # インジェクタ制御ロジック
+  │       │   │   └── camera-sim.js   # 仮想カメラ・歪曲制御ロジック
+  │       │   ├── commands/
+  │       │   │   └── command-bus.js  # コマンドバス（UI/外部共通の実行経路）
+  │       │   ├── config/
+  │       │   │   ├── config-service.js # 外部config.json非同期ローダー
+  │       │   │   └── models-config.js  # 3Dモデル定義・登録管理
+  │       │   ├── services/
+  │       │   │   ├── model-registry.js      # GLTF/画像ローダ・インスタンス管理
+  │       │   │   ├── video-stream-service.js# 映像ストリーミング制御サービス
+  │       │   │   ├── command-log-service.js # コマンド実行ログ管理
+  │       │   │   ├── sequence-service.js    # シーケンス状態管理
+  │       │   │   ├── sequence-runner.js     # スキャンシーケンス実行制御
+  │       │   │   ├── batch-service.js       # バッチキュー管理
+  │       │   │   ├── performance-service.js # FPS/パフォーマンス計測
+  │       │   │   └── tween-utils.js         # アニメーションイージング補助
+  │       │   └── profile/
+  │       │       ├── default-profile.js     # 標準HWプロファイル定義
+  │       │       └── profile-service.js     # 機種差分プロファイルサービス
+  │       ├── adapters/               # 外部接続・UIアダプター
+  │       │   ├── ui/
+  │       │   │   ├── ui-controller.js       # 全体UI同期・DOMイベント・歪曲UIハンドラ
+  │       │   │   ├── patient-controller.js  # 患者モデル選択・9-DOFトランスフォーム操作
+  │       │   │   ├── scan-controller.js     # スキャン・バッチ操作ハンドラ
+  │       │   │   └── dialog-controller.js   # モーダルダイアログ制御
+  │       │   ├── external/
+  │       │   │   ├── protocol-v1.js         # 通信プロトコル検証・レスポンス生成
+  │       │   │   └── external-gateway.js    # 外部公開API Gateway (window.CTExternalGateway)
+  │       │   └── video/              # 映像配信アダプター
+  │       │       ├── canvas-capturer.js     # Canvasフレームキャプチャ・バックプレッシャー制御
+  │       │       └── stream-gateway.js      # RTSP / HTTP ストリーミング転送アダプター
+  │       └── view/                   # プレゼンテーション・3D表現
+  │           ├── camera-presets.js   # カメラアングルプリセット定義
+  │           ├── fps-controls.js     # WASD / マウス視線移動 (FPS Walkthrough)
+  │           ├── view-sync.js        # AppStateと3Dメッシュ同期
+  │           └── models/
+  │               ├── mesh-factory.js        # 3D形状・マテリアル生成ファクトリ
+  │               ├── room-model.js          # 検査室・壁・床
+  │               ├── gantry-model.js        # ガントリ・回転ローター3Dモデル
+  │               ├── injector-model.js      # インジェクタ3Dモデル
+  │               ├── control-room-model.js  # 操作室・窓・コンソール
+  │               └── server-rack-model.js   # サーバーラック・LEDアニメーション
+  ├── scripts/
+  │   ├── stream-server.js            # Node.jsベース MJPEG/RTSP 配信サーバー
+  │   └── verify-external-interface.js# 外部API/プロトコル自動検証スクリプト
+  └── docs/                           # 仕様書・設計書群
 ```
 
 ---
@@ -377,13 +454,19 @@ assets/js/
 ## 8. UI構成・表示仕様
 
 ### 8.1 パネル構成と役割
-操作画面は以下の5パネルで構成され、将来実コンソール画面へ接続する際にも各パネル単位で容易に換装できる設計としています。
+操作画面は以下の5パネルおよびオーバーレイ要素で構成されています：
 
 - **Console (`panel-console`)**: スキャン開始/停止、バッチ編集、シーケンス実行
 - **HW STATE MONITOR (`panel-monitor`)**: ガントリ・寝台・インジェクタ・直近結果表示
 - **HW設定 (`panel-hw-config`)**: Detector Rows、Couch Y/Z、Injector A/B 設定
-- **3D表示・操作 (`panel-3d-config`)**: フォーカス、カメラ、透過、X線、患者表示、患者モデル選択/9-DOF、カメラ歪曲設定、カメラ配信設定
-- **Command Log (`panel-command-log`)**: コマンド実行履歴表示
+- **3D表示・操作 (`panel-3d-config`)**:
+  - 視点プリセット切替（Free, Front, Side, Top, Operator, FPS Walkthrough）
+  - 表示要素トグル（透過、X線、患者表示）
+  - 患者GLBモデル選択および9-DOFトランスフォーム（位置・角度・拡大縮小）スライダー＆数値入力
+  - カメラ魚眼レンズ歪曲設定（プリセット選択、$k_1..k_4, f_x, f_y, c_x, c_y$, Zoom）
+  - 仮想カメラ配信設定（Codec, Protocol, FPS, クリップURL）
+- **Command Log (`panel-command-log`)**: コマンド実行履歴・リクエスト/レスポンスログ表示
+- **FPS Walkthrough HUD (`fps-hud-guide`)**: FPS視点有効時に画面下部に操作ガイド（[WASD]: Walk, [Drag]: Look, [Shift]: Fast, [Q/E]: Up/Down）を表示
 
 ---
 
@@ -393,17 +476,22 @@ assets/js/
 
 | 方式 | コーデック | 通信プロトコル | 技術スタック・伝送方式 |
 | :--- | :--- | :--- | :--- |
-| **MJPEG Stream** | MJPEG (JPEG連番) | HTTP (`multipart/x-mixed-replace`) | HTMLCanvasElement `.toDataURL('image/jpeg')` または Blob 転送 |
-| **H.264 Stream (RTSP)** | H.264 / AVC | RTSP (または WebSocket-RTSP ゲートウェイ) | `MediaRecorder` API (`video/mp4;codecs=avc1` / `video/webm`) ＋ RTSP リレー |
+| **MJPEG Stream** | MJPEG (JPEG連番) | HTTP (`multipart/x-mixed-replace`) | HTMLCanvasElement `toBlob('image/jpeg')` ＋ HTTP multipart 転送 |
+| **H.264 Stream (RTSP)** | H.264 / AVC | RTSP (または WebSocket-RTSP ゲートウェイ) | `MediaRecorder` API / TypedArray Uint32 バッファ転送 ＋ RTSP サーバー |
 | **H.264 Stream (HTTP)** | H.264 | HTTP (HLS / Low-Latency HLS) | MediaSource Extensions (MSE) / HLS.js 互換セグメント生成 |
 
 ---
 
 ## 10. 検証方針
-- **構文チェック**: `node --check`
-- **外部I/Fプロトコル検証**: `node scripts/verify-external-interface.js`
+- **外部I/Fプロトコル検証**:
+  ```bash
+  node scripts/verify-external-interface.js
+  ```
+  全ターゲット（gantry, couch, injector, simulator, camera）および全アクション（歪曲、9-DOF、ストリーミング、視点移動）の自動テストを実行。
 - **映像配信検証**:
-  - MJPEG over HTTP ストリームのブラウザ再生確認
+  - MJPEG over HTTP ストリームのブラウザ再生確認（`http://localhost:8080/stream/main.mjpg`）
   - RTSP ストリーム (VLC メディアプレイヤー / ffmpeg での受信確認)
 - **カメラ歪曲検証**:
   - OpenCV Fisheye パラメータ計算と sRGB ガンマ 2.2 補正後のレンダリング結果の目視およびキャプチャ確認
+- **Eco Mode 検証**:
+  - アイドル時の GPU/CPU 使用率およびフレームスキップ（`renderDemandCount`）の動作確認

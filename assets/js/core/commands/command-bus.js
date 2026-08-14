@@ -84,13 +84,16 @@
                     return withLog(command, { success: true, state: state });
                 }
                 if (action === "setPatientPosition") {
-                    if (!state.patientOffset) state.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 };
+                    if (!state.patientOffset) state.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
                     if (typeof params.x === "number") state.patientOffset.x = params.x;
                     if (typeof params.y === "number") state.patientOffset.y = params.y;
                     if (typeof params.z === "number") state.patientOffset.z = params.z;
                     if (typeof params.rotX === "number") state.patientOffset.rotX = params.rotX;
                     if (typeof params.rotY === "number") state.patientOffset.rotY = params.rotY;
                     if (typeof params.rotZ === "number") state.patientOffset.rotZ = params.rotZ;
+                    if (typeof params.scaleX === "number") state.patientOffset.scaleX = params.scaleX;
+                    if (typeof params.scaleY === "number") state.patientOffset.scaleY = params.scaleY;
+                    if (typeof params.scaleZ === "number") state.patientOffset.scaleZ = params.scaleZ;
 
                     if (g.CTModelRegistry) {
                         g.CTModelRegistry.updateInstanceTransform("patient_primary", {
@@ -99,8 +102,16 @@
                                 typeof state.patientOffset.rotX === "number" ? state.patientOffset.rotX : -90,
                                 typeof state.patientOffset.rotY === "number" ? state.patientOffset.rotY : 0,
                                 typeof state.patientOffset.rotZ === "number" ? state.patientOffset.rotZ : 0
+                            ],
+                            scale: [
+                                typeof state.patientOffset.scaleX === "number" ? state.patientOffset.scaleX : 1.0,
+                                typeof state.patientOffset.scaleY === "number" ? state.patientOffset.scaleY : 1.0,
+                                typeof state.patientOffset.scaleZ === "number" ? state.patientOffset.scaleZ : 1.0
                             ]
                         });
+                    }
+                    if (typeof g.syncAllPatientTransformUI === "function") {
+                        g.syncAllPatientTransformUI();
                     }
                     if (typeof state.notify === "function") state.notify();
                     return withLog(command, { success: true, state: state });
@@ -128,15 +139,20 @@
             }
 
             if (target === "camera") {
-                if (!global.CameraSim) return withLog(command, fail("CAMERA_SIM_UNAVAILABLE"));
-                if (action === "startStream") return withLog(command, global.CameraSim.startStream(params));
-                if (action === "stopStream") return withLog(command, global.CameraSim.stopStream());
-                if (action === "getStreamUrl") return withLog(command, global.CameraSim.getStreamUrl());
-                if (action === "setDistortion") return withLog(command, global.CameraSim.setDistortion(params));
+                var cam = global.CameraSim || (g && g.CameraSim);
+                if (!cam) return withLog(command, fail("CAMERA_SIM_UNAVAILABLE"));
+                if (action === "startStream") return withLog(command, cam.startStream(params));
+                if (action === "stopStream") return withLog(command, cam.stopStream());
+                if (action === "getStreamUrl") return withLog(command, cam.getStreamUrl());
+                if (action === "setDistortion") return withLog(command, cam.setDistortion(params));
+                if (action === "setTransform") return withLog(command, cam.setTransform(params.position, params.lookAt));
+                if (action === "setVirtualTransform") return withLog(command, cam.setVirtualTransform(params.position, params.lookAt));
+                if (action === "setFov") return withLog(command, cam.setFov(typeof params.value === "number" ? params.value : params.fov));
+                if (action === "setHFov") return withLog(command, cam.setHFov(typeof params.value === "number" ? params.value : params.hfov));
                 if (action === "getState")
                     return withLog(command, {
                         success: true,
-                        state: global.CameraSim.getState(),
+                        state: cam.getState(),
                     });
                 return withLog(command, fail("UNKNOWN_CAMERA_ACTION"));
             }

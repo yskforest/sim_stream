@@ -21,6 +21,7 @@
         simulator: {
             setPatientVisible: true,
             setPatientModel: true,
+            setPatientPosition: true,
             loadGlbModel: true,
             getState: true,
         },
@@ -28,6 +29,11 @@
             startStream: true,
             stopStream: true,
             getStreamUrl: true,
+            setDistortion: true,
+            setTransform: true,
+            setVirtualTransform: true,
+            setFov: true,
+            setHFov: true,
             getState: true,
         },
     };
@@ -93,6 +99,15 @@
                 return fail("VALIDATION_ERROR", "params.modelId must be a string when provided.");
             }
         }
+        if (command.target === "simulator" && command.action === "setPatientPosition") {
+            var numKeys = ["x", "y", "z", "rotX", "rotY", "rotZ", "scaleX", "scaleY", "scaleZ"];
+            for (var i = 0; i < numKeys.length; i++) {
+                var k = numKeys[i];
+                if (p[k] !== undefined && typeof p[k] !== "number") {
+                    return fail("VALIDATION_ERROR", "params." + k + " must be a number when provided.");
+                }
+            }
+        }
         if (command.target === "camera" && command.action === "startStream") {
             if (p.codec !== undefined && p.codec !== "h264" && p.codec !== "mjpeg") {
                 return fail("VALIDATION_ERROR", "params.codec must be 'h264' or 'mjpeg'.");
@@ -102,6 +117,31 @@
             }
             if (p.fps !== undefined && typeof p.fps !== "number") {
                 return fail("VALIDATION_ERROR", "params.fps must be a number when provided.");
+            }
+        }
+        if (command.target === "camera" && command.action === "setDistortion") {
+            if (p.enabled !== undefined && typeof p.enabled !== "boolean") {
+                return fail("VALIDATION_ERROR", "params.enabled must be a boolean when provided.");
+            }
+            var distNumKeys = ["k1", "k2", "k3", "k4", "fx", "fy", "cx", "cy", "zoom"];
+            for (var j = 0; j < distNumKeys.length; j++) {
+                var dk = distNumKeys[j];
+                if (p[dk] !== undefined && typeof p[dk] !== "number") {
+                    return fail("VALIDATION_ERROR", "params." + dk + " must be a number when provided.");
+                }
+            }
+        }
+        if (command.target === "camera" && (command.action === "setFov" || command.action === "setHFov")) {
+            if (typeof p.value !== "number" && typeof p.fov !== "number" && typeof p.hfov !== "number") {
+                return fail("VALIDATION_ERROR", "Field value/fov/hfov must be a number.");
+            }
+        }
+        if (command.target === "camera" && (command.action === "setTransform" || command.action === "setVirtualTransform")) {
+            if (p.position && typeof p.position !== "object") {
+                return fail("VALIDATION_ERROR", "params.position must be an object.");
+            }
+            if (p.lookAt && typeof p.lookAt !== "object") {
+                return fail("VALIDATION_ERROR", "params.lookAt must be an object.");
             }
         }
         return ok();

@@ -90,24 +90,28 @@ sequenceDiagram
 | **`gantry`**<br>(ガントリ部) | `setScanning` | `value: boolean` | スキャン動作の開始 (`true`) / 停止 (`false`) |
 | | `setDetectorRows` | `value: number` | 検出器列数を設定 (例: `320`) |
 | | `setXrayVisible` | `value: boolean` | X線ビームの表示切替 |
-| | `setRotorSpeed` | `value: number` | 回転速度を設定 |
+| | `setRotorSpeed` | `value: number` | 回転速度を設定 (rpm) |
 | | `setField` | `key: string`, `value: any` | フィールド直接更新 |
 | | `getState` | なし | ガントリの現在状態を取得 |
-| **`couch`**<br>(寝台部) | `moveY` | `value: number` | 寝台の上下位置変更 (mm) |
-| | `moveZ` | `value: number` | 寝台の前後位置変更 (mm) |
+| **`couch`**<br>(寝台部) | `moveY` | `value: number` | 寝台の上下位置変更 (mm / %) |
+| | `moveZ` | `value: number` | 寝台の前後位置変更 (mm / %) |
 | | `getState` | なし | 寝台の現在状態を取得 |
-| **`injector`**<br>(インジェクタ部) | `setA` | `value: number` | A剤（造影剤）注入量の設定 |
-| | `setB` | `value: number` | B剤（生理食塩水）注入量の設定 |
+| **`injector`**<br>(インジェクタ部) | `setA` | `value: number` | A剤（造影剤）注入量の設定 (%) |
+| | `setB` | `value: number` | B剤（生理食塩水）注入量の設定 (%) |
 | | `getState` | なし | インジェクタの現在状態を取得 |
 | **`simulator`**<br>(全体・モデル制御) | `setPatientVisible` | `value: boolean` | 患者モデルの表示 (`true`) / 非表示 (`false`) |
 | | `setPatientModel` | `modelId: string` | 表示するアクティブ患者GLBモデルIDを指定 |
-| | `setPatientPosition` | `x?: number, y?: number, z?: number, rotX?: number, rotY?: number, rotZ?: number` | 患者モデルの9-DOFトランスフォーム（位置・角度）を変更 |
+| | `setPatientPosition` | `x?: number, y?: number, z?: number,`<br>`rotX?: number, rotY?: number, rotZ?: number,`<br>`scaleX?: number, scaleY?: number, scaleZ?: number` | 患者モデルの9-DOFトランスフォーム（位置・角度・拡大縮小）を変更 |
 | | `loadGlbModel` | `id: string, path: string, attachTo?: string, position?: Array, rotation?: Array, scale?: Array` | GLB 3Dモデルを動的に読み込んでアタッチ |
 | | `getState` | なし | 全体の現在状態を取得 |
-| **`camera`**<br>(仮想カメラ・歪曲・配信) | `startStream` | `codec: string` (`'h264'` \| `'mjpeg'`),<br>`protocol: string` (`'rtsp'` \| `'http'`),<br>`fps?: number` | 仮想カメラ映像のエンコードストリーミング配信を開始 |
+| **`camera`**<br>(仮想カメラ・歪曲・配信) | `startStream` | `codec: string` (`'h264'` \| `'mjpeg'`),<br>`protocol: string` (`'rtsp'` \| `'http'`),<br>`fps?: number, width?: number, height?: number, mode?: string` | 仮想カメラ映像のエンコードストリーミング配信を開始 |
 | | `stopStream` | なし | 映像ストリーミング配信を停止 |
 | | `getStreamUrl` | なし | 現在配信中のストリーミングURLを取得 |
 | | `setDistortion` | `enabled?: boolean, k1?: number, k2?: number, k3?: number, k4?: number, fx?: number, fy?: number, cx?: number, cy?: number, zoom?: number` | OpenCV 魚眼カメラ歪曲パラメータを動的更新 |
+| | `setTransform` | `position?: { x, y, z }, lookAt?: { x, y, z }` | 撮影用メインカメラの位置と注視点を設定 |
+| | `setVirtualTransform` | `position?: { x, y, z }, lookAt?: { x, y, z }` | 独立仮想カメラの位置と注視点を設定 |
+| | `setFov` | `value: number` (または `fov: number`) | 垂直画角（FOV度数）を設定 |
+| | `setHFov` | `value: number` (または `hfov: number`) | 水平画角（HFOV度数）を設定 |
 | | `getState` | なし | カメラおよび配信・歪曲状態を取得 |
 
 ---
@@ -151,15 +155,23 @@ const res3 = window.CTExternalGateway.send({
   params: { enabled: true, k1: 0.20, k2: 0.05, fx: 1.0, fy: 1.0, cx: 0.5, cy: 0.5, zoom: 1.0 }
 });
 
-// 4. 患者モデル位置・姿態調整
+// 4. 患者モデル9-DOF（位置・角度・スケール）調整
 const res4 = window.CTExternalGateway.send({
   requestId: 'req-004',
   target: 'simulator',
   action: 'setPatientPosition',
-  params: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 }
+  params: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 }
 });
 
-// 5. リアルタイム状態監視の開始
+// 5. 仮想カメラ視点設定
+const res5 = window.CTExternalGateway.send({
+  requestId: 'req-005',
+  target: 'camera',
+  action: 'setTransform',
+  params: { position: { x: 0, y: 2.0, z: 4.0 }, lookAt: { x: 0, y: 1.0, z: 0 } }
+});
+
+// 6. リアルタイム状態監視の開始
 const unsubscribe = window.CTExternalGateway.subscribe((event) => {
   if (event.success) {
     console.log('[状態更新通知]', event.payload);
