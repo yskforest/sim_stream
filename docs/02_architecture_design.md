@@ -453,20 +453,40 @@ ct-3d-sim/
 
 ## 8. UI構成・表示仕様
 
-### 8.1 パネル構成と役割
-操作画面は以下の5パネルおよびオーバーレイ要素で構成されています：
+### 8.1 レイアウト構成と役割
+UIは、3D空間の視認性と作業領域を最大化するため、**「トップアプリバー」「右設定サイドバー」「下部統合ドック（Scan Console / HW Settings / HW Monitor / Command Log）」** で構成されています（左サイドバーを撤廃し、画面左端まで広大な3D空間を確保）。
 
-- **Console (`panel-console`)**: スキャン開始/停止、バッチ編集、シーケンス実行
-- **HW STATE MONITOR (`panel-monitor`)**: ガントリ・寝台・インジェクタ・直近結果表示
-- **HW設定 (`panel-hw-config`)**: Detector Rows、Couch Y/Z、Injector A/B 設定
-- **3D表示・操作 (`panel-3d-config`)**:
-  - 視点プリセット切替（Free, Front, Side, Top, Operator, FPS Walkthrough）
-  - 表示要素トグル（透過、X線、患者表示）
-  - 患者GLBモデル選択および9-DOFトランスフォーム（位置・角度・拡大縮小）スライダー＆数値入力
-  - カメラ魚眼レンズ歪曲設定（プリセット選択、$k_1..k_4, f_x, f_y, c_x, c_y$, Zoom）
-  - 仮想カメラ配信設定（Codec, Protocol, FPS, クリップURL）
-- **Command Log (`panel-command-log`)**: コマンド実行履歴・リクエスト/レスポンスログ表示
-- **FPS Walkthrough HUD (`fps-hud-guide`)**: FPS視点有効時に画面下部に操作ガイド（[WASD]: Walk, [Drag]: Look, [Shift]: Fast, [Q/E]: Up/Down）を表示
+```mermaid
+flowchart TB
+    TopBar["トップバー: タイトル | Console Mode [Mock ⇄ External] | ECO | PERF | ▼ Console & Monitor Dock | Settings ▶"]
+    
+    subgraph CenterArea["メイン表示領域"]
+        direction LR
+        Viewport3D["🖥 3D Viewport\n（画面左端から広がる超ワイドなThree.js空間）"]
+        RightSidebar["右サイドバー（幅340px） ▶\n・[3D View] タブ\n・[Lens Fisheye] タブ\n・[Stream] タブ\n・[Patient 9-DOF] タブ"]
+    end
+
+    BottomDock["▼ 下部統合ステータス＆コンソールドック（高さ245px / 左端からワイド表示 / 折りたたみ可能）\n・[Scan Console] タブ (Mock: 左操作部 ＋ 右横向き最大6個スクロールなしBatchキュー)\n・[HW Settings] タブ (Detector Rows / Couch Y/Z / Injector A/B)\n・[HW Monitor] タブ (Gantry RPM / Couch / Injector / Last Result)\n・[Command Log] タブ (Gateway / Bus Execution Stream)\n※Mock OFF時はScanタブが安全にロック"]
+```
+
+- **Top App Bar (`top-app-bar`)**:
+  - タイトル `CT 3D Simulator` ＋ ステータスバッジ
+  - **Console Mode 切り替えスイッチ (`pill-mode-mock` / `pill-mode-external`)**: Mock Console (内蔵UI操作) と External Console (実コンソール連携モード: Mock UIロック・非表示) をワンクリックで切り替え可能
+  - `ECO` (省電力モード), `PERF` (HUD表示), 下部ドック・右サイドバーのトグルボタン
+- **Right Sidebar (`right-sidebar` - 幅340px)**:
+  - **[3D View] タブ**: 視点プリセット（Free, FPS, Operator, Patient, Gantry）、フォーカス対象、透過/X線/レーザー/ファントム/座標軸トグル
+  - **[Lens Fisheye] タブ**: OpenCV 魚眼レンズ歪曲（有効トグル、プリセット選択、$k_1..k_4, f_x, f_y, c_x, c_y$, Zoom）
+  - **[Stream] タブ**: 仮想カメラ映像配信（H.264/MJPEG, RTSP/HTTP, FPS, 解像度, 品質, 診断情報）
+  - **[Patient 9-DOF] タブ**: 患者GLBモデル選択、9-DOFトランスフォーム（位置XYZ, 回転XYZ, スケールXYZ）、動的アセットローダー
+- **Bottom Status & Console Dock (`bottom-dock` - 高さ245px / 左端からワイド配置)**:
+  - **[Scan Console] タブ (Mock)**:
+    - 左側（幅200px）：スキャン開始/停止、回転速度スライダー、RUNボタン、+ Add Batchボタン
+    - 右側（横長コンテナ）：**横向き（Horizontal Row）で最大6個のバッチカードがスクロールなしで一望・操作可能**
+    - ※External Mode時は自動ロックされ「External Console Mode Active」バナーを表示
+  - **[HW Settings] タブ**: 検出器列数（Detector Rows）、寝台位置（Couch Y/Z）、インジェクタ（Contrast A / Saline B）の横並びカード
+  - **[HW Monitor] タブ**: ガントリRPMバー、モード、寝台Y/Z、インジェクタ残量バー、直近コマンド結果
+  - **[Command Log] タブ**: 外部GatewayおよびUIから実行された全コマンド履歴（Clear可能）
+- **FPS Walkthrough HUD (`fps-hud-guide`)**: FPS視点有効時に画面下部に操作ガイド（[WASD]: 移動, [Drag]: 視線, [Shift]: 高速, [Q/E]: 上昇下降）を表示
 
 ---
 

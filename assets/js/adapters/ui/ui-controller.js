@@ -220,31 +220,34 @@
                 return `<option value="${o}" ${o === batch.mode ? "selected" : ""}>${o === "dual_scano" ? "Dual Scano" : o === "3d_landmark" ? "3D Landmark" : o === "real_prep" ? "Real Prep" : o.charAt(0).toUpperCase() + o.slice(1)}</option>`;
             }).join("");
 
-            var cardCls = "relative rounded-lg p-2.5 w-36 flex flex-col items-center transition-all duration-300 " + 
-                (isActive ? "bg-blue-900/80 border-2 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-105 z-10" : "bg-gray-800 border border-gray-600");
+            var cardCls = "relative rounded-lg p-2 w-[122px] min-w-[122px] max-w-[130px] flex flex-col justify-between transition-all duration-200 " + 
+                (isActive ? "bg-blue-950/90 border-2 border-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.55)] scale-105 z-10" : "bg-slate-900/90 border border-slate-700 hover:border-slate-500");
 
-            var overlay = (isActive && countdown > 0) ? `<div class="absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]">
-                <span class="text-[10px] text-yellow-400 font-bold mb-1 tracking-widest">DELAY</span>
-                <span class="text-2xl font-mono text-white font-bold leading-none">${countdown}</span></div>` : "";
+            var overlay = (isActive && countdown > 0) ? `<div class="absolute inset-0 bg-black/85 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]">
+                <span class="text-[9px] text-yellow-400 font-bold tracking-wider">DELAY</span>
+                <span class="text-xl font-mono text-white font-bold leading-none">${countdown}</span></div>` : "";
 
             var dis = isRunning ? "disabled" : "";
             var disCls = isRunning ? "opacity-70 cursor-not-allowed" : "";
 
             return `<div class="${cardCls}">
                 ${overlay}
-                <div class="text-[10px] text-gray-400 mb-1.5 w-full flex justify-between items-center">
-                    <span class="${isActive ? 'text-yellow-400 font-bold' : ''}">Batch ${index + 1}</span>
-                    <button class="btn-del hover:text-red-400 text-base leading-none transition-colors ${(isRunning || seq.length <= 1) ? 'opacity-30 cursor-not-allowed' : ''}" ${(isRunning || seq.length <= 1) ? "disabled" : ""}>&times;</button>
+                <div class="text-[10px] text-slate-400 mb-1 w-full flex justify-between items-center">
+                    <span class="font-bold ${isActive ? 'text-yellow-400' : 'text-slate-300'}">#${index + 1} Batch</span>
+                    <button class="btn-del hover:text-red-400 text-sm leading-none font-bold text-slate-400 transition-colors ${(isRunning || seq.length <= 1) ? 'opacity-20 cursor-not-allowed' : ''}" ${(isRunning || seq.length <= 1) ? "disabled" : ""}>&times;</button>
                 </div>
-                <select class="sel-mode w-full bg-gray-900 text-white text-[11px] p-1.5 rounded border border-gray-700 outline-none hover:border-blue-500 transition-colors cursor-pointer ${disCls}" ${dis}>
+                <select class="sel-mode w-full bg-slate-950 text-white text-[10px] py-1 px-1 rounded border border-slate-700 outline-none hover:border-blue-500 transition-colors cursor-pointer ${disCls}" ${dis}>
                     ${optHtml}
                 </select>
-                <div class="w-full flex items-center justify-between mt-2 text-[10px] text-gray-400">
-                    <span>Delay (s)</span>
-                    <input type="number" min="0" max="60" value="${batch.delay}" class="inp-delay w-10 bg-gray-900 text-white p-1 rounded border border-gray-700 outline-none text-center" ${dis}>
+                <div class="w-full flex items-center justify-between my-1 text-[9px] text-slate-400">
+                    <span>Delay:</span>
+                    <div class="flex items-center gap-0.5">
+                        <input type="number" min="0" max="60" value="${batch.delay}" class="inp-delay w-8 bg-slate-950 text-white py-0.5 px-0.5 rounded border border-slate-700 outline-none text-center font-mono text-[9px]" ${dis}>
+                        <span>s</span>
+                    </div>
                 </div>
-                <button class="btn-sync w-full mt-2 py-1 rounded text-[9px] font-bold transition-colors ${isSync ? 'bg-purple-600/80 text-white border border-purple-400' : 'bg-gray-900 text-gray-500 border border-gray-700 hover:bg-gray-700'} ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}" ${dis}>
-                    INJ SYNC: ${isSync ? "ON" : "OFF"}
+                <button class="btn-sync w-full py-0.5 rounded text-[8px] font-bold transition-colors ${isSync ? 'bg-purple-600 text-white border border-purple-400' : 'bg-slate-950 text-slate-400 border border-slate-700 hover:bg-slate-800'} ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}" ${dis}>
+                    INJ: ${isSync ? "ON" : "OFF"}
                 </button>
             </div>`;
         }).join("");
@@ -261,63 +264,24 @@
         });
 
         var addBtn = byId("btn-add-batch");
-        addBtn.disabled = seq.length >= 5 || isRunning;
-        addBtn.className = "w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-600 flex items-center justify-center text-gray-400 hover:text-white transition-colors " + (addBtn.disabled ? "opacity-30 cursor-not-allowed" : "");
+        if (addBtn) {
+            addBtn.disabled = seq.length >= 6 || isRunning;
+            addBtn.className = "flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-semibold py-1.5 rounded text-xs transition " + (addBtn.disabled ? "opacity-30 cursor-not-allowed" : "");
+        }
 
         var runBtn = byId("btn-run-sequence");
-        runBtn.disabled = isRunning && AppState.gantry.cancelRequested;
-        runBtn.onclick = isRunning ? stopAutoSequence : runAutoSequence;
-        runBtn.className = isRunning 
-            ? "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 rounded py-1.5 text-xs font-bold " + (AppState.gantry.cancelRequested ? "opacity-60 cursor-not-allowed" : "")
-            : "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded py-1.5 text-xs font-bold";
-        runBtn.innerText = isRunning ? (AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE") : "RUN SEQUENCE";
-    }
-
-    function setPanelVisibilityForViewport() {
-        var panels = document.querySelectorAll(".ui-panel");
-        panels.forEach(function (p) {
-            if (p.classList.contains("is-hidden")) {
-                p.style.display = "none";
-            } else {
-                p.style.display = "block";
-            }
-        });
+        if (runBtn) {
+            runBtn.disabled = isRunning && AppState.gantry.cancelRequested;
+            runBtn.onclick = isRunning ? stopAutoSequence : runAutoSequence;
+            runBtn.className = isRunning 
+                ? "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 text-white font-bold py-1.5 rounded text-xs shadow-md transition " + (AppState.gantry.cancelRequested ? "opacity-60 cursor-not-allowed" : "")
+                : "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-bold py-1.5 rounded text-xs shadow-md transition";
+            runBtn.innerText = isRunning ? (AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE") : "RUN SEQUENCE";
+        }
     }
 
     function bindPanelControls() {
-        mobileMedia = window.matchMedia("(max-width: 1279px)");
-
-        document.querySelectorAll(".toolbar-btn[data-panel-target]").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-                var id = btn.getAttribute("data-panel-target");
-                var target = byId(id);
-                if (!target) return;
-                target.classList.toggle("is-hidden");
-                setPanelVisibilityForViewport();
-            });
-        });
-
-        document.querySelectorAll(".ui-panel").forEach(function (panel) {
-            var collapseBtn = panel.querySelector('[data-panel-action="collapse"]');
-            var hideBtn = panel.querySelector('[data-panel-action="hide"]');
-
-            if (collapseBtn) {
-                collapseBtn.addEventListener("click", function () {
-                    panel.classList.toggle("is-collapsed");
-                });
-            }
-            if (hideBtn) {
-                hideBtn.addEventListener("click", function () {
-                    panel.classList.add("is-hidden");
-                    setPanelVisibilityForViewport();
-                });
-            }
-        });
-
-        if (mobileMedia && typeof mobileMedia.addEventListener === "function") {
-            mobileMedia.addEventListener("change", setPanelVisibilityForViewport);
-        }
-        setPanelVisibilityForViewport();
+        // Modern sidebar tab/dock navigation is managed by initModernNavigation()
     }
 
     function applyConfigToUIInputs() {
@@ -454,7 +418,121 @@
             global.syncAllPatientTransformUI();
         }
 
+        initModernNavigation();
         isSetup = true;
+    }
+
+    function initModernNavigation() {
+        if (!global.CTConfigService) return;
+        var get = global.CTConfigService.get.bind(global.CTConfigService);
+
+        var mockEnabled = get("ui.consoleMockEnabled", true);
+        setConsoleMockMode(mockEnabled);
+
+        var rightOpen = get("ui.rightSidebarOpen", true);
+        var dockOpen = get("ui.bottomDockOpen", true);
+
+        toggleRightSidebar(rightOpen);
+        toggleBottomDock(dockOpen);
+
+        var defRightTab = get("ui.defaultRightTab", "view");
+        var defDockTab = get("ui.defaultDockTab", "scan");
+        switchRightTab(defRightTab);
+        switchDockTab(defDockTab);
+    }
+
+    function switchLeftTab(tabId) {
+        // Left dock merged into bottom dock
+    }
+
+    function switchRightTab(tabId) {
+        var sidebar = byId("right-sidebar");
+        if (!sidebar) return;
+        var tabBtns = sidebar.querySelectorAll(".tab-btn");
+        var tabPanes = sidebar.querySelectorAll(".tab-pane");
+
+        tabBtns.forEach(function (btn) {
+            btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
+        });
+        tabPanes.forEach(function (pane) {
+            pane.classList.toggle("active", pane.id === "tab-right-" + tabId);
+        });
+    }
+
+    function switchDockTab(tabId) {
+        var dock = byId("bottom-dock");
+        if (!dock) return;
+        var tabBtns = dock.querySelectorAll(".tab-btn");
+        var tabPanes = dock.querySelectorAll(".tab-pane");
+
+        tabBtns.forEach(function (btn) {
+            btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
+        });
+        tabPanes.forEach(function (pane) {
+            pane.classList.toggle("active", pane.id === "tab-dock-" + tabId);
+        });
+    }
+
+    function toggleLeftSidebar(forceState) {
+        // Left dock merged into bottom dock
+    }
+
+    function toggleRightSidebar(forceState) {
+        var sidebar = byId("right-sidebar");
+        var btn = byId("btn-toggle-right-sidebar");
+        var dock = byId("bottom-dock");
+        if (!sidebar) return;
+
+        var isCollapsed = typeof forceState === "boolean" ? !forceState : !sidebar.classList.contains("is-collapsed");
+        sidebar.classList.toggle("is-collapsed", isCollapsed);
+        if (btn) btn.classList.toggle("active", !isCollapsed);
+        if (dock) dock.classList.toggle("expand-right", isCollapsed);
+    }
+
+    function toggleBottomDock(forceState) {
+        var dock = byId("bottom-dock");
+        var btn = byId("btn-toggle-dock");
+        if (!dock) return;
+
+        var isCollapsed = typeof forceState === "boolean" ? !forceState : !dock.classList.contains("is-collapsed");
+        dock.classList.toggle("is-collapsed", isCollapsed);
+        if (btn) btn.classList.toggle("active", !isCollapsed);
+    }
+
+    function setConsoleMockMode(enabled) {
+        if (!AppState.ui) AppState.ui = {};
+        AppState.ui.consoleMockEnabled = !!enabled;
+
+        var btnMock = byId("pill-mode-mock");
+        var btnExt = byId("pill-mode-external");
+        var mockOverlay = byId("mock-console-overlay");
+        var scanConsoleBody = byId("mock-console-controls");
+        var statusBadge = byId("status-app-mode");
+
+        if (btnMock && btnExt) {
+            btnMock.classList.toggle("active", enabled);
+            btnExt.classList.toggle("active-external", !enabled);
+        }
+
+        if (mockOverlay && scanConsoleBody) {
+            if (enabled) {
+                mockOverlay.classList.add("hidden");
+                scanConsoleBody.classList.remove("opacity-50", "pointer-events-none");
+            } else {
+                mockOverlay.classList.remove("hidden");
+                scanConsoleBody.classList.add("opacity-50", "pointer-events-none");
+            }
+        }
+
+        if (statusBadge) {
+            if (enabled) {
+                statusBadge.innerText = "MOCK CONSOLE";
+                statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-600/50";
+            } else {
+                statusBadge.innerText = "EXTERNAL CONSOLE";
+                statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-300 border border-emerald-500/50";
+            }
+        }
     }
 
     function teardownUI() {
@@ -471,8 +549,22 @@
         renderBatchQueue: renderBatchUI,
         renderMonitor: updateStateMonitor,
         renderCommandLog: renderCommandLog,
+        switchLeftTab: switchLeftTab,
+        switchRightTab: switchRightTab,
+        switchDockTab: switchDockTab,
+        toggleLeftSidebar: toggleLeftSidebar,
+        toggleRightSidebar: toggleRightSidebar,
+        toggleBottomDock: toggleBottomDock,
+        setConsoleMockMode: setConsoleMockMode,
     };
 
+    global.switchLeftTab = switchLeftTab;
+    global.switchRightTab = switchRightTab;
+    global.switchDockTab = switchDockTab;
+    global.toggleLeftSidebar = toggleLeftSidebar;
+    global.toggleRightSidebar = toggleRightSidebar;
+    global.toggleBottomDock = toggleBottomDock;
+    global.setConsoleMockMode = setConsoleMockMode;
     global.updateStateMonitor = updateStateMonitor;
     global.renderBatchUI = renderBatchUI;
 

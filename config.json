@@ -133,5 +133,12 @@
         ]
       }
     }
-  ]
+  ],
+  "ui": {
+    "consoleMockEnabled": true,
+    "defaultRightTab": "view",
+    "defaultDockTab": "scan",
+    "rightSidebarOpen": true,
+    "bottomDockOpen": true
+  }
 }
