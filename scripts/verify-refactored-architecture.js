@@ -143,6 +143,8 @@ const contextObj = {
     performance: { now: () => Date.now() },
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
+    setInterval: setInterval,
+    clearInterval: clearInterval,
     console: console,
     requestAnimationFrame: () => {},
     WebSocket: function() { this.send = () => {}; },
@@ -217,6 +219,26 @@ if (hasError) {
     console.error("\nArchitecture verification FAILED!");
     process.exit(1);
 } else {
+    // Verify Stream Start / Stop toggle logic
+    console.log("\n--- Testing Camera Stream Start / Stop ---");
+    if (typeof vmContext.toggleCameraStream === "function") {
+        vmContext.toggleCameraStream();
+        const activeState = vmContext.AppState.camera;
+        console.log("  [OK] toggleCameraStream() started streaming. isStreaming:", activeState.isStreaming, "URL:", activeState.streamUrl);
+        if (!activeState.isStreaming) {
+            console.error("  [FAIL] Expected camera.isStreaming to be true after start");
+            process.exit(1);
+        }
+        vmContext.toggleCameraStream();
+        console.log("  [OK] toggleCameraStream() stopped streaming. isStreaming:", activeState.isStreaming);
+        if (activeState.isStreaming) {
+            console.error("  [FAIL] Expected camera.isStreaming to be false after stop");
+            process.exit(1);
+        }
+    } else {
+        console.error("  [FAIL] global.toggleCameraStream is not a function");
+        process.exit(1);
+    }
     console.log("\nALL 5-LAYER REFACTORING & ARCHITECTURE TESTS PASSED!");
 }
 

@@ -1,243 +1,122 @@
-// CT 3D Simulator - Three.js Scene, Pipeline & Render Loop Manager
+// CT 3D Simulator - Three.js Scene, Pipeline & Render Loop Manager (Slim & Modular)
 (function attachSceneManager(global) {
     "use strict";
 
-    var isFisheyeEnabled = false;
-    var isEcoModeEnabled = false;
-    var renderDemandCount = 60;
+    var isFisheye = false, isEco = false, demandFrames = 60;
+    var rt = null, fCam = null, fScene = null, fMesh = null;
 
-    var fisheyeRenderTarget = null;
-    var fisheyeCamera = null;
-    var fisheyeScene = null;
-    var fisheyeMesh = null;
+    var requestRenderFrame = function (n) { demandFrames = Math.max(demandFrames || 0, typeof n === "number" ? n : 15); };
 
-    function requestRenderFrame(count) {
-        renderDemandCount = Math.max(renderDemandCount || 0, typeof count === "number" ? count : 15);
-    }
-
-    function toggleFisheye(enabled) {
-        if (typeof enabled === "boolean") {
-            isFisheyeEnabled = enabled;
-        } else {
-            isFisheyeEnabled = !isFisheyeEnabled;
-        }
-        if (global.AppState && global.AppState.distortion) {
-            global.AppState.distortion.enabled = isFisheyeEnabled;
-        }
-        var btn = document.getElementById("btn-fisheye-toggle");
-        if (btn) {
-            btn.style.backgroundColor = isFisheyeEnabled ? "#7e22ce" : "";
-            btn.textContent = isFisheyeEnabled ? "Disable Fisheye Lens" : "Toggle Fisheye Lens";
-        }
-        var mainToggle = document.getElementById("input-distortion-enable");
-        if (mainToggle) mainToggle.checked = isFisheyeEnabled;
+    function toggleFisheye(en) {
+        isFisheye = typeof en === "boolean" ? en : !isFisheye;
+        if (global.AppState && global.AppState.distortion) global.AppState.distortion.enabled = isFisheye;
+        var btn = document.getElementById("btn-fisheye-toggle"), toggle = document.getElementById("input-distortion-enable");
+        if (btn) { btn.style.backgroundColor = isFisheye ? "#7e22ce" : ""; btn.textContent = isFisheye ? "Disable Fisheye Lens" : "Toggle Fisheye Lens"; }
+        if (toggle) toggle.checked = isFisheye;
         requestRenderFrame(30);
     }
 
-    function updateCameraDistortion(params) {
-        if (!params && global.AppState && global.AppState.distortion) {
-            params = global.AppState.distortion;
-        }
+    function updateCameraDistortion(p) {
+        var params = p || (global.AppState && global.AppState.distortion);
         if (!params) return;
-
-        if (params.enabled !== undefined) {
-            isFisheyeEnabled = !!params.enabled;
-            var btn = document.getElementById("btn-fisheye-toggle");
-            if (btn) btn.style.backgroundColor = isFisheyeEnabled ? "#7e22ce" : "";
-        }
-
-        if (fisheyeMesh && fisheyeMesh.material && fisheyeMesh.material.uniforms) {
-            var u = fisheyeMesh.material.uniforms;
+        if (params.enabled !== undefined) toggleFisheye(params.enabled);
+        if (fMesh && fMesh.material && fMesh.material.uniforms) {
+            var u = fMesh.material.uniforms;
             if (u.uK && params.k1 !== undefined) u.uK.value.set(params.k1 || 0, params.k2 || 0, params.k3 || 0, params.k4 || 0);
-            if (u.uFocal && params.fx !== undefined) u.uFocal.value.set(params.fx !== undefined ? params.fx : 1.0, params.fy !== undefined ? params.fy : 1.0);
+            if (u.uFocal && params.fx !== undefined) u.uFocal.value.set(params.fx || 1.0, params.fy || 1.0);
             if (u.uCenter && params.cx !== undefined) u.uCenter.value.set(params.cx !== undefined ? params.cx : 0.5, params.cy !== undefined ? params.cy : 0.5);
             if (u.uZoom && params.zoom !== undefined) u.uZoom.value = params.zoom || 1.0;
         }
         requestRenderFrame(15);
     }
 
-    function toggleEcoMode(enabled) {
-        if (typeof enabled === "boolean") {
-            isEcoModeEnabled = enabled;
-        } else {
-            isEcoModeEnabled = !isEcoModeEnabled;
-        }
+    function toggleEcoMode(en) {
+        isEco = typeof en === "boolean" ? en : !isEco;
         var btn = document.getElementById("btn-eco-toggle");
         if (btn) {
-            if (isEcoModeEnabled) {
-                btn.className = "top-bar-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold border border-emerald-400";
-                btn.textContent = "ECO: ON";
-            } else {
-                btn.className = "top-bar-btn border-emerald-500/50 text-emerald-300 hover:bg-emerald-950/60 font-bold";
-                btn.textContent = "ECO";
-            }
+            btn.className = isEco ? "top-bar-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold border border-emerald-400" : "top-bar-btn border-emerald-500/50 text-emerald-300 hover:bg-emerald-950/60 font-bold";
+            btn.textContent = isEco ? "ECO: ON" : "ECO";
         }
-        if (isEcoModeEnabled) {
-            setGraphicsQuality("eco");
-        } else {
-            setGraphicsQuality("high");
-        }
+        setGraphicsQuality(isEco ? "eco" : "high");
         requestRenderFrame(30);
     }
 
     function setGraphicsQuality(mode) {
         if (!global.renderer) return;
-        if (mode === "high") {
-            global.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            if (typeof THREE.ACESFilmicToneMapping !== "undefined") {
-                global.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                global.renderer.toneMappingExposure = 1.05;
-            }
-            global.renderer.shadowMap.enabled = true;
-        } else if (mode === "eco" || mode === "low") {
-            global.renderer.setPixelRatio(0.85);
-            global.renderer.toneMapping = THREE.NoToneMapping;
-            global.renderer.shadowMap.enabled = false;
-        } else {
-            global.renderer.setPixelRatio(1.0);
-            global.renderer.toneMapping = THREE.NoToneMapping;
-            global.renderer.shadowMap.enabled = true;
+        var isHigh = mode === "high";
+        global.renderer.setPixelRatio(isHigh ? Math.min(window.devicePixelRatio, 2) : 0.85);
+        if (typeof THREE.ACESFilmicToneMapping !== "undefined") {
+            global.renderer.toneMapping = isHigh ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
+            if (isHigh) global.renderer.toneMappingExposure = 1.05;
         }
-        global.renderer.setSize(window.innerWidth, window.innerHeight);
-        requestRenderFrame(10);
+        global.renderer.shadowMap.enabled = isHigh;
     }
 
-    function toggleLaserAlignment() {
-        if (global.Meshes && global.Meshes.laserGroup) {
-            global.Meshes.laserGroup.visible = !global.Meshes.laserGroup.visible;
-            var btn = document.getElementById("btn-laser-toggle");
-            if (btn) {
-                if (global.Meshes.laserGroup.visible) {
-                    btn.className = "w-full bg-red-700 hover:bg-red-600 text-xs py-1.5 rounded border border-red-500 font-bold";
-                } else {
-                    btn.className = "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600";
-                }
-            }
-            requestRenderFrame(15);
+    function toggleObjectVisibility(meshKey, btnId, activeClass, inactiveClass, textOn, textOff) {
+        var meshes = global.Meshes || window.Meshes;
+        if (!meshes || !meshes[meshKey]) return;
+        var vis = !meshes[meshKey].visible;
+        meshes[meshKey].visible = vis;
+        var btn = document.getElementById(btnId);
+        if (btn) {
+            if (activeClass && inactiveClass) btn.className = vis ? activeClass : inactiveClass;
+            if (textOn && textOff) btn.textContent = vis ? textOff : textOn;
         }
+        requestRenderFrame(15);
     }
 
-    function toggleWaterPhantom() {
-        if (global.Meshes && global.Meshes.phantomGroup) {
-            global.Meshes.phantomGroup.visible = !global.Meshes.phantomGroup.visible;
-            var btn = document.getElementById("btn-phantom-toggle");
-            if (btn) {
-                if (global.Meshes.phantomGroup.visible) {
-                    btn.className = "w-full bg-cyan-700 hover:bg-cyan-600 text-xs py-1.5 rounded border border-cyan-500 font-bold";
-                } else {
-                    btn.className = "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600";
-                }
-            }
-            requestRenderFrame(15);
-        }
-    }
-
-    function toggleAxesHelper() {
-        if (global.Meshes && global.Meshes.axesHelper) {
-            global.Meshes.axesHelper.visible = !global.Meshes.axesHelper.visible;
-            var btn = document.getElementById("btn-axes-toggle");
-            if (btn) {
-                if (global.Meshes.axesHelper.visible) {
-                    btn.className = "w-full bg-indigo-700 hover:bg-indigo-600 text-xs py-1.5 rounded border border-indigo-500 font-bold";
-                } else {
-                    btn.className = "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600";
-                }
-            }
-            requestRenderFrame(15);
-        }
-    }
+    var toggleLaserAlignment = function () {
+        toggleObjectVisibility("laserGroup", "btn-laser-toggle", "top-bar-btn bg-rose-600 hover:bg-rose-500 text-white font-bold border border-rose-400 shadow-md shadow-rose-900/40", "top-bar-btn border-rose-500/50 text-rose-300 hover:bg-rose-950/60 font-bold");
+    };
+    var toggleWaterPhantom = function () {
+        toggleObjectVisibility("phantomGroup", "btn-phantom-toggle", "top-bar-btn bg-sky-600 hover:bg-sky-500 text-white font-bold border border-sky-400 shadow-md shadow-sky-900/40", "top-bar-btn border-sky-500/50 text-sky-300 hover:bg-sky-950/60 font-bold");
+    };
+    var toggleAxesHelper = function () {
+        toggleObjectVisibility("worldAxesGroup", "btn-axes-toggle", "top-bar-btn bg-amber-600 hover:bg-amber-500 text-white font-bold border border-amber-400 shadow-md shadow-amber-900/40", "top-bar-btn border-amber-500/50 text-amber-300 hover:bg-amber-950/60 font-bold");
+    };
 
     function setupFisheyePipeline(rw, rh) {
-        if (!fisheyeRenderTarget || fisheyeRenderTarget.width !== rw || fisheyeRenderTarget.height !== rh) {
-            if (fisheyeRenderTarget) fisheyeRenderTarget.dispose();
-            fisheyeRenderTarget = new THREE.WebGLRenderTarget(rw, rh, {
-                format: THREE.RGBAFormat,
-                samples: 4,
-                minFilter: THREE.LinearFilter,
-                magFilter: THREE.LinearFilter
-            });
+        if (!rt || rt.width !== rw || rt.height !== rh) {
+            if (rt) rt.dispose();
+            rt = new THREE.WebGLRenderTarget(rw, rh, { format: THREE.RGBAFormat, samples: 4, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
         }
-
-        if (!fisheyeScene) {
-            fisheyeScene = new THREE.Scene();
-            fisheyeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            var geo = new THREE.PlaneGeometry(2, 2);
-            var dParams = (global.AppState && global.AppState.distortion) ? global.AppState.distortion : {};
-
+        if (!fScene) {
+            fScene = new THREE.Scene();
+            fCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            var d = (global.AppState && global.AppState.distortion) || {};
             var mat = new THREE.ShaderMaterial({
                 uniforms: {
                     tDiffuse: { value: null },
-                    uK: { value: new THREE.Vector4(dParams.k1 !== undefined ? dParams.k1 : 0.1, dParams.k2 !== undefined ? dParams.k2 : 0.05, dParams.k3 || 0, dParams.k4 || 0) },
-                    uFocal: { value: new THREE.Vector2(dParams.fx !== undefined ? dParams.fx : 1.0, dParams.fy !== undefined ? dParams.fy : 1.0) },
-                    uCenter: { value: new THREE.Vector2(dParams.cx !== undefined ? dParams.cx : 0.5, dParams.cy !== undefined ? dParams.cy : 0.5) },
-                    uZoom: { value: dParams.zoom !== undefined ? dParams.zoom : 1.0 },
+                    uK: { value: new THREE.Vector4(d.k1 || 0.1, d.k2 || 0.05, d.k3 || 0, d.k4 || 0) },
+                    uFocal: { value: new THREE.Vector2(d.fx || 1.0, d.fy || 1.0) },
+                    uCenter: { value: new THREE.Vector2(d.cx !== undefined ? d.cx : 0.5, d.cy !== undefined ? d.cy : 0.5) },
+                    uZoom: { value: d.zoom || 1.0 },
                     uAspect: { value: (rw && rh) ? (rw / rh) : (window.innerWidth / window.innerHeight) }
                 },
                 vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }",
-                fragmentShader: [
-                    "uniform sampler2D tDiffuse;",
-                    "uniform vec4 uK;",
-                    "uniform vec2 uFocal;",
-                    "uniform vec2 uCenter;",
-                    "uniform float uZoom;",
-                    "uniform float uAspect;",
-                    "varying vec2 vUv;",
-                    "",
-                    "void main() {",
-                    "    vec2 p_dist = (vUv - uCenter) * vec2(uAspect, 1.0) / max(uZoom, 0.01);",
-                    "    p_dist.x /= max(uFocal.x, 0.001);",
-                    "    p_dist.y /= max(uFocal.y, 0.001);",
-                    "",
-                    "    float theta_d = length(p_dist);",
-                    "",
-                    "    if (theta_d < 1e-6) {",
-                    "        vec4 texColor = texture2D(tDiffuse, vUv);",
-                    "        gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a);",
-                    "        return;",
-                    "    }",
-                    "",
-                    "    float theta = theta_d;",
-                    "    for (int i = 0; i < 4; i++) {",
-                    "        float theta2 = theta * theta;",
-                    "        float theta4 = theta2 * theta2;",
-                    "        float theta6 = theta4 * theta2;",
-                    "        float theta8 = theta4 * theta4;",
-                    "",
-                    "        float f = theta * (1.0 + uK.x * theta2 + uK.y * theta4 + uK.z * theta6 + uK.w * theta8) - theta_d;",
-                    "        float df = 1.0 + 3.0 * uK.x * theta2 + 5.0 * uK.y * theta4 + 7.0 * uK.z * theta6 + 9.0 * uK.w * theta8;",
-                    "",
-                    "        if (abs(df) > 1e-6) {",
-                    "            theta -= f / df;",
-                    "        }",
-                    "    }",
-                    "",
-                    "    float safe_theta = clamp(theta, -1.55, 1.55);",
-                    "    float r = tan(safe_theta);",
-                    "",
-                    "    vec2 p_undist = (p_dist / theta_d) * r;",
-                    "    p_undist.x *= uFocal.x;",
-                    "    p_undist.y *= uFocal.y;",
-                    "",
-                    "    vec2 uv_src = (p_undist / vec2(uAspect, 1.0)) + uCenter;",
-                    "",
-                    "    if (uv_src.x < 0.0 || uv_src.x > 1.0 || uv_src.y < 0.0 || uv_src.y > 1.0) {",
-                    "        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);",
-                    "    } else {",
-                    "        vec4 texColor = texture2D(tDiffuse, uv_src);",
-                    "        gl_FragColor = vec4(pow(texColor.rgb, vec3(1.0 / 2.2)), texColor.a);",
-                    "    }",
+                fragmentShader: "uniform sampler2D tDiffuse; uniform vec4 uK; uniform vec2 uFocal, uCenter; uniform float uZoom, uAspect; varying vec2 vUv;\n" +
+                    "void main() {\n" +
+                    "  vec2 p = (vUv - uCenter) * vec2(uAspect, 1.0) / max(uZoom, 0.01) / max(uFocal, vec2(0.001));\n" +
+                    "  float td = length(p);\n" +
+                    "  if (td < 1e-6) { gl_FragColor = vec4(pow(texture2D(tDiffuse, vUv).rgb, vec3(0.4545)), 1.0); return; }\n" +
+                    "  float th = td;\n" +
+                    "  for (int i = 0; i < 4; i++) {\n" +
+                    "    float t2 = th*th, t4 = t2*t2, t6 = t4*t2, t8 = t4*t4;\n" +
+                    "    float f = th * (1.0 + uK.x*t2 + uK.y*t4 + uK.z*t6 + uK.w*t8) - td;\n" +
+                    "    float df = 1.0 + 3.0*uK.x*t2 + 5.0*uK.y*t4 + 7.0*uK.z*t6 + 9.0*uK.w*t8;\n" +
+                    "    if (abs(df) > 1e-6) th -= f / df;\n" +
+                    "  }\n" +
+                    "  vec2 uv = ((p / td) * tan(clamp(th, -1.55, 1.55)) * uFocal) / vec2(uAspect, 1.0) + uCenter;\n" +
+                    "  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n" +
+                    "  else gl_FragColor = vec4(pow(texture2D(tDiffuse, uv).rgb, vec3(0.4545)), texture2D(tDiffuse, uv).a);\n" +
                     "}"
-                ].join("\n")
             });
-            fisheyeMesh = new THREE.Mesh(geo, mat);
-            fisheyeScene.add(fisheyeMesh);
+            fMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+            fScene.add(fMesh);
         }
-
-        if (fisheyeMesh && fisheyeMesh.material && fisheyeMesh.material.uniforms) {
-            fisheyeMesh.material.uniforms.tDiffuse.value = fisheyeRenderTarget.texture;
-            if (fisheyeMesh.material.uniforms.uAspect) {
-                fisheyeMesh.material.uniforms.uAspect.value = (rw && rh) ? (rw / rh) : (window.innerWidth / window.innerHeight);
-            }
+        if (fMesh && fMesh.material && fMesh.material.uniforms) {
+            fMesh.material.uniforms.tDiffuse.value = rt.texture;
+            if (fMesh.material.uniforms.uAspect) fMesh.material.uniforms.uAspect.value = (rw && rh) ? (rw / rh) : (window.innerWidth / window.innerHeight);
         }
     }
 
@@ -249,139 +128,136 @@
 
         var camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
         var renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });
-
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
-
-        if (typeof THREE.ACESFilmicToneMapping !== "undefined") {
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.05;
-        }
-        if (typeof THREE.SRGBColorSpace !== "undefined") {
-            renderer.outputColorSpace = THREE.SRGBColorSpace;
-        }
+        if (typeof THREE.ACESFilmicToneMapping !== "undefined") { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; }
+        if (typeof THREE.SRGBColorSpace !== "undefined") renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-        if (container) {
-            container.innerHTML = "";
-            container.appendChild(renderer.domElement);
-        }
+        if (container) { container.innerHTML = ""; container.appendChild(renderer.domElement); }
 
-        // Lighting
-        var ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-        scene.add(ambientLight);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        var hemi = new THREE.HemisphereLight(0xe2e8f0, 0x1e293b, 0.6); hemi.position.set(0, 20, 0); scene.add(hemi);
 
-        var hemiLight = new THREE.HemisphereLight(0xe2e8f0, 0x1e293b, 0.6);
-        hemiLight.position.set(0, 20, 0);
-        scene.add(hemiLight);
-
-        var mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        mainLight.position.set(5, 8, 5);
-        mainLight.castShadow = true;
-        mainLight.shadow.mapSize.width = 2048;
-        mainLight.shadow.mapSize.height = 2048;
-        mainLight.shadow.bias = -0.0001;
-        mainLight.shadow.normalBias = 0.02;
-        scene.add(mainLight);
-
-        var fillLight = new THREE.DirectionalLight(0x94a3b8, 0.4);
-        fillLight.position.set(-5, 6, -5);
-        scene.add(fillLight);
+        var mainL = new THREE.DirectionalLight(0xffffff, 1.2); mainL.position.set(5, 8, 5); mainL.castShadow = true;
+        mainL.shadow.mapSize.width = 2048; mainL.shadow.mapSize.height = 2048; mainL.shadow.bias = -0.0001; mainL.shadow.normalBias = 0.02; scene.add(mainL);
+        var fillL = new THREE.DirectionalLight(0x94a3b8, 0.4); fillL.position.set(-5, 6, -5); scene.add(fillL);
 
         var controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.maxPolarAngle = Math.PI / 2 + 0.05;
-        controls.minDistance = 0.5;
-        controls.maxDistance = 25;
+        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.maxPolarAngle = Math.PI / 2 + 0.05;
+        controls.minDistance = 0.5; controls.maxDistance = 25;
+        camera.position.set(4, 3, 5); controls.target.set(0, 0.5, 0); controls.update();
 
-        // Default Free View Camera Position & Target
-        camera.position.set(4, 3, 5);
-        controls.target.set(0, 0.5, 0);
-        controls.update();
-
-        controls.addEventListener("change", function () {
-            requestRenderFrame(5);
-        });
-
+        controls.addEventListener("change", function () { requestRenderFrame(5); });
         window.addEventListener("resize", function () {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            setupFisheyePipeline(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight); setupFisheyePipeline(window.innerWidth, window.innerHeight);
             requestRenderFrame(15);
         });
 
-        // Initialize distortion pipeline
         setupFisheyePipeline(window.innerWidth, window.innerHeight);
-
-        global.scene = scene;
-        global.camera = camera;
-        global.renderer = renderer;
-        global.controls = controls;
-
+        Object.assign(global, { scene: scene, camera: camera, renderer: renderer, controls: controls });
         return { scene: scene, camera: camera, renderer: renderer, controls: controls };
     }
 
     function renderFrame(delta) {
-        if (typeof TWEEN !== "undefined") {
-            TWEEN.update();
-        }
+        if (typeof TWEEN !== "undefined") TWEEN.update();
+        var gantry = global.AppState && global.AppState.gantry;
+        if (gantry && (gantry.isScanning || gantry.rotorSpeed > 0 || gantry.activeBatchIndex >= 0)) requestRenderFrame(10);
+        if (global.controls && global.controls.update) global.controls.update();
 
-        var isScanning = global.AppState && global.AppState.gantry && global.AppState.gantry.isScanning;
-        var rpm = global.AppState && global.AppState.gantry ? global.AppState.gantry.rotorSpeed : 0;
-        var activeIdx = global.AppState && global.AppState.gantry ? global.AppState.gantry.activeBatchIndex : -1;
+        if (isEco && demandFrames <= 0) return;
+        if (demandFrames > 0) demandFrames--;
 
-        if (isScanning || rpm > 0 || activeIdx >= 0) {
-            requestRenderFrame(10);
-        }
+        var activeStream = (global.CTVideoStreamService && typeof global.CTVideoStreamService.getActiveStream === "function")
+            ? global.CTVideoStreamService.getActiveStream() : null;
 
-        if (global.controls && global.controls.update) {
-            global.controls.update();
-        }
+        var isStreamingMain = activeStream && activeStream.isStreaming && activeStream.mode === "main";
 
-        if (isEcoModeEnabled && renderDemandCount <= 0) {
-            return;
-        }
+        if (isStreamingMain) {
+            requestRenderFrame(5);
+            var sw = activeStream.width || 1280, sh = activeStream.height || 720;
+            var targetAspect = sw / sh;
+            global.camera.aspect = targetAspect;
 
-        if (renderDemandCount > 0) {
-            renderDemandCount--;
-        }
+            if (typeof activeStream.hfov === "number" && activeStream.hfov > 0) {
+                var hfovRad = (activeStream.hfov * Math.PI) / 180;
+                var vfovRad = 2 * Math.atan(Math.tan(hfovRad / 2) / targetAspect);
+                global.camera.fov = (vfovRad * 180) / Math.PI;
+            }
+            global.camera.updateProjectionMatrix();
 
-        if (isFisheyeEnabled && fisheyeRenderTarget && fisheyeScene && fisheyeCamera) {
-            global.renderer.setRenderTarget(fisheyeRenderTarget);
-            global.renderer.render(global.scene, global.camera);
-            global.renderer.setRenderTarget(null);
-            global.renderer.render(fisheyeScene, fisheyeCamera);
+            var winW = (typeof window !== "undefined" && window.innerWidth) || sw;
+            var winH = (typeof window !== "undefined" && window.innerHeight) || sh;
+            var winAspect = winW / winH;
+
+            var vpW, vpH, vpX, vpY;
+            if (winAspect > targetAspect) {
+                vpH = winH; vpW = vpH * targetAspect;
+                vpX = Math.floor((winW - vpW) / 2); vpY = 0;
+            } else {
+                vpW = winW; vpH = vpW / targetAspect;
+                vpX = 0; vpY = Math.floor((winH - vpH) / 2);
+            }
+
+            global.renderer.setScissorTest(true);
+            global.renderer.setClearColor(0x000000, 1.0);
+            global.renderer.setViewport(0, 0, winW, winH);
+            global.renderer.setScissor(0, 0, winW, winH);
+            global.renderer.clear();
+
+            global.renderer.setViewport(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
+            global.renderer.setScissor(vpX, vpY, Math.floor(vpW), Math.floor(vpH));
+
+            if (isFisheye && rt && fScene && fCam) {
+                setupFisheyePipeline(sw, sh);
+                global.renderer.setRenderTarget(rt);
+                global.renderer.render(global.scene, global.camera);
+                global.renderer.setRenderTarget(null);
+                global.renderer.render(fScene, fCam);
+            } else {
+                global.renderer.setRenderTarget(null);
+                global.renderer.render(global.scene, global.camera);
+            }
+
+            global.renderer.setScissorTest(false);
+            if (typeof window !== "undefined") {
+                window.activeViewportBounds = { x: vpX, y: vpY, w: Math.floor(vpW), h: Math.floor(vpH), winW: winW, winH: winH };
+            }
         } else {
-            global.renderer.setRenderTarget(null);
-            global.renderer.render(global.scene, global.camera);
+            if (typeof window !== "undefined") {
+                window.activeViewportBounds = null;
+                var currAspect = window.innerWidth / window.innerHeight;
+                if (global.camera && Math.abs(global.camera.aspect - currAspect) > 0.001) {
+                    global.camera.aspect = currAspect;
+                    global.camera.fov = 50;
+                    global.camera.updateProjectionMatrix();
+                }
+            }
+            global.renderer.setScissorTest(false);
+            global.renderer.setViewport(0, 0, (typeof window !== "undefined" ? window.innerWidth : 1280), (typeof window !== "undefined" ? window.innerHeight : 720));
+
+            if (isFisheye && rt && fScene && fCam) {
+                global.renderer.setRenderTarget(rt);
+                global.renderer.render(global.scene, global.camera);
+                global.renderer.setRenderTarget(null);
+                global.renderer.render(fScene, fCam);
+            } else {
+                global.renderer.setRenderTarget(null);
+                global.renderer.render(global.scene, global.camera);
+            }
         }
     }
 
-    // Public API
-    global.CTSceneManager = {
-        init: initScene,
-        renderFrame: renderFrame,
-        requestRenderFrame: requestRenderFrame,
-        toggleFisheye: toggleFisheye,
-        updateCameraDistortion: updateCameraDistortion,
-        toggleEcoMode: toggleEcoMode,
-        setGraphicsQuality: setGraphicsQuality,
-        toggleLaserAlignment: toggleLaserAlignment,
-        toggleWaterPhantom: toggleWaterPhantom,
-        toggleAxesHelper: toggleAxesHelper,
-        setupFisheyePipeline: setupFisheyePipeline,
+    var manager = {
+        init: initScene, renderFrame: renderFrame, requestRenderFrame: requestRenderFrame,
+        toggleFisheye: toggleFisheye, updateCameraDistortion: updateCameraDistortion,
+        toggleEcoMode: toggleEcoMode, setGraphicsQuality: setGraphicsQuality,
+        toggleLaserAlignment: toggleLaserAlignment, toggleWaterPhantom: toggleWaterPhantom,
+        toggleAxesHelper: toggleAxesHelper, setupFisheyePipeline: setupFisheyePipeline
     };
 
-    // Exports for global callers
-    global.requestRenderFrame = requestRenderFrame;
-    global.toggleFisheye = toggleFisheye;
-    global.updateCameraDistortion = updateCameraDistortion;
-    global.toggleEcoMode = toggleEcoMode;
-    global.setGraphicsQuality = setGraphicsQuality;
-    global.toggleLaserAlignment = toggleLaserAlignment;
-    global.toggleWaterPhantom = toggleWaterPhantom;
-    global.toggleAxesHelper = toggleAxesHelper;
+    global.CTSceneManager = manager;
+    Object.assign(global, manager);
 })(typeof window !== "undefined" ? window : this);

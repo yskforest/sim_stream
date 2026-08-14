@@ -225,6 +225,31 @@
         return group;
     };
 
+    factory.createRoundedBox = function(width, height, depth, radius, material) {
+        var shape = new THREE.Shape();
+        var x = -width / 2, y = -depth / 2;
+        shape.moveTo(x, y + radius);
+        shape.lineTo(x, y + depth - radius);
+        shape.quadraticCurveTo(x, y + depth, x + radius, y + depth);
+        shape.lineTo(x + width - radius, y + depth);
+        shape.quadraticCurveTo(x + width, y + depth, x + width, y + depth - radius);
+        shape.lineTo(x + width, y + radius);
+        shape.quadraticCurveTo(x + width, y, x + width - radius, y);
+        shape.lineTo(x + radius, y);
+        shape.quadraticCurveTo(x, y, x, y + radius);
+
+        var geo = new THREE.ExtrudeGeometry(shape, {
+            depth: height, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.015, bevelThickness: 0.015
+        });
+        geo.rotateX(-Math.PI / 2);
+        geo.translate(0, -height / 2, 0);
+        var mesh = new THREE.Mesh(geo, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+    };
+
     global.CTMeshFactory = factory;
+    global.createRoundedBox = factory.createRoundedBox;
 })(typeof window !== "undefined" ? window : this);
 

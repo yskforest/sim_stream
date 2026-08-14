@@ -36,15 +36,17 @@ function setCameraView(viewType) {
     var cam = window.camera || (typeof camera !== "undefined" ? camera : null);
     if (!cam) return;
 
-    // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
     if (typeof TWEEN !== "undefined") {
-        new TWEEN.Tween(cam.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+        new TWEEN.Tween(cam.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out)
+            .onUpdate(function() { if (window.requestRenderFrame) window.requestRenderFrame(5); })
+            .start();
         if (ctrl) {
             new TWEEN.Tween(ctrl.target)
                 .to(target.lookAt, 1000)
                 .easing(TWEEN.Easing.Cubic.Out)
                 .onUpdate(function() {
                     if (ctrl) ctrl.update();
+                    if (window.requestRenderFrame) window.requestRenderFrame(5);
                 })
                 .start();
         }
@@ -54,6 +56,7 @@ function setCameraView(viewType) {
             ctrl.target.copy(target.lookAt);
             ctrl.update();
         }
+        if (window.requestRenderFrame) window.requestRenderFrame(15);
     }
 }
 
