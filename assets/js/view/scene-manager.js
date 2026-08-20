@@ -167,7 +167,7 @@
         if (gantry && (gantry.isScanning || gantry.rotorSpeed > 0 || gantry.activeBatchIndex >= 0)) requestRenderFrame(10);
         if (global.controls && global.controls.update) global.controls.update();
 
-        if (isEco && demandFrames <= 0) return;
+        if (demandFrames <= 0) return;
         if (demandFrames > 0) demandFrames--;
 
         var activeStream = (global.CTVideoStreamService && typeof global.CTVideoStreamService.getActiveStream === "function")
@@ -255,7 +255,8 @@
         toggleFisheye: toggleFisheye, updateCameraDistortion: updateCameraDistortion,
         toggleEcoMode: toggleEcoMode, setGraphicsQuality: setGraphicsQuality,
         toggleLaserAlignment: toggleLaserAlignment, toggleWaterPhantom: toggleWaterPhantom,
-        toggleAxesHelper: toggleAxesHelper, setupFisheyePipeline: setupFisheyePipeline
+        toggleAxesHelper: toggleAxesHelper, toggleWorldAxes: toggleAxesHelper,
+        setupFisheyePipeline: setupFisheyePipeline
     };
 
     global.CTSceneManager = manager;

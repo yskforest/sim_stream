@@ -239,6 +239,51 @@ if (hasError) {
         console.error("  [FAIL] global.toggleCameraStream is not a function");
         process.exit(1);
     }
+
+    console.log("\n--- Testing Refactored UI Feature Wiring ---");
+    if (typeof vmContext.toggleWorldAxes !== "function") {
+        console.error("  [FAIL] global.toggleWorldAxes is not a function");
+        process.exit(1);
+    }
+    console.log("  [OK] Legacy world-axes UI handler is exported");
+
+    try {
+        vmContext.onDistortionPresetChange("fisheye");
+        if (vmContext.AppState.distortion.k1 !== 0.4 || vmContext.AppState.distortion.zoom !== 0.95) {
+            console.error("  [FAIL] Distortion preset did not update AppState");
+            process.exit(1);
+        }
+        vmContext.onDistortionParamInput();
+        console.log("  [OK] Distortion preset and slider handlers execute without missing-service errors");
+    } catch (e) {
+        console.error("  [FAIL] Distortion UI handler threw:", e.stack || e.message);
+        process.exit(1);
+    }
+
+    if (!vmContext.CTSequenceRunner || typeof vmContext.CTSequenceRunner.isRunning !== "function") {
+        console.error("  [FAIL] CTSequenceRunner running-state API is unavailable");
+        process.exit(1);
+    }
+    console.log("  [OK] CTSequenceRunner exposes its running state");
+
+    const initialBatchCount = vmContext.AppState.gantry.scanSequence.length;
+    vmContext.addScanBatch();
+    if (vmContext.AppState.gantry.scanSequence.length !== initialBatchCount + 1) {
+        console.error("  [FAIL] addScanBatch did not append a batch");
+        process.exit(1);
+    }
+    const addedBatchIndex = vmContext.AppState.gantry.scanSequence.length - 1;
+    vmContext.updateBatchData(addedBatchIndex, "delay", 7);
+    if (vmContext.AppState.gantry.scanSequence[addedBatchIndex].delay !== 7) {
+        console.error("  [FAIL] updateBatchData did not update the batch");
+        process.exit(1);
+    }
+    vmContext.removeScanBatch(addedBatchIndex);
+    if (vmContext.AppState.gantry.scanSequence.length !== initialBatchCount) {
+        console.error("  [FAIL] removeScanBatch did not remove the batch");
+        process.exit(1);
+    }
+    console.log("  [OK] Batch add, update, and remove operations are functional");
+
     console.log("\nALL 5-LAYER REFACTORING & ARCHITECTURE TESTS PASSED!");
 }
-

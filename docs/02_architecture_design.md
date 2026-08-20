@@ -30,7 +30,7 @@ flowchart TB
     end
 
     subgraph Adapter["Adapter Layer (接続層)"]
-        UIAdapter["UIController / ScanController / PatientController"]
+        UIAdapter["CTUIController"]
         ExtGateway["CTExternalGateway"]
         Protocol["CTProtocolV1"]
         StreamGateway["StreamGateway (HTTP/RTSP Adapter)"]
@@ -40,7 +40,7 @@ flowchart TB
     subgraph Application["Application Layer (応用層)"]
         CommandBus["CTCommandBus"]
         LogService["CTCommandLogService"]
-        SeqService["CTSequenceService / BatchService"]
+        SeqService["CTSequenceRunner (Batch Management)"]
         VideoStreamService["VideoStreamService"]
         ModelRegistry["CTModelRegistryService"]
     end
@@ -395,7 +395,7 @@ ct-3d-sim/
   │   │   └── 20180129131124.png
   │   └── js/
   │       ├── core/                   # ドメイン・アプリケーションコア
-  │       │   ├── main.js             # 3Dシーン初期化、レンダリングループ、Eco-Mode、歪曲パイプライン
+  │       │   ├── main.js             # アプリケーション初期化・レンダリングループのオーケストレーション
   │       │   ├── state.js            # AppState (状態実体 & 説明文マッピング)
   │       │   ├── store.js            # CTStore (AppStateアクセサー & Pub/Sub)
   │       │   ├── hw/                 # 仮想HWドメインシミュレータ
@@ -412,20 +412,14 @@ ct-3d-sim/
   │       │   │   ├── model-registry.js      # GLTF/画像ローダ・インスタンス管理
   │       │   │   ├── video-stream-service.js# 映像ストリーミング制御サービス
   │       │   │   ├── command-log-service.js # コマンド実行ログ管理
-  │       │   │   ├── sequence-service.js    # シーケンス状態管理
-  │       │   │   ├── sequence-runner.js     # スキャンシーケンス実行制御
-  │       │   │   ├── batch-service.js       # バッチキュー管理
-  │       │   │   ├── performance-service.js # FPS/パフォーマンス計測
-  │       │   │   └── tween-utils.js         # アニメーションイージング補助
+  │       │   │   ├── sequence-runner.js     # バッチキュー管理・スキャンシーケンス実行制御
+  │       │   │   └── performance-service.js # FPS/パフォーマンス計測
   │       │   └── profile/
   │       │       ├── default-profile.js     # 標準HWプロファイル定義
   │       │       └── profile-service.js     # 機種差分プロファイルサービス
   │       ├── adapters/               # 外部接続・UIアダプター
   │       │   ├── ui/
-  │       │   │   ├── ui-controller.js       # 全体UI同期・DOMイベント・歪曲UIハンドラ
-  │       │   │   ├── patient-controller.js  # 患者モデル選択・9-DOFトランスフォーム操作
-  │       │   │   ├── scan-controller.js     # スキャン・バッチ操作ハンドラ
-  │       │   │   └── dialog-controller.js   # モーダルダイアログ制御
+  │       │   │   └── ui-controller.js       # UI同期・スキャン/バッチ・患者・ダイアログ・歪曲UIハンドラ
   │       │   ├── external/
   │       │   │   ├── protocol-v1.js         # 通信プロトコル検証・レスポンス生成
   │       │   │   └── external-gateway.js    # 外部公開API Gateway (window.CTExternalGateway)
@@ -433,16 +427,14 @@ ct-3d-sim/
   │       │       ├── canvas-capturer.js     # Canvasフレームキャプチャ・バックプレッシャー制御
   │       │       └── stream-gateway.js      # RTSP / HTTP ストリーミング転送アダプター
   │       └── view/                   # プレゼンテーション・3D表現
+  │           ├── scene-manager.js    # 3Dシーン・Eco-Mode・歪曲パイプライン・表示トグル
   │           ├── camera-presets.js   # カメラアングルプリセット定義
   │           ├── fps-controls.js     # WASD / マウス視線移動 (FPS Walkthrough)
-  │           ├── view-sync.js        # AppStateと3Dメッシュ同期
   │           └── models/
   │               ├── mesh-factory.js        # 3D形状・マテリアル生成ファクトリ
-  │               ├── room-model.js          # 検査室・壁・床
+  │               ├── room-model.js          # 検査室・操作室・サーバーラック・床
   │               ├── gantry-model.js        # ガントリ・回転ローター3Dモデル
-  │               ├── injector-model.js      # インジェクタ3Dモデル
-  │               ├── control-room-model.js  # 操作室・窓・コンソール
-  │               └── server-rack-model.js   # サーバーラック・LEDアニメーション
+  │               └── injector-model.js      # インジェクタ3Dモデル
   ├── scripts/
   │   ├── stream-server.js            # Node.jsベース MJPEG/RTSP 配信サーバー
   │   └── verify-external-interface.js# 外部API/プロトコル自動検証スクリプト

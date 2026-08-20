@@ -194,13 +194,15 @@
         var rpm = Math.round(gantry.rotorSpeed);
 
         updateText("monitor-rpm", rpm + " rpm");
-        updateStyle("monitor-rpm-bar", "width", (rpm / 3) + "%");
+        updateStyle("monitor-rpm-bar", "width", Math.max(0, Math.min(100, rpm)) + "%");
         updateText("monitor-mode", gantry.currentScanMode ? gantry.currentScanMode.toUpperCase() : "SCANO");
         updateText("monitor-rows", String(gantry.detectorRows));
 
-        updateText("status-badge", gantry.isScanning ? "SCANNING" : "STANDBY");
+        updateText("status-badge", gantry.isScanning ? "SCANNING" : (rpm > 0 ? "SPINNING" : "STANDBY"));
         updateClass("status-badge", gantry.isScanning
             ? "px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/60 text-green-400 border border-green-500/50 animate-pulse"
+            : rpm > 0
+            ? "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-900/60 text-yellow-400 border border-yellow-500/50"
             : "px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300");
 
         updateText("monitor-couch-y", Math.round(AppState.couch.y) + "%");
@@ -234,18 +236,20 @@
     }
 
     function renderBatchUI() {
-        var container = byId("batch-list-container");
+        var container = byId("batch-container");
         if (!container || !AppState.gantry.scanSequence) return;
 
         var seq = AppState.gantry.scanSequence;
         var activeIdx = AppState.gantry.activeBatchIndex;
         var syncIdx = AppState.gantry.injectorSyncIndex;
-        var isRunning = activeIdx >= 0;
-        var isAutoRun = global.isSequenceRunning || false;
+        var isAutoRun = !!(global.CTSequenceRunner && global.CTSequenceRunner.isRunning());
+        var isRunning = AppState.gantry.isScanning || isAutoRun || activeIdx >= 0;
 
-        var runBtn = byId("btn-run-seq");
+        var runBtn = byId("btn-run-sequence");
         if (runBtn) {
             runBtn.innerText = isAutoRun ? "Stop Sequence" : "Run All Batches";
+            runBtn.onclick = isAutoRun ? global.stopAutoSequence : global.runAutoSequence;
+            runBtn.disabled = isAutoRun && AppState.gantry.cancelRequested;
             runBtn.className = isAutoRun
                 ? "bg-red-700 hover:bg-red-600 text-white font-bold px-3 py-1 rounded text-xs shadow-md transition-colors"
                 : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-3 py-1 rounded text-xs shadow-md transition-colors";
@@ -401,23 +405,6 @@
             });
             unsubscribers.push(unsubFrames);
         }
-
-        var distEnable = byId("input-distortion-enable");
-        if (distEnable) {
-            addListener(distEnable, "change", function (e) { toggleFisheye(e.target.checked); });
-        }
-
-        var distPreset = byId("select-distortion-preset");
-        if (distPreset) {
-            addListener(distPreset, "change", function (e) {
-                if (e.target.value !== "custom") onDistortionPresetChange(e.target.value);
-            });
-        }
-
-        ["k1", "k2", "k3", "k4", "fx", "fy", "cx", "cy", "zoom"].forEach(function (k) {
-            var slider = byId("slider-distortion-" + k);
-            if (slider) addListener(slider, "input", onDistortionParamInput);
-        });
 
         unsubscribers.push(AppState.subscribe(function (state) {
             syncInteractiveState(state);
@@ -705,25 +692,33 @@
     function onDistortionParamInput() {
         var params = {};
         ["k1", "k2", "k3", "k4", "fx", "fy", "cx", "cy", "zoom"].forEach(function (k) {
-            var el = byId("slider-distortion-" + k), num = byId("num-distortion-" + k);
+            var el = byId("slider-distortion-" + k), valueLabel = byId("val-distortion-" + k);
             var val = el ? parseFloat(el.value) : 0;
-            if (num) num.value = val.toFixed(2);
+            if (valueLabel) valueLabel.innerText = val.toFixed(2);
             params[k] = val;
         });
-        if (global.CTVideoStreamService) global.CTVideoStreamService.updateDistortionParameters(params);
-        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion();
+        var presetSelect = byId("select-distortion-preset");
+        if (presetSelect) presetSelect.value = "custom";
+        if (global.AppState && global.AppState.distortion) {
+            Object.assign(global.AppState.distortion, params);
+        }
+        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(params);
+        if (global.AppState && typeof global.AppState.notify === "function") global.AppState.notify();
     }
 
     function onDistortionPresetChange(presetKey) {
         var p = DISTORTION_PRESETS[presetKey];
         if (!p) return;
         Object.keys(p).forEach(function (k) {
-            var el = byId("slider-distortion-" + k), num = byId("num-distortion-" + k);
+            var el = byId("slider-distortion-" + k), valueLabel = byId("val-distortion-" + k);
             if (el) el.value = String(p[k]);
-            if (num) num.value = Number(p[k]).toFixed(2);
+            if (valueLabel) valueLabel.innerText = Number(p[k]).toFixed(2);
         });
-        if (global.CTVideoStreamService) global.CTVideoStreamService.updateDistortionParameters(p);
-        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion();
+        if (global.AppState && global.AppState.distortion) {
+            Object.assign(global.AppState.distortion, p);
+        }
+        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(p);
+        if (global.AppState && typeof global.AppState.notify === "function") global.AppState.notify();
     }
 
     function resetDistortionParamsUI() {

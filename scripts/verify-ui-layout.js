@@ -13,6 +13,9 @@ function verifyUILayout() {
     const uiJsPath = path.resolve(__dirname, "../assets/js/adapters/ui/ui-controller.js");
     const uiJs = fs.readFileSync(uiJsPath, "utf-8");
 
+    const sceneManagerPath = path.resolve(__dirname, "../assets/js/view/scene-manager.js");
+    const sceneManagerJs = fs.readFileSync(sceneManagerPath, "utf-8");
+
     // 1. Verify Top App Bar & Switcher
     const requiredIds = [
         "top-app-bar",
@@ -148,7 +151,43 @@ function verifyUILayout() {
     }
     console.log(`PASS: All ${requiredFunctions.length} UI controller navigation functions exist`);
 
-    // 3. Verify CSS rules
+    // 3. Verify cross-file UI wiring that simple ID-presence checks cannot catch.
+    const wiringChecks = [
+        {
+            ok: uiJs.includes('byId("batch-container")') && !uiJs.includes('byId("batch-list-container")'),
+            message: 'Batch renderer targets the HTML element "batch-container"'
+        },
+        {
+            ok: uiJs.includes('byId("btn-run-sequence")') && !uiJs.includes('byId("btn-run-seq")'),
+            message: 'Sequence runner UI targets the HTML button "btn-run-sequence"'
+        },
+        {
+            ok: uiJs.includes('global.CTSequenceRunner.isRunning()') &&
+                uiJs.includes('runBtn.onclick = isAutoRun ? global.stopAutoSequence : global.runAutoSequence'),
+            message: 'Sequence UI reads runner state and switches the RUN button to the stop handler'
+        },
+        {
+            ok: html.includes('onclick="toggleWorldAxes()"') && sceneManagerJs.includes('toggleWorldAxes: toggleAxesHelper'),
+            message: 'World-axes HTML handler has a compatible scene-manager export'
+        },
+        {
+            ok: sceneManagerJs.includes('if (demandFrames <= 0) return;') && !sceneManagerJs.includes('if (isEco && demandFrames <= 0) return;'),
+            message: 'Demand-driven rendering skips idle frames in every graphics mode'
+        },
+        {
+            ok: uiJs.includes('byId("val-distortion-" + k)') && !uiJs.includes('updateDistortionParameters'),
+            message: 'Distortion controls update existing value labels without calling a missing service method'
+        }
+    ];
+
+    const failedWiring = wiringChecks.filter(check => !check.ok).map(check => check.message);
+    if (failedWiring.length > 0) {
+        console.error("FAIL: Broken cross-file UI wiring:", failedWiring);
+        process.exit(1);
+    }
+    console.log(`PASS: All ${wiringChecks.length} cross-file UI wiring checks passed`);
+
+    // 4. Verify CSS rules
     const requiredCssRules = [
         "#top-app-bar",
         "#right-sidebar",
