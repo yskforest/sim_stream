@@ -24,6 +24,17 @@
     var lastMouseX = 0;
     var lastMouseY = 0;
 
+    function resetInputState() {
+        Object.keys(keys).forEach(function (k) { keys[k] = false; });
+        isMouseDown = false;
+    }
+
+    function requestFPSRender(count) {
+        if (typeof global.requestRenderFrame === "function") {
+            global.requestRenderFrame(count || 2);
+        }
+    }
+
     function onKeyDown(e) {
         if (!isEnabled) return;
         // Don't capture keys when user is typing in input fields
@@ -32,6 +43,7 @@
             return;
         }
 
+        var handled = true;
         switch (e.code) {
             case "KeyW":
             case "ArrowUp":
@@ -60,10 +72,14 @@
             case "ShiftRight":
                 keys.sprint = true;
                 break;
+            default:
+                handled = false;
         }
+        if (handled && e.cancelable) e.preventDefault();
     }
 
     function onKeyUp(e) {
+        var handled = true;
         switch (e.code) {
             case "KeyW":
             case "ArrowUp":
@@ -92,7 +108,10 @@
             case "ShiftRight":
                 keys.sprint = false;
                 break;
+            default:
+                handled = false;
         }
+        if (isEnabled && handled && e.cancelable) e.preventDefault();
     }
 
     function onMouseDown(e) {
@@ -125,6 +144,7 @@
         pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
 
         updateCameraRotation();
+        requestFPSRender(5);
     }
 
     function updateCameraRotation() {
@@ -139,6 +159,9 @@
 
         var target = camera.position.clone().add(dir);
         camera.lookAt(target);
+        if (window.controls && window.controls.target) {
+            window.controls.target.copy(target);
+        }
     }
 
     function syncAnglesFromCamera() {
@@ -161,12 +184,17 @@
             window.addEventListener("mousedown", onMouseDown, false);
             window.addEventListener("mouseup", onMouseUp, false);
             window.addEventListener("mousemove", onMouseMove, false);
+            window.addEventListener("blur", resetInputState, false);
+            document.addEventListener("visibilitychange", function () {
+                if (document.hidden) resetInputState();
+            }, false);
         },
 
         enable: function enable() {
             isEnabled = true;
             syncAnglesFromCamera();
             updateCameraRotation();
+            requestFPSRender(10);
 
             var hud = document.getElementById("fps-hud-guide");
             if (hud) hud.classList.remove("hidden");
@@ -174,9 +202,8 @@
 
         disable: function disable() {
             isEnabled = false;
-            // Reset pressed key states
-            Object.keys(keys).forEach(function (k) { keys[k] = false; });
-            isMouseDown = false;
+            resetInputState();
+            requestFPSRender(10);
 
             var hud = document.getElementById("fps-hud-guide");
             if (hud) hud.classList.add("hidden");
@@ -224,6 +251,9 @@
                     window.controls.target.copy(camera.position).add(lookDir.multiplyScalar(2.0));
                 }
             }
+
+            // FPS mode is dynamic even while the user is momentarily stationary.
+            requestFPSRender(2);
         }
     };
 

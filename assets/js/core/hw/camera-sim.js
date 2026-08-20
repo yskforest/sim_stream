@@ -140,4 +140,5 @@
     };
 
     global.CameraSim = cameraSim;
-})(window);
+    notifyStateChange();
+})(typeof window !== "undefined" ? window : this);

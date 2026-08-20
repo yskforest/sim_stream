@@ -27,23 +27,39 @@ function setCameraView(viewType) {
         sel.value = viewType;
     }
 
-    // Free または FPS モードへの切替時は現在のカメラ位置・向きを保持して自由操作へ移行
-    if (isFree || isFPS) return;
+    // Free / FPS 間の切替では現在の位置と向きを保持する
+    if (isFree || isFPS) {
+        if (window.requestRenderFrame) window.requestRenderFrame(15);
+        return;
+    }
 
     var target = getCameraTarget(viewType);
     if (!target) return;
 
-    // カメラ位置と注視点を同時補間して、視点遷移を滑らかにする
-    new TWEEN.Tween(camera.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    var cam = window.camera || (typeof camera !== "undefined" ? camera : null);
+    if (!cam) return;
 
-    if (ctrl) {
-        new TWEEN.Tween(ctrl.target)
-            .to(target.lookAt, 1000)
-            .easing(TWEEN.Easing.Cubic.Out)
-            .onUpdate(function() {
-                if (window.controls) window.controls.update();
-            })
+    if (typeof TWEEN !== "undefined") {
+        new TWEEN.Tween(cam.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out)
+            .onUpdate(function() { if (window.requestRenderFrame) window.requestRenderFrame(5); })
             .start();
+        if (ctrl) {
+            new TWEEN.Tween(ctrl.target)
+                .to(target.lookAt, 1000)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .onUpdate(function() {
+                    if (ctrl) ctrl.update();
+                    if (window.requestRenderFrame) window.requestRenderFrame(5);
+                })
+                .start();
+        }
+    } else {
+        cam.position.copy(target.pos);
+        if (ctrl) {
+            ctrl.target.copy(target.lookAt);
+            ctrl.update();
+        }
+        if (window.requestRenderFrame) window.requestRenderFrame(15);
     }
 }
 

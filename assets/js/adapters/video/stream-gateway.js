@@ -1,12 +1,13 @@
 (function attachStreamGateway(global) {
     var listeners = [];
-    var serverUploadUrl = "http://127.0.0.1:8080/upload-frame";
+    var host = (typeof window !== "undefined" && window.location && window.location.hostname) || "127.0.0.1";
+    var serverUploadUrl = "http://" + host + ":8080/upload-frame";
     var isSending = false;
     var serverAvailable = true;
     var lastCheckTime = 0;
     var ws = null;
     var isWsConnected = false;
-    var wsUrl = "ws://127.0.0.1:8080/";
+    var wsUrl = "ws://" + host + ":8080/";
 
     function connectWebSocket() {
         if (ws) return;
@@ -20,22 +21,26 @@
             ws.onclose = function () {
                 isWsConnected = false;
                 ws = null;
-                setTimeout(connectWebSocket, 3000);
             };
             ws.onerror = function () {
                 isWsConnected = false;
+                serverAvailable = false;
             };
         } catch (e) {
             isWsConnected = false;
+            serverAvailable = false;
         }
     }
-    connectWebSocket();
 
     function sendFrameToServer(frameData) {
         if (!frameData) return;
 
         var sendStart = performance.now();
         var blobSize = frameData.size || frameData.byteLength || 0;
+
+        if (!ws && !isWsConnected) {
+            connectWebSocket();
+        }
 
         function recordMetrics(latencyMs) {
             if (global.CTPerformanceService) {

@@ -279,5 +279,6 @@ function buildInjector() {
         }
     });
 
-    scene.add(injectorGroup);
+    var targetScene = (typeof scene !== "undefined" && scene) ? scene : window.scene;
+    if (targetScene) targetScene.add(injectorGroup);
 }

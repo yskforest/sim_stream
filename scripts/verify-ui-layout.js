@@ -13,6 +13,15 @@ function verifyUILayout() {
     const uiJsPath = path.resolve(__dirname, "../assets/js/adapters/ui/ui-controller.js");
     const uiJs = fs.readFileSync(uiJsPath, "utf-8");
 
+    const sceneManagerPath = path.resolve(__dirname, "../assets/js/view/scene-manager.js");
+    const sceneManagerJs = fs.readFileSync(sceneManagerPath, "utf-8");
+
+    const fpsControlsPath = path.resolve(__dirname, "../assets/js/view/fps-controls.js");
+    const fpsControlsJs = fs.readFileSync(fpsControlsPath, "utf-8");
+
+    const cameraPresetsPath = path.resolve(__dirname, "../assets/js/view/camera-presets.js");
+    const cameraPresetsJs = fs.readFileSync(cameraPresetsPath, "utf-8");
+
     // 1. Verify Top App Bar & Switcher
     const requiredIds = [
         "top-app-bar",
@@ -148,7 +157,59 @@ function verifyUILayout() {
     }
     console.log(`PASS: All ${requiredFunctions.length} UI controller navigation functions exist`);
 
-    // 3. Verify CSS rules
+    // 3. Verify cross-file UI wiring that simple ID-presence checks cannot catch.
+    const wiringChecks = [
+        {
+            ok: uiJs.includes('byId("batch-container")') && !uiJs.includes('byId("batch-list-container")'),
+            message: 'Batch renderer targets the HTML element "batch-container"'
+        },
+        {
+            ok: uiJs.includes('byId("btn-run-sequence")') && !uiJs.includes('byId("btn-run-seq")'),
+            message: 'Sequence runner UI targets the HTML button "btn-run-sequence"'
+        },
+        {
+            ok: uiJs.includes('global.CTSequenceRunner.isRunning()') &&
+                uiJs.includes('runBtn.onclick = isAutoRun ? global.stopAutoSequence : global.runAutoSequence'),
+            message: 'Sequence UI reads runner state and switches the RUN button to the stop handler'
+        },
+        {
+            ok: html.includes('onclick="toggleWorldAxes()"') && sceneManagerJs.includes('toggleWorldAxes: toggleAxesHelper'),
+            message: 'World-axes HTML handler has a compatible scene-manager export'
+        },
+        {
+            ok: sceneManagerJs.includes('if (demandFrames <= 0) return;') && !sceneManagerJs.includes('if (isEco && demandFrames <= 0) return;'),
+            message: 'Demand-driven rendering skips idle frames in every graphics mode'
+        },
+        {
+            ok: sceneManagerJs.includes('if (isFpsActive) requestRenderFrame(2);') &&
+                fpsControlsJs.includes('requestFPSRender(2);'),
+            message: 'FPS mode continuously requests frames from the demand-driven renderer'
+        },
+        {
+            ok: cameraPresetsJs.includes('if (isFree || isFPS)') &&
+                !html.includes('onchange="setCameraView(this.value)"'),
+            message: 'Free/FPS transitions preserve the current view and camera selection has one change handler'
+        },
+        {
+            ok: fpsControlsJs.includes('window.addEventListener("blur", resetInputState') &&
+                fpsControlsJs.includes('document.addEventListener("visibilitychange"') &&
+                fpsControlsJs.includes('window.controls.target.copy(target)'),
+            message: 'FPS input resets on focus loss and keeps the OrbitControls target synchronized'
+        },
+        {
+            ok: uiJs.includes('byId("val-distortion-" + k)') && !uiJs.includes('updateDistortionParameters'),
+            message: 'Distortion controls update existing value labels without calling a missing service method'
+        }
+    ];
+
+    const failedWiring = wiringChecks.filter(check => !check.ok).map(check => check.message);
+    if (failedWiring.length > 0) {
+        console.error("FAIL: Broken cross-file UI wiring:", failedWiring);
+        process.exit(1);
+    }
+    console.log(`PASS: All ${wiringChecks.length} cross-file UI wiring checks passed`);
+
+    // 4. Verify CSS rules
     const requiredCssRules = [
         "#top-app-bar",
         "#right-sidebar",

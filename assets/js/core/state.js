@@ -18,6 +18,17 @@ const AppState = {
         cancelRequested: false,
     },
     injector: { a: 0, b: 0 },
+    camera: {
+        isStreaming: false,
+        streamUrl: null,
+        codec: "jpeg",
+        protocol: "ws",
+        fps: 30,
+        width: 1280,
+        height: 720,
+        hfov: 70,
+        mode: "main"
+    },
     patientVisible: true,
     patientModelId: (typeof CTModelsConfig !== "undefined" && typeof CTModelsConfig.getDefaultPatientId === "function") ? CTModelsConfig.getDefaultPatientId() : null,
     patientOffset: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 },
@@ -80,14 +91,18 @@ const Descriptions = {
     real_prep: "Real Prep Mode\n\nリアルタイムプレップモード。",
 };
 const UI = (typeof window !== "undefined" && window.UI) || {};
-const Meshes = (typeof window !== "undefined" && window.Meshes) || {};
-let scene, camera, renderer, controls, mixer, clock;
-
-if (window.CTStore) {
-    window.CTStore.bindState(AppState);
-}
 if (typeof window !== "undefined") {
-    window.AppState = AppState;
     window.UI = UI;
-    window.Meshes = Meshes;
+    window.Meshes = window.Meshes || {};
+    window.AppState = AppState;
+    window.Descriptions = Descriptions;
+}
+if (typeof global !== "undefined") {
+    global.AppState = AppState;
+    global.Descriptions = Descriptions;
+    global.UI = UI;
+}
+
+if (typeof window !== "undefined" && window.CTStore) {
+    window.CTStore.bindState(AppState);
 }

@@ -1,11 +1,15 @@
+// CT 3D Simulator - UI Controller Adapter (Slim & Modular)
 (function attachUIController(global) {
+    "use strict";
+
     var isSetup = false;
     var unsubscribers = [];
-    var mobileMedia = null;
 
-    function byId(id) {
-        return document.getElementById(id);
-    }
+    var byId = function (id) { return document.getElementById(id); };
+    var updateText = function (id, text) { var el = byId(id); if (el && el.innerText !== text) el.innerText = text; };
+    var updateValue = function (id, val) { var el = byId(id); if (el && el.value != val) el.value = val; };
+    var updateClass = function (id, cls) { var el = byId(id); if (el && el.className !== cls) el.className = cls; };
+    var updateStyle = function (id, prop, val) { var el = byId(id); if (el && el.style[prop] !== val) el.style[prop] = val; };
 
     function bindRangeProfile(input, cap) {
         if (!input || !cap) return;
@@ -16,7 +20,6 @@
 
     function applyProfileUIConfig() {
         if (!global.CTProfileService) return;
-
         bindRangeProfile(UI.sliderCouchY, CTProfileService.getAxisCapability("couch", "y"));
         bindRangeProfile(UI.sliderCouchZ, CTProfileService.getAxisCapability("couch", "z"));
         bindRangeProfile(UI.sliderInjectA, CTProfileService.getAxisCapability("injector", "a"));
@@ -24,38 +27,42 @@
 
         var rows = CTProfileService.getDetectorRowsOptions();
         if (!UI.selectDetectorRows) return;
-
         UI.selectDetectorRows.innerHTML = "";
         rows.forEach(function (v) {
-            var option = document.createElement("option");
-            option.value = String(v);
-            option.textContent = v === 320 ? "320 Rows (High-End class)" : v + " Rows";
-            if (AppState.gantry.detectorRows === v) option.selected = true;
-            UI.selectDetectorRows.appendChild(option);
+            var opt = document.createElement("option");
+            opt.value = String(v);
+            opt.textContent = v === 320 ? "320 Rows (High-End class)" : v + " Rows";
+            if (AppState.gantry.detectorRows === v) opt.selected = true;
+            UI.selectDetectorRows.appendChild(opt);
         });
     }
 
-    function executeCommand(source, target, action, valueOrParams) {
-        // UI入力値の単一値/オブジェクト差を吸収してコマンドバスへ統一形式で渡す
-        var params =
-            typeof valueOrParams === "object" && valueOrParams !== null ? valueOrParams : { value: valueOrParams };
-
-        return CTCommandBus.execute({
-            source: source,
-            target: target,
-            action: action,
-            params: params,
-        });
+    function executeCommand(target, action, valOrParams) {
+        var params = typeof valOrParams === "object" && valOrParams !== null ? valOrParams : { value: valOrParams };
+        return CTCommandBus.execute({ source: "ui-console", target: target, action: action, params: params });
     }
 
-    function executeConsoleCommand(target, action, valueOrParams) {
-        return executeCommand("ui-console", target, action, valueOrParams);
-    }
+    function getStreamConfigFromUI() {
+        var protoEl = byId("select-stream-proto") || byId("select-stream-protocol");
+        var fpsEl = byId("select-stream-fps") || byId("input-stream-fps");
+        var qualEl = byId("select-stream-quality") || byId("input-stream-quality");
+        var codecEl = byId("select-stream-codec");
+        var modeEl = byId("select-stream-mode");
+        var wEl = byId("input-stream-width");
+        var hEl = byId("input-stream-height");
+        var fovEl = byId("input-stream-hfov");
 
-    function updateText(id, text) { var el = byId(id); if (el && el.innerText !== text) el.innerText = text; }
-    function updateValue(id, value) { var el = byId(id); if (el && el.value != value) el.value = value; }
-    function updateClass(id, cls) { var el = byId(id); if (el && el.className !== cls) el.className = cls; }
-    function updateStyle(id, prop, val) { var el = byId(id); if (el && el.style[prop] !== val) el.style[prop] = val; }
+        return {
+            width: parseInt(wEl ? wEl.value : "1280", 10) || 1280,
+            height: parseInt(hEl ? hEl.value : "960", 10) || 960,
+            fps: parseInt(fpsEl ? fpsEl.value : "30", 10) || 30,
+            quality: parseFloat(qualEl ? qualEl.value : "0.85") || 0.85,
+            mode: modeEl ? modeEl.value : "main",
+            codec: codecEl ? codecEl.value : "h264",
+            protocol: protoEl ? protoEl.value : "rtsp",
+            hfov: parseFloat(fovEl ? fovEl.value : "60") || 60
+        };
+    }
 
     function syncInteractiveState(state) {
         if (!state) return;
@@ -63,48 +70,41 @@
         var gantry = state.gantry || { rotorSpeed: 0, isScanning: false, activeBatchIndex: -1, detectorRows: 320, xrayVisible: false };
         var injector = state.injector || { a: 0, b: 0 };
 
-        updateText("couch-y-val", couch.y.toFixed(0) + "%");
-        updateText("couch-z-val", couch.z.toFixed(0) + "%");
-        updateText("rotor-speed-val", gantry.rotorSpeed.toFixed(0) + " rpm");
-        updateText("inject-a-val", injector.a.toFixed(0) + "%");
-        updateText("inject-b-val", injector.b.toFixed(0) + "%");
+        [["couch-y-val", couch.y.toFixed(0) + "%"], ["couch-z-val", couch.z.toFixed(0) + "%"],
+         ["rotor-speed-val", gantry.rotorSpeed.toFixed(0) + " rpm"],
+         ["inject-a-val", injector.a.toFixed(0) + "%"], ["inject-b-val", injector.b.toFixed(0) + "%"]
+        ].forEach(function (item) { updateText(item[0], item[1]); });
 
-        updateValue("slider-couch-y", couch.y);
-        updateValue("slider-couch-z", couch.z);
-        updateValue("slider-rotor-speed", gantry.rotorSpeed);
-        updateValue("slider-inject-a", injector.a);
-        updateValue("slider-inject-b", injector.b);
-        updateValue("select-detector-rows", gantry.detectorRows);
+        [["slider-couch-y", couch.y], ["slider-couch-z", couch.z],
+         ["slider-rotor-speed", gantry.rotorSpeed], ["slider-inject-a", injector.a],
+         ["slider-inject-b", injector.b], ["select-detector-rows", gantry.detectorRows]
+        ].forEach(function (item) { updateValue(item[0], item[1]); });
 
         var isRunning = gantry.isScanning || gantry.activeBatchIndex >= 0;
         if (UI.selectDetectorRows) UI.selectDetectorRows.disabled = isRunning;
 
-        if (gantry.isScanning) {
-            updateText("btn-scan-toggle", "Stop Scan");
-            updateClass("btn-scan-toggle", "w-full bg-red-600 hover:bg-red-500 text-sm py-2 rounded shadow-lg transition font-bold");
-        } else {
-            updateText("btn-scan-toggle", "Start Scan");
-            updateClass("btn-scan-toggle", "w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded shadow-lg transition font-bold");
+        updateText("btn-scan-toggle", gantry.isScanning ? "Stop Scan" : "Start Scan");
+        updateClass("btn-scan-toggle", gantry.isScanning
+            ? "w-full bg-red-600 hover:bg-red-500 text-sm py-2 rounded shadow-lg transition font-bold"
+            : "w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded shadow-lg transition font-bold");
+
+        updateText("btn-xray-toggle", gantry.xrayVisible ? "Hide X-Ray Beam" : "Show X-Ray Beam");
+        updateClass("btn-xray-toggle", gantry.xrayVisible
+            ? "w-full bg-yellow-500 hover:bg-yellow-400 text-xs py-1.5 rounded transition font-bold text-black"
+            : "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition");
+
+        var meshes = global.Meshes || window.Meshes;
+        if (meshes && meshes.xrayBeam && meshes.xrayBeam.material) {
+            meshes.xrayBeam.material.opacity = gantry.xrayVisible ? 0.35 : 0.0;
+        }
+        if (meshes && meshes.patientGroup) {
+            meshes.patientGroup.visible = state.patientVisible;
         }
 
-        if (gantry.xrayVisible) {
-            updateText("btn-xray-toggle", "Hide X-Ray Beam");
-            updateClass("btn-xray-toggle", "w-full bg-yellow-500 hover:bg-yellow-400 text-xs py-1.5 rounded transition font-bold text-black");
-        } else {
-            updateText("btn-xray-toggle", "Show X-Ray Beam");
-            updateClass("btn-xray-toggle", "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition");
-        }
-
-        if (Meshes.xrayBeam) Meshes.xrayBeam.material.opacity = gantry.xrayVisible ? 0.35 : 0.0;
-        if (Meshes.patientGroup) Meshes.patientGroup.visible = state.patientVisible;
-
-        if (state.patientVisible) {
-            updateText("btn-patient-toggle", "Hide Patient");
-            updateClass("btn-patient-toggle", "w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold");
-        } else {
-            updateText("btn-patient-toggle", "Show Patient");
-            updateClass("btn-patient-toggle", "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition text-gray-400");
-        }
+        updateText("btn-patient-toggle", state.patientVisible ? "Hide Patient" : "Show Patient");
+        updateClass("btn-patient-toggle", state.patientVisible
+            ? "w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold"
+            : "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition text-gray-400");
 
         if (state.camera) {
             if (state.camera.isStreaming) {
@@ -119,62 +119,96 @@
             }
         }
 
-        if (gantry.isTranslucent) {
-            updateClass("btn-gantry-opaque", "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600");
-            updateClass("btn-gantry-trans", "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold");
-        } else {
-            updateClass("btn-gantry-opaque", "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold");
-            updateClass("btn-gantry-trans", "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600");
-        }
+        updateClass("btn-gantry-opaque", gantry.isTranslucent
+            ? "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600"
+            : "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold");
+        updateClass("btn-gantry-trans", gantry.isTranslucent
+            ? "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
+            : "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600");
 
         applyStateToMeshes(state);
+    }
+
+    function applyStateToMeshes(state) {
+        if (!state) return;
+        var meshes = global.Meshes || window.Meshes;
+        if (!meshes) return;
+
+        var yRange = (global.CTProfileService && typeof global.CTProfileService.getCouchWorldRange === "function")
+            ? global.CTProfileService.getCouchWorldRange("y") : { min: 0.45, max: 0.95 };
+        var targetY = yRange.min + (yRange.max - yRange.min) * (state.couch.y / 100);
+
+        if (meshes.tabletopGroup) meshes.tabletopGroup.position.y = targetY;
+
+        if (meshes.bellows && Array.isArray(meshes.bellows)) {
+            var partHeight = (targetY - 0.22) / meshes.bellows.length;
+            meshes.bellows.forEach(function (mesh, idx) {
+                mesh.scale.y = partHeight / 0.1;
+                mesh.position.y = idx * partHeight + partHeight / 2;
+            });
+        }
+
+        var zRange = (global.CTProfileService && typeof global.CTProfileService.getCouchWorldRange === "function")
+            ? global.CTProfileService.getCouchWorldRange("z") : { min: 2.6, max: -1.0 };
+        if (meshes.tabletopGroup) {
+            meshes.tabletopGroup.position.z = zRange.min + (zRange.max - zRange.min) * (state.couch.z / 100);
+        }
+
+        if (meshes.detectorGroup && meshes.xrayBeam) {
+            var maxRows = (global.CTProfileService && typeof global.CTProfileService.getDetectorRowsMax === "function")
+                ? global.CTProfileService.getDetectorRowsMax() : 320;
+            var ratio = state.gantry.detectorRows / maxRows;
+            meshes.detectorGroup.scale.z = ratio;
+            var baseBeam = (global.CTProfileService && typeof global.CTProfileService.getBeamZScaleAtMax === "function")
+                ? global.CTProfileService.getBeamZScaleAtMax() : 0.16;
+            meshes.xrayBeam.scale.z = baseBeam * ratio;
+        }
+
+        function updateSyringe(fluid, plunger, pct) {
+            if (fluid) fluid.scale.y = Math.max(0.01, 1.0 - pct / 100);
+            if (plunger) plunger.position.y = 0.15 - 0.3 * (pct / 100);
+        }
+        if (meshes.injector) {
+            updateSyringe(meshes.injector.fluidA, meshes.injector.plungerA, state.injector.a);
+            updateSyringe(meshes.injector.fluidB, meshes.injector.plungerB, state.injector.b);
+        }
     }
 
     function updateLastCommandMonitor() {
         if (!global.CTCommandLogService) return;
         var logs = global.CTCommandLogService.list();
         var last = logs.length > 0 ? logs[logs.length - 1] : null;
-        var src = byId("monitor-last-source");
-        var res = byId("monitor-last-result");
-        var err = byId("monitor-last-error");
+        var src = byId("monitor-last-source"), res = byId("monitor-last-result"), err = byId("monitor-last-error");
         if (!src || !res || !err) return;
-
-        if (!last) {
-            src.innerText = "-";
-            res.innerText = "-";
-            err.innerText = "-";
-            return;
-        }
+        if (!last) { src.innerText = "-"; res.innerText = "-"; err.innerText = "-"; return; }
 
         src.innerText = last.source || "-";
         var ok = last.result && last.result.success === true;
-        res.innerText = ok ? "success" : "fail";
-        err.innerText = ok ? "-" : last.result && last.result.error ? last.result.error : "UNKNOWN_ERROR";
+        res.innerText = ok ? "OK" : "FAIL";
+        res.className = ok ? "text-green-400 font-mono" : "text-red-400 font-mono";
+        err.innerText = ok ? "-" : (last.result && last.result.error ? last.result.error : "ERROR");
     }
 
     function updateStateMonitor() {
-        var rpm = Math.round(AppState.gantry.rotorSpeed);
-        updateText("monitor-rpm", rpm + " rpm");
-        updateStyle("monitor-rpm-bar", "width", (rpm / 100) * 100 + "%");
-        updateText("monitor-mode", AppState.gantry.currentScanMode.replace(/_/g, " ").toUpperCase());
-        updateText("monitor-rows", AppState.gantry.detectorRows);
+        var gantry = AppState.gantry;
+        var rpm = Math.round(gantry.rotorSpeed);
 
-        if (AppState.gantry.isScanning) {
-            updateText("status-badge", "SCANNING");
-            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse");
-        } else if (rpm > 0) {
-            updateText("status-badge", "SPINNING");
-            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/50");
-        } else {
-            updateText("status-badge", "STANDBY");
-            updateClass("status-badge", "px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300");
-        }
+        updateText("monitor-rpm", rpm + " rpm");
+        updateStyle("monitor-rpm-bar", "width", Math.max(0, Math.min(100, rpm)) + "%");
+        updateText("monitor-mode", gantry.currentScanMode ? gantry.currentScanMode.toUpperCase() : "SCANO");
+        updateText("monitor-rows", String(gantry.detectorRows));
+
+        updateText("status-badge", gantry.isScanning ? "SCANNING" : (rpm > 0 ? "SPINNING" : "STANDBY"));
+        updateClass("status-badge", gantry.isScanning
+            ? "px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/60 text-green-400 border border-green-500/50 animate-pulse"
+            : rpm > 0
+            ? "px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-900/60 text-yellow-400 border border-yellow-500/50"
+            : "px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300 border border-gray-600 transition-colors duration-300");
 
         updateText("monitor-couch-y", Math.round(AppState.couch.y) + "%");
         updateText("monitor-couch-z", Math.round(AppState.couch.z) + "%");
 
-        var injA = Math.round(AppState.injector.a);
-        var injB = Math.round(AppState.injector.b);
+        var injA = Math.round(AppState.injector.a), injB = Math.round(AppState.injector.b);
         updateText("monitor-inj-a", (100 - injA) + "%");
         updateText("monitor-inj-b", (100 - injB) + "%");
         updateStyle("monitor-inj-a-bar", "width", (100 - injA) + "%");
@@ -184,129 +218,93 @@
     }
 
     function renderCommandLog() {
-        if (!global.CTCommandLogService || !UI.commandLogList) return;
-        var entries = global.CTCommandLogService.list();
-        var latest = entries.slice(-40);
+        var container = byId("command-log-list");
+        if (!container || !global.CTCommandLogService) return;
+        var logs = global.CTCommandLogService.list();
+        if (logs.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 text-center py-2">No commands logged yet</div>';
+            return;
+        }
 
-        UI.commandLogList.innerHTML = "";
-        latest.forEach(function (entry) {
-            var row = document.createElement("div");
-            var ok = entry.result && entry.result.success === true;
-            var action = entry.command ? entry.command.target + "." + entry.command.action : "n/a";
-            var stamp = entry.timestamp ? entry.timestamp.split("T")[1].replace("Z", "") : "--:--:--";
-            var err = ok ? "" : " " + (entry.result && entry.result.error ? entry.result.error : "ERROR");
-            row.className = ok ? "text-green-300" : "text-red-300";
-            row.innerText =
-                "[" + stamp + "] " + (entry.source || "-") + " " + action + " -> " + (ok ? "OK" : "FAIL") + err;
-            UI.commandLogList.appendChild(row);
-        });
-
-        UI.commandLogList.scrollTop = UI.commandLogList.scrollHeight;
+        container.innerHTML = logs.slice().reverse().map(function (item) {
+            var time = new Date(item.timestamp).toLocaleTimeString();
+            var ok = item.result && item.result.success;
+            var color = ok ? "text-green-400" : "text-red-400";
+            var err = !ok && item.result && item.result.error ? " - " + item.result.error : "";
+            return '<div class="flex items-center justify-between border-b border-gray-800 pb-1 pt-1"><div class="flex items-center gap-1.5"><span class="text-gray-500">[' + time + ']</span><span class="text-blue-300 font-bold">' + item.source + '</span><span class="text-gray-400">&rarr;</span><span class="text-purple-300">' + item.target + '.' + item.action + '</span></div><span class="' + color + ' font-bold">' + (ok ? "OK" : "FAIL" + err) + '</span></div>';
+        }).join("");
     }
 
     function renderBatchUI() {
         var container = byId("batch-container");
+        if (!container || !AppState.gantry.scanSequence) return;
+
         var seq = AppState.gantry.scanSequence;
         var activeIdx = AppState.gantry.activeBatchIndex;
         var syncIdx = AppState.gantry.injectorSyncIndex;
-        var countdown = AppState.gantry.countdown;
-        var isRunning = AppState.gantry.isScanning || activeIdx >= 0;
+        var isAutoRun = !!(global.CTSequenceRunner && global.CTSequenceRunner.isRunning());
+        var isRunning = AppState.gantry.isScanning || isAutoRun || activeIdx >= 0;
 
-        container.innerHTML = seq.map(function (batch, index) {
-            var isActive = index === activeIdx;
-            var isSync = index === syncIdx;
-            var opts = ["scano", "dual_scano", "3d_landmark", "helical", "axial", "volume", "dynamic", "real_prep"];
-            var optHtml = opts.map(function(o) {
-                return `<option value="${o}" ${o === batch.mode ? "selected" : ""}>${o === "dual_scano" ? "Dual Scano" : o === "3d_landmark" ? "3D Landmark" : o === "real_prep" ? "Real Prep" : o.charAt(0).toUpperCase() + o.slice(1)}</option>`;
+        var runBtn = byId("btn-run-sequence");
+        if (runBtn) {
+            runBtn.innerText = isAutoRun ? "Stop Sequence" : "Run All Batches";
+            runBtn.onclick = isAutoRun ? global.stopAutoSequence : global.runAutoSequence;
+            runBtn.disabled = isAutoRun && AppState.gantry.cancelRequested;
+            runBtn.className = isAutoRun
+                ? "bg-red-700 hover:bg-red-600 text-white font-bold px-3 py-1 rounded text-xs shadow-md transition-colors"
+                : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-3 py-1 rounded text-xs shadow-md transition-colors";
+        }
+
+        var modes = [
+            { id: "scano", label: "Scano (Topo)" }, { id: "dual_scano", label: "Dual Scano" },
+            { id: "helical", label: "Helical Scan" }, { id: "axial", label: "Axial Scan" },
+            { id: "volume", label: "Volume (3D)" }, { id: "dynamic", label: "Dynamic Perfusion" },
+            { id: "real_prep", label: "RealPrep Monitoring" }, { id: "3d_landmark", label: "3D Landmark" }
+        ];
+
+        container.innerHTML = seq.map(function (b, idx) {
+            var isActive = activeIdx === idx;
+            var isSync = syncIdx === idx;
+            var dis = isRunning ? "disabled" : "";
+            var cardBorder = isActive ? "border-amber-400 ring-2 ring-amber-500/50 bg-slate-800" : "border-slate-700 bg-slate-900/90";
+
+            var optionsHtml = modes.map(function (m) {
+                return '<option value="' + m.id + '" ' + (b.mode === m.id ? "selected" : "") + ">" + m.label + "</option>";
             }).join("");
 
-            var cardCls = "relative rounded-lg p-2 w-[122px] min-w-[122px] max-w-[130px] flex flex-col justify-between transition-all duration-200 " + 
-                (isActive ? "bg-blue-950/90 border-2 border-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.55)] scale-105 z-10" : "bg-slate-900/90 border border-slate-700 hover:border-slate-500");
-
-            var overlay = (isActive && countdown > 0) ? `<div class="absolute inset-0 bg-black/85 rounded-lg flex flex-col items-center justify-center z-20 backdrop-blur-[2px]">
-                <span class="text-[9px] text-yellow-400 font-bold tracking-wider">DELAY</span>
-                <span class="text-xl font-mono text-white font-bold leading-none">${countdown}</span></div>` : "";
-
-            var dis = isRunning ? "disabled" : "";
-            var disCls = isRunning ? "opacity-70 cursor-not-allowed" : "";
-
-            return `<div class="${cardCls}">
-                ${overlay}
-                <div class="text-[10px] text-slate-400 mb-1 w-full flex justify-between items-center">
-                    <span class="font-bold ${isActive ? 'text-yellow-400' : 'text-slate-300'}">#${index + 1} Batch</span>
-                    <button class="btn-del hover:text-red-400 text-sm leading-none font-bold text-slate-400 transition-colors ${(isRunning || seq.length <= 1) ? 'opacity-20 cursor-not-allowed' : ''}" ${(isRunning || seq.length <= 1) ? "disabled" : ""}>&times;</button>
-                </div>
-                <select class="sel-mode w-full bg-slate-950 text-white text-[10px] py-1 px-1 rounded border border-slate-700 outline-none hover:border-blue-500 transition-colors cursor-pointer ${disCls}" ${dis}>
-                    ${optHtml}
-                </select>
-                <div class="w-full flex items-center justify-between my-1 text-[9px] text-slate-400">
-                    <span>Delay:</span>
-                    <div class="flex items-center gap-0.5">
-                        <input type="number" min="0" max="60" value="${batch.delay}" class="inp-delay w-8 bg-slate-950 text-white py-0.5 px-0.5 rounded border border-slate-700 outline-none text-center font-mono text-[9px]" ${dis}>
-                        <span>s</span>
-                    </div>
-                </div>
-                <button class="btn-sync w-full py-0.5 rounded text-[8px] font-bold transition-colors ${isSync ? 'bg-purple-600 text-white border border-purple-400' : 'bg-slate-950 text-slate-400 border border-slate-700 hover:bg-slate-800'} ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}" ${dis}>
-                    INJ: ${isSync ? "ON" : "OFF"}
-                </button>
-            </div>`;
+            return '<div class="batch-card flex flex-col justify-between p-2 rounded-lg border text-xs relative transition-all duration-200 ' + cardBorder + '">' +
+                '<div class="flex items-center justify-between border-b border-slate-700/60 pb-1 mb-1.5">' +
+                    '<span class="font-bold text-slate-300 text-[11px]">#' + (idx + 1) + "</span>" +
+                    '<button class="btn-del text-slate-500 hover:text-red-400 font-bold text-sm px-1 ' + (seq.length <= 1 || isRunning ? "opacity-30 pointer-events-none" : "") + '" ' + dis + ">&times;</button>" +
+                "</div>" +
+                '<div class="space-y-1.5 mb-2">' +
+                    '<select class="sel-mode w-full bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500" ' + dis + ">" + optionsHtml + "</select>" +
+                    '<div class="flex items-center justify-between text-[9px] text-slate-400 bg-slate-950/60 px-1.5 py-0.5 rounded border border-slate-800">' +
+                        "<span>Delay:</span>" +
+                        '<div class="flex items-center gap-0.5"><input type="number" class="inp-delay w-10 bg-transparent text-right font-mono text-white focus:outline-none" value="' + (b.delay || 0) + '" min="0" max="60" ' + dis + " /><span>s</span></div>" +
+                    "</div>" +
+                "</div>" +
+                '<button class="btn-sync w-full py-0.5 rounded text-[8px] font-bold transition-colors ' + (isSync ? "bg-purple-600 text-white border border-purple-400" : "bg-slate-950 text-slate-400 border border-slate-700 hover:bg-slate-800") + " " + (isRunning ? "opacity-50 cursor-not-allowed" : "") + '" ' + dis + ">INJ: " + (isSync ? "ON" : "OFF") + "</button>" +
+            "</div>";
         }).join("");
 
-        Array.from(container.children).forEach(function(card, idx) {
+        Array.from(container.children || []).forEach(function (card, idx) {
             var delBtn = card.querySelector(".btn-del");
-            if(delBtn) delBtn.onclick = function() { removeScanBatch(idx); };
+            if (delBtn) delBtn.onclick = function () { removeScanBatch(idx); };
             var sel = card.querySelector(".sel-mode");
-            if(sel) sel.onchange = function(e) { updateBatchData(idx, "mode", e.target.value); };
+            if (sel) sel.onchange = function (e) { updateBatchData(idx, "mode", e.target.value); };
             var inp = card.querySelector(".inp-delay");
-            if(inp) inp.onchange = function(e) { updateBatchData(idx, "delay", parseInt(e.target.value, 10) || 0); };
+            if (inp) inp.onchange = function (e) { updateBatchData(idx, "delay", parseInt(e.target.value, 10) || 0); };
             var syn = card.querySelector(".btn-sync");
-            if(syn) syn.onclick = function() { setInjectorSync(idx); };
+            if (syn) syn.onclick = function () { setInjectorSync(idx); };
         });
 
         var addBtn = byId("btn-add-batch");
         if (addBtn) {
-            addBtn.disabled = seq.length >= 6 || isRunning;
-            addBtn.className = "flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-semibold py-1.5 rounded text-xs transition " + (addBtn.disabled ? "opacity-30 cursor-not-allowed" : "");
-        }
-
-        var runBtn = byId("btn-run-sequence");
-        if (runBtn) {
-            runBtn.disabled = isRunning && AppState.gantry.cancelRequested;
-            runBtn.onclick = isRunning ? stopAutoSequence : runAutoSequence;
-            runBtn.className = isRunning 
-                ? "flex-[2] bg-red-600 hover:bg-red-500 border border-red-500 text-white font-bold py-1.5 rounded text-xs shadow-md transition " + (AppState.gantry.cancelRequested ? "opacity-60 cursor-not-allowed" : "")
-                : "flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-bold py-1.5 rounded text-xs shadow-md transition";
-            runBtn.innerText = isRunning ? (AppState.gantry.cancelRequested ? "STOPPING..." : "STOP SEQUENCE") : "RUN SEQUENCE";
-        }
-    }
-
-    function bindPanelControls() {
-        // Modern sidebar tab/dock navigation is managed by initModernNavigation()
-    }
-
-    function applyConfigToUIInputs() {
-        if (!global.CTConfigService) return;
-        var get = global.CTConfigService.get.bind(global.CTConfigService);
-
-        var codecSelect = byId("select-stream-codec");
-        var protoSelect = byId("select-stream-proto");
-        var fpsSelect = byId("select-stream-fps");
-        var qualSelect = byId("select-stream-quality");
-        var widthInput = byId("input-stream-width");
-        var heightInput = byId("input-stream-height");
-        var hfovInput = byId("input-stream-hfov");
-
-        if (codecSelect) codecSelect.value = get("camera.codec", "h264");
-        if (protoSelect) protoSelect.value = get("camera.protocol", "rtsp");
-        if (fpsSelect) fpsSelect.value = String(get("camera.fps", 30));
-        if (qualSelect) qualSelect.value = String(get("camera.quality", 0.92));
-        if (widthInput) widthInput.value = String(get("camera.width", 1280));
-        if (heightInput) heightInput.value = String(get("camera.height", 960));
-        if (hfovInput) hfovInput.value = String(get("camera.hfov", 60));
-
-        var detRows = get("hardware.defaultDetectorRows", 320);
-        if (AppState && AppState.gantry && typeof detRows === "number") {
-            AppState.gantry.detectorRows = detRows;
+            addBtn.disabled = isRunning || seq.length >= 6;
+            addBtn.className = (seq.length >= 6 || isRunning)
+                ? "bg-slate-800 text-slate-600 border border-slate-700 px-3 py-1 rounded text-xs font-semibold cursor-not-allowed opacity-50"
+                : "bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white border border-slate-600 hover:border-blue-400 px-3 py-1 rounded text-xs font-semibold shadow transition-colors";
         }
     }
 
@@ -318,171 +316,146 @@
         UI.sliderRotorSpeed = byId("slider-rotor-speed");
         UI.sliderInjectA = byId("slider-inject-a");
         UI.sliderInjectB = byId("slider-inject-b");
-        UI.btnScanToggle = byId("btn-scan-toggle");
-        UI.btnXrayToggle = byId("btn-xray-toggle");
         UI.selectDetectorRows = byId("select-detector-rows");
-        UI.btnPatientToggle = byId("btn-patient-toggle");
-        UI.commandLogList = byId("command-log-list");
-        UI.btnClearCommandLog = byId("btn-clear-command-log");
-        UI.btnCameraStreamToggle = byId("btn-camera-stream-toggle");
-        UI.selectStreamCodec = byId("select-stream-codec");
-        UI.selectStreamProto = byId("select-stream-proto");
-        UI.streamUrlDisplay = byId("stream-url-display");
+        UI.selectCameraView = byId("select-camera-view");
+        UI.selectFocus = byId("select-focus");
 
-        applyConfigToUIInputs();
         applyProfileUIConfig();
-        bindPanelControls();
+        initModernNavigation();
 
-        if (UI.btnCameraStreamToggle) {
-            UI.btnCameraStreamToggle.addEventListener("click", function () {
-                if (global.CameraSim) {
-                    var state = global.CameraSim.getState();
-                    if (state.isStreaming) {
-                        executeConsoleCommand("camera", "stopStream");
-                    } else {
-                        var codec = UI.selectStreamCodec ? UI.selectStreamCodec.value : "mjpeg";
-                        var proto = UI.selectStreamProto ? UI.selectStreamProto.value : "http";
-                        var fpsSelect = byId("select-stream-fps");
-                        var qualSelect = byId("select-stream-quality");
-                        var widthInput = byId("input-stream-width");
-                        var heightInput = byId("input-stream-height");
-                        var hfovInput = byId("input-stream-hfov");
+        function addListener(el, event, handler) {
+            if (!el) return;
+            el.addEventListener(event, handler);
+            unsubscribers.push(function () { el.removeEventListener(event, handler); });
+        }
 
-                        var fps = fpsSelect ? parseInt(fpsSelect.value, 10) : 30;
-                        var quality = qualSelect ? parseFloat(qualSelect.value) : 0.92;
-                        var width = widthInput ? parseInt(widthInput.value, 10) : 1280;
-                        var height = heightInput ? parseInt(heightInput.value, 10) : 960;
-                        var hfov = hfovInput ? parseInt(hfovInput.value, 10) : 60;
+        [["sliderCouchY", "couch", "y"], ["sliderCouchZ", "couch", "z"],
+         ["sliderInjectA", "injector", "a"], ["sliderInjectB", "injector", "b"]
+        ].forEach(function (def) {
+            addListener(UI[def[0]], "input", function (e) {
+                executeCommand(def[1], "setPosition", { axis: def[2], value: parseFloat(e.target.value) });
+            });
+        });
 
-                        executeConsoleCommand("camera", "startStream", { codec: codec, protocol: proto, fps: fps, quality: quality, width: width, height: height, hfov: hfov });
-                    }
+        addListener(UI.sliderRotorSpeed, "input", function (e) {
+            executeCommand("gantry", "setRotorSpeed", { speed: parseFloat(e.target.value) });
+        });
+
+        addListener(UI.selectDetectorRows, "change", function (e) {
+            executeCommand("gantry", "setDetectorRows", { rows: parseInt(e.target.value, 10) });
+        });
+
+        addListener(UI.selectCameraView, "change", function (e) {
+            if (typeof global.setCameraView === "function") global.setCameraView(e.target.value);
+        });
+
+        addListener(UI.selectFocus, "change", function (e) {
+            handleFocusChange(e.target.value);
+        });
+
+        var btnClearLog = byId("btn-clear-command-log");
+        if (btnClearLog) {
+            addListener(btnClearLog, "click", function () {
+                if (global.CTCommandLogService) global.CTCommandLogService.clear();
+            });
+        }
+
+        var btnStreamToggle = byId("btn-camera-stream-toggle");
+        if (btnStreamToggle) {
+            addListener(btnStreamToggle, "click", toggleCameraStream);
+        }
+
+        var streamMode = byId("select-stream-mode"),
+            streamCodec = byId("select-stream-codec"),
+            streamProto = byId("select-stream-proto") || byId("select-stream-protocol"),
+            streamFps = byId("select-stream-fps") || byId("input-stream-fps"),
+            streamQual = byId("select-stream-quality") || byId("input-stream-quality"),
+            streamW = byId("input-stream-width"),
+            streamH = byId("input-stream-height"),
+            streamHfov = byId("input-stream-hfov");
+
+        function updateStreamConfig() {
+            var cfg = getStreamConfigFromUI();
+            if (global.CTVideoStreamService) {
+                global.CTVideoStreamService.start(cfg);
+            }
+            if (global.requestRenderFrame) global.requestRenderFrame(15);
+        }
+
+        [streamMode, streamCodec, streamProto, streamFps, streamQual, streamW, streamH, streamHfov].filter(Boolean).forEach(function (el) {
+            addListener(el, "change", function () {
+                if (AppState.camera && AppState.camera.isStreaming) updateStreamConfig();
+            });
+            if (el.tagName === "INPUT") {
+                addListener(el, "input", function () {
+                    if (AppState.camera && AppState.camera.isStreaming) updateStreamConfig();
+                });
+            }
+        });
+
+        if (global.CTStreamGateway && typeof global.CTStreamGateway.subscribeFrames === "function") {
+            var prevBlobUrl = null;
+            var unsubFrames = global.CTStreamGateway.subscribeFrames(function (blob) {
+                var img = byId("stream-preview-img");
+                if (img && blob && typeof URL !== "undefined") {
+                    if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
+                    prevBlobUrl = URL.createObjectURL(blob);
+                    img.src = prevBlobUrl;
                 }
             });
+            unsubscribers.push(unsubFrames);
         }
 
-        UI.sliderCouchY.addEventListener("input", function (e) {
-            executeConsoleCommand("couch", "moveY", parseFloat(e.target.value));
-        });
-        UI.sliderCouchZ.addEventListener("input", function (e) {
-            executeConsoleCommand("couch", "moveZ", parseFloat(e.target.value));
-        });
-        UI.sliderInjectA.addEventListener("input", function (e) {
-            executeConsoleCommand("injector", "setA", parseFloat(e.target.value));
-        });
-        UI.sliderInjectB.addEventListener("input", function (e) {
-            executeConsoleCommand("injector", "setB", parseFloat(e.target.value));
-        });
-        UI.selectDetectorRows.addEventListener("change", function (e) {
-            executeConsoleCommand("gantry", "setDetectorRows", parseInt(e.target.value, 10));
-        });
-
-        if (UI.btnClearCommandLog && global.CTCommandLogService) {
-            UI.btnClearCommandLog.addEventListener("click", function () {
-                global.CTCommandLogService.clear();
-                renderCommandLog();
-                updateLastCommandMonitor();
-            });
-        }
-
-        renderBatchUI();
-        renderCommandLog();
-        unsubscribers.push(AppState.subscribe(syncInteractiveState));
-        var lastBatchState = "";
-        unsubscribers.push(AppState.subscribe(function () {
+        unsubscribers.push(AppState.subscribe(function (state) {
+            syncInteractiveState(state);
             updateStateMonitor();
-            var currentState = JSON.stringify([
-                AppState.gantry.scanSequence, 
-                AppState.gantry.activeBatchIndex, 
-                AppState.gantry.injectorSyncIndex, 
-                AppState.gantry.countdown, 
-                AppState.gantry.isScanning,
-                AppState.gantry.cancelRequested
-            ]);
-            if (currentState !== lastBatchState) {
-                lastBatchState = currentState;
-                renderBatchUI();
-            }
+            renderBatchUI();
         }));
 
         if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
-            unsubscribers.push(
-                global.CTCommandLogService.subscribe(function () {
-                    renderCommandLog();
-                    updateLastCommandMonitor();
-                }),
-            );
+            unsubscribers.push(global.CTCommandLogService.subscribe(function () {
+                renderCommandLog();
+                updateLastCommandMonitor();
+            }));
         }
 
+        syncInteractiveState(AppState);
+        updateStateMonitor();
+        renderBatchUI();
+        renderCommandLog();
+        updatePatientGlbSelectOptions();
+        syncAllPatientTransformUI();
 
-        if (typeof global.syncAllPatientTransformUI === "function") {
-            global.syncAllPatientTransformUI();
-        }
-
-        initModernNavigation();
         isSetup = true;
     }
 
     function initModernNavigation() {
         if (!global.CTConfigService) return;
         var get = global.CTConfigService.get.bind(global.CTConfigService);
-
-        var mockEnabled = get("ui.consoleMockEnabled", true);
-        setConsoleMockMode(mockEnabled);
-
-        var rightOpen = get("ui.rightSidebarOpen", true);
-        var dockOpen = get("ui.bottomDockOpen", true);
-
-        toggleRightSidebar(rightOpen);
-        toggleBottomDock(dockOpen);
-
-        var defRightTab = get("ui.defaultRightTab", "view");
-        var defDockTab = get("ui.defaultDockTab", "scan");
-        switchRightTab(defRightTab);
-        switchDockTab(defDockTab);
-    }
-
-    function switchLeftTab(tabId) {
-        // Left dock merged into bottom dock
+        setConsoleMockMode(get("ui.consoleMockEnabled", true));
+        toggleRightSidebar(get("ui.rightSidebarOpen", true));
+        toggleBottomDock(get("ui.bottomDockOpen", true));
+        switchRightTab(get("ui.defaultRightTab", "view"));
+        switchDockTab(get("ui.defaultDockTab", "scan"));
     }
 
     function switchRightTab(tabId) {
         var sidebar = byId("right-sidebar");
         if (!sidebar) return;
-        var tabBtns = sidebar.querySelectorAll(".tab-btn");
-        var tabPanes = sidebar.querySelectorAll(".tab-pane");
-
-        tabBtns.forEach(function (btn) {
-            btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
-        });
-        tabPanes.forEach(function (pane) {
-            pane.classList.toggle("active", pane.id === "tab-right-" + tabId);
-        });
+        sidebar.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === tabId); });
+        sidebar.querySelectorAll(".tab-pane").forEach(function (p) { p.classList.toggle("active", p.id === "tab-right-" + tabId); });
     }
 
     function switchDockTab(tabId) {
         var dock = byId("bottom-dock");
         if (!dock) return;
-        var tabBtns = dock.querySelectorAll(".tab-btn");
-        var tabPanes = dock.querySelectorAll(".tab-pane");
-
-        tabBtns.forEach(function (btn) {
-            btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
-        });
-        tabPanes.forEach(function (pane) {
-            pane.classList.toggle("active", pane.id === "tab-dock-" + tabId);
-        });
-    }
-
-    function toggleLeftSidebar(forceState) {
-        // Left dock merged into bottom dock
+        dock.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === tabId); });
+        dock.querySelectorAll(".tab-pane").forEach(function (p) { p.classList.toggle("active", p.id === "tab-dock-" + tabId); });
     }
 
     function toggleRightSidebar(forceState) {
-        var sidebar = byId("right-sidebar");
-        var btn = byId("btn-toggle-right-sidebar");
-        var dock = byId("bottom-dock");
+        var sidebar = byId("right-sidebar"), btn = byId("btn-toggle-right-sidebar"), dock = byId("bottom-dock");
         if (!sidebar) return;
-
         var isCollapsed = typeof forceState === "boolean" ? !forceState : !sidebar.classList.contains("is-collapsed");
         sidebar.classList.toggle("is-collapsed", isCollapsed);
         if (btn) btn.classList.toggle("active", !isCollapsed);
@@ -490,10 +463,8 @@
     }
 
     function toggleBottomDock(forceState) {
-        var dock = byId("bottom-dock");
-        var btn = byId("btn-toggle-dock");
+        var dock = byId("bottom-dock"), btn = byId("btn-toggle-dock");
         if (!dock) return;
-
         var isCollapsed = typeof forceState === "boolean" ? !forceState : !dock.classList.contains("is-collapsed");
         dock.classList.toggle("is-collapsed", isCollapsed);
         if (btn) btn.classList.toggle("active", !isCollapsed);
@@ -503,150 +474,278 @@
         if (!AppState.ui) AppState.ui = {};
         AppState.ui.consoleMockEnabled = !!enabled;
 
-        var btnMock = byId("pill-mode-mock");
-        var btnExt = byId("pill-mode-external");
-        var mockOverlay = byId("mock-console-overlay");
-        var scanConsoleBody = byId("mock-console-controls");
-        var statusBadge = byId("status-app-mode");
+        var btnMock = byId("pill-mode-mock"), btnExt = byId("pill-mode-external"),
+            mockOverlay = byId("mock-console-overlay"), scanBody = byId("mock-console-controls"),
+            statusBadge = byId("status-app-mode");
 
         if (btnMock && btnExt) {
             btnMock.classList.toggle("active", enabled);
             btnExt.classList.toggle("active-external", !enabled);
         }
-
-        if (mockOverlay && scanConsoleBody) {
-            if (enabled) {
-                mockOverlay.classList.add("hidden");
-                scanConsoleBody.classList.remove("opacity-50", "pointer-events-none");
-            } else {
-                mockOverlay.classList.remove("hidden");
-                scanConsoleBody.classList.add("opacity-50", "pointer-events-none");
-            }
+        if (mockOverlay && scanBody) {
+            mockOverlay.classList.toggle("hidden", enabled);
+            scanBody.classList.toggle("opacity-50", !enabled);
+            scanBody.classList.toggle("pointer-events-none", !enabled);
         }
-
         if (statusBadge) {
-            if (enabled) {
-                statusBadge.innerText = "MOCK CONSOLE";
-                statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-600/50";
-            } else {
-                statusBadge.innerText = "EXTERNAL CONSOLE";
-                statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-300 border border-emerald-500/50";
+            statusBadge.innerText = enabled ? "MOCK CONSOLE" : "EXTERNAL CONSOLE";
+            statusBadge.className = enabled
+                ? "text-[10px] font-bold px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-600/50"
+                : "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-300 border border-emerald-500/50";
+        }
+    }
+
+    function toggleCameraStream() {
+        var isStreaming = AppState.camera && AppState.camera.isStreaming;
+        if (isStreaming) {
+            CTCommandBus.execute({ source: "ui-console", target: "camera", action: "stopStream" });
+        } else {
+            var cfg = getStreamConfigFromUI();
+            CTCommandBus.execute({ source: "ui-console", target: "camera", action: "startStream", params: cfg });
+        }
+        if (global.requestRenderFrame) global.requestRenderFrame(30);
+    }
+
+    function toggleScan() {
+        var isScan = !AppState.gantry.isScanning;
+        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setScanning", params: { value: isScan } });
+        if (typeof TWEEN !== "undefined") {
+            new TWEEN.Tween(AppState.gantry).to({ rotorSpeed: isScan ? 100 : 0 }, 2000)
+                .easing(TWEEN.Easing.Quadratic.InOut).onUpdate(function () { AppState.notify(); }).start();
+        }
+    }
+
+    function setScanMode(mode) {
+        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "scanMode", value: mode } });
+    }
+
+    function toggleXRay() {
+        var isVisible = !AppState.gantry.xrayVisible;
+        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setXrayVisible", params: { value: isVisible } });
+        if (isVisible) setGantryOpacity(true);
+    }
+
+    function setGantryOpacity(isTranslucent) {
+        if (!Meshes.materials) return;
+        var opacity = isTranslucent ? 0.2 : 1.0;
+        if (Meshes.materials.gantry) {
+            Meshes.materials.gantry.transparent = isTranslucent;
+            Meshes.materials.gantry.opacity = opacity;
+            Meshes.materials.gantry.depthWrite = !isTranslucent;
+            Meshes.materials.gantry.needsUpdate = true;
+        }
+        if (Meshes.materials.tunnel) {
+            Meshes.materials.tunnel.transparent = isTranslucent;
+            Meshes.materials.tunnel.opacity = isTranslucent ? 0.35 : 1.0;
+            Meshes.materials.tunnel.transmission = isTranslucent ? 0.9 : 0.0;
+            Meshes.materials.tunnel.depthWrite = !isTranslucent;
+            Meshes.materials.tunnel.needsUpdate = true;
+        }
+        if (Array.isArray(Meshes.materials.accessories)) {
+            Meshes.materials.accessories.forEach(function (mat) {
+                mat.transparent = isTranslucent;
+                mat.opacity = opacity;
+                mat.depthWrite = !isTranslucent;
+                mat.needsUpdate = true;
+            });
+        }
+        if (window.AppState) AppState.update("gantry", "isTranslucent", isTranslucent);
+    }
+
+    function togglePatient() {
+        CTCommandBus.execute({ source: "ui-console", target: "simulator", action: "setPatientVisible", params: { value: !AppState.patientVisible } });
+    }
+
+    async function changePatientGlbModel(modelId) {
+        AppState.patientModelId = modelId;
+        if (window.CTModelRegistry && window.Meshes && window.Meshes.patientGroup) {
+            while (Meshes.patientGroup.children.length > 0) {
+                Meshes.patientGroup.remove(Meshes.patientGroup.children[0]);
+            }
+            var instance = await CTModelRegistry.spawnModelInstance(modelId, { instanceId: "patient_primary", attachTo: "couch", visible: AppState.patientVisible });
+            if (instance && instance.sceneObject) {
+                Meshes.patientGroup.add(instance.sceneObject);
+                Meshes.patientGroup.visible = AppState.patientVisible;
+                var pos = instance.transform.position || [0, -0.1, 0.45], rot = instance.transform.rotation || [-90, 0, 0];
+                window.AppState.patientOffset = { x: pos[0], y: pos[1], z: pos[2], rotX: rot[0], rotY: rot[1], rotZ: rot[2] };
+                syncAllPatientTransformUI();
             }
         }
+    }
+
+    function updatePatientGlbSelectOptions() {
+        var selectEl = byId("select-patient-glb");
+        if (!selectEl) return;
+        var models = (window.CTModelsConfig && typeof window.CTModelsConfig.getAllModels === "function") ? window.CTModelsConfig.getAllModels() : [];
+        selectEl.innerHTML = "";
+        models.forEach(function (m) {
+            var opt = document.createElement("option");
+            opt.value = m.id;
+            opt.textContent = m.name || (m.id + " (" + (m.path || "").split("/").pop() + ")");
+            if (window.AppState && window.AppState.patientModelId === m.id) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+    }
+
+    async function spawnCustomGlbFromInput() {
+        var inputEl = byId("input-add-glb-path");
+        if (!inputEl || !inputEl.value.trim()) return;
+        var path = inputEl.value.trim();
+        var modelId = path.split("/").pop().replace(".glb", "") || "custom_glb";
+
+        if (window.CTModelsConfig) {
+            window.CTModelsConfig.registerModel({ id: modelId, name: "Custom GLB: " + modelId, path: path, category: "patient", attachTo: "couch" });
+            updatePatientGlbSelectOptions();
+        }
+        try {
+            await CTModelRegistry.spawnModelInstance(modelId, { path: path, attachTo: "couch" });
+            alert("Successfully spawned model: " + modelId);
+            inputEl.value = "";
+        } catch (err) {
+            alert("Failed to load GLB from path: " + path);
+        }
+    }
+
+    function _updatePatientTransform(key, valStr) {
+        if (!window.AppState) return;
+        if (!window.AppState.patientOffset) {
+            window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
+        }
+        if (!key) return syncAllPatientTransformUI();
+
+        var val = parseFloat(valStr);
+        if (isNaN(val)) return;
+        window.AppState.patientOffset[key] = val;
+        syncAllPatientTransformUI();
+
+        var po = window.AppState.patientOffset;
+        if (window.CTModelRegistry) {
+            window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+                position: [po.x, po.y, po.z], rotation: [po.rotX, po.rotY, po.rotZ], scale: [po.scaleX, po.scaleY, po.scaleZ]
+            });
+        }
+    }
+
+    function onPatientPosSliderChange(key) { var el = byId("slider-patient-pos-" + key); if (el) _updatePatientTransform(key, el.value); }
+    function onPatientPosInputChange(key) { var el = byId("input-patient-pos-" + key); if (el) _updatePatientTransform(key, el.value); }
+
+    function syncAllPatientTransformUI() {
+        if (!window.AppState || !window.AppState.patientOffset) return;
+        var po = window.AppState.patientOffset;
+        ["x", "y", "z", "rotX", "rotY", "rotZ", "scaleX", "scaleY", "scaleZ"].forEach(function (k) {
+            var input = byId("input-patient-pos-" + k), slider = byId("slider-patient-pos-" + k);
+            var val = typeof po[k] === "number" ? po[k] : (k.startsWith("scale") ? 1.0 : 0);
+            if (input) input.value = k.startsWith("rot") ? val.toFixed(0) : val.toFixed(2);
+            if (slider) slider.value = String(val);
+        });
+    }
+
+    function resetPatientPositionUI() {
+        if (!window.AppState) return;
+        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
+        syncAllPatientTransformUI();
+        var po = window.AppState.patientOffset;
+        if (window.CTModelRegistry) {
+            window.CTModelRegistry.updateInstanceTransform("patient_primary", {
+                position: [po.x, po.y, po.z], rotation: [po.rotX, po.rotY, po.rotZ], scale: [po.scaleX, po.scaleY, po.scaleZ]
+            });
+        }
+    }
+
+    function showInfoDialog(key) {
+        if (!key || key === "none") return;
+        var dialog = byId("info-dialog"), title = byId("info-dialog-title"), desc = byId("info-dialog-desc");
+        if (!dialog || !title || !desc) return;
+        var text = (global.Descriptions && global.Descriptions[key]) || "Description not found.";
+        var lines = text.split("\n\n");
+        title.innerText = lines[0];
+        desc.innerText = lines[1] || "";
+        dialog.classList.remove("hidden", "opacity-0");
+    }
+
+    function hideInfoDialog() {
+        var dialog = byId("info-dialog"), focus = byId("select-focus");
+        if (dialog) dialog.classList.add("hidden");
+        if (focus) focus.value = "";
+    }
+
+    function handleFocusChange(value) {
+        if (!value) return;
+        if (value === "XrayTube" || value === "Detector") setGantryOpacity(true);
+        else if (value === "Gantry" || value === "TouchPanel") setGantryOpacity(false);
+        if (typeof global.setCameraView === "function") global.setCameraView("focus_" + value);
+        showInfoDialog(value);
     }
 
     function teardownUI() {
-        while (unsubscribers.length > 0) {
-            var off = unsubscribers.pop();
-            if (typeof off === "function") off();
-        }
+        while (unsubscribers.length > 0) unsubscribers.pop()();
         isSetup = false;
     }
-
-    global.CTUIController = {
-        setup: setupUI,
-        teardown: teardownUI,
-        renderBatchQueue: renderBatchUI,
-        renderMonitor: updateStateMonitor,
-        renderCommandLog: renderCommandLog,
-        switchLeftTab: switchLeftTab,
-        switchRightTab: switchRightTab,
-        switchDockTab: switchDockTab,
-        toggleLeftSidebar: toggleLeftSidebar,
-        toggleRightSidebar: toggleRightSidebar,
-        toggleBottomDock: toggleBottomDock,
-        setConsoleMockMode: setConsoleMockMode,
-    };
-
-    global.switchLeftTab = switchLeftTab;
-    global.switchRightTab = switchRightTab;
-    global.switchDockTab = switchDockTab;
-    global.toggleLeftSidebar = toggleLeftSidebar;
-    global.toggleRightSidebar = toggleRightSidebar;
-    global.toggleBottomDock = toggleBottomDock;
-    global.setConsoleMockMode = setConsoleMockMode;
-    global.updateStateMonitor = updateStateMonitor;
-    global.renderBatchUI = renderBatchUI;
 
     var DISTORTION_PRESETS = {
         standard: { k1: 0.20, k2: 0.05, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.00 },
         action_cam: { k1: 0.12, k2: -0.02, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.05 },
-        ultra_wide: { k1: 0.45, k2: 0.18, k3: 0.05, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 0.90 },
+        fisheye: { k1: 0.40, k2: 0.15, k3: -0.02, k4: 0.00, fx: 0.90, fy: 0.90, cx: 0.50, cy: 0.50, zoom: 0.95 },
         pincushion: { k1: -0.15, k2: 0.00, k3: 0.00, k4: 0.00, fx: 1.00, fy: 1.00, cx: 0.50, cy: 0.50, zoom: 1.00 }
     };
 
-    global.onDistortionParamInput = function onDistortionParamInput() {
-        var k1 = parseFloat(byId("slider-distortion-k1").value) || 0;
-        var k2 = parseFloat(byId("slider-distortion-k2").value) || 0;
-        var k3 = parseFloat(byId("slider-distortion-k3").value) || 0;
-        var k4 = parseFloat(byId("slider-distortion-k4").value) || 0;
-        var fx = parseFloat(byId("slider-distortion-fx").value) || 1.0;
-        var fy = parseFloat(byId("slider-distortion-fy").value) || 1.0;
-        var cx = parseFloat(byId("slider-distortion-cx").value) || 0.5;
-        var cy = parseFloat(byId("slider-distortion-cy").value) || 0.5;
-        var zoom = parseFloat(byId("slider-distortion-zoom").value) || 1.0;
-
-        updateText("val-distortion-k1", k1.toFixed(2));
-        updateText("val-distortion-k2", k2.toFixed(2));
-        updateText("val-distortion-k3", k3.toFixed(2));
-        updateText("val-distortion-k4", k4.toFixed(2));
-        updateText("val-distortion-fx", fx.toFixed(2));
-        updateText("val-distortion-fy", fy.toFixed(2));
-        updateText("val-distortion-cx", cx.toFixed(2));
-        updateText("val-distortion-cy", cy.toFixed(2));
-        updateText("val-distortion-zoom", zoom.toFixed(2));
-
+    function onDistortionParamInput() {
+        var params = {};
+        ["k1", "k2", "k3", "k4", "fx", "fy", "cx", "cy", "zoom"].forEach(function (k) {
+            var el = byId("slider-distortion-" + k), valueLabel = byId("val-distortion-" + k);
+            var val = el ? parseFloat(el.value) : 0;
+            if (valueLabel) valueLabel.innerText = val.toFixed(2);
+            params[k] = val;
+        });
         var presetSelect = byId("select-distortion-preset");
         if (presetSelect) presetSelect.value = "custom";
-
         if (global.AppState && global.AppState.distortion) {
-            var d = global.AppState.distortion;
-            d.k1 = k1; d.k2 = k2; d.k3 = k3; d.k4 = k4;
-            d.fx = fx; d.fy = fy; d.cx = cx; d.cy = cy;
-            d.zoom = zoom;
+            Object.assign(global.AppState.distortion, params);
         }
+        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(params);
+        if (global.AppState && typeof global.AppState.notify === "function") global.AppState.notify();
+    }
 
-        if (typeof global.updateCameraDistortion === "function") {
-            global.updateCameraDistortion();
-        }
-    };
-
-    global.onDistortionPresetChange = function onDistortionPresetChange(presetKey) {
+    function onDistortionPresetChange(presetKey) {
         var p = DISTORTION_PRESETS[presetKey];
         if (!p) return;
-
-        updateValue("slider-distortion-k1", p.k1);
-        updateValue("slider-distortion-k2", p.k2);
-        updateValue("slider-distortion-k3", p.k3);
-        updateValue("slider-distortion-k4", p.k4);
-        updateValue("slider-distortion-fx", p.fx);
-        updateValue("slider-distortion-fy", p.fy);
-        updateValue("slider-distortion-cx", p.cx);
-        updateValue("slider-distortion-cy", p.cy);
-        updateValue("slider-distortion-zoom", p.zoom);
-
-        updateText("val-distortion-k1", p.k1.toFixed(2));
-        updateText("val-distortion-k2", p.k2.toFixed(2));
-        updateText("val-distortion-k3", p.k3.toFixed(2));
-        updateText("val-distortion-k4", p.k4.toFixed(2));
-        updateText("val-distortion-fx", p.fx.toFixed(2));
-        updateText("val-distortion-fy", p.fy.toFixed(2));
-        updateText("val-distortion-cx", p.cx.toFixed(2));
-        updateText("val-distortion-cy", p.cy.toFixed(2));
-        updateText("val-distortion-zoom", p.zoom.toFixed(2));
-
+        Object.keys(p).forEach(function (k) {
+            var el = byId("slider-distortion-" + k), valueLabel = byId("val-distortion-" + k);
+            if (el) el.value = String(p[k]);
+            if (valueLabel) valueLabel.innerText = Number(p[k]).toFixed(2);
+        });
         if (global.AppState && global.AppState.distortion) {
             Object.assign(global.AppState.distortion, p);
         }
+        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(p);
+        if (global.AppState && typeof global.AppState.notify === "function") global.AppState.notify();
+    }
 
-        if (typeof global.updateCameraDistortion === "function") {
-            global.updateCameraDistortion();
-        }
+    function resetDistortionParamsUI() {
+        var select = byId("select-distortion-preset");
+        if (select) select.value = "standard";
+        onDistortionPresetChange("standard");
+    }
+
+    global.CTUIController = {
+        setup: setupUI, teardown: teardownUI, renderBatchQueue: renderBatchUI,
+        renderMonitor: updateStateMonitor, renderCommandLog: renderCommandLog,
+        switchRightTab: switchRightTab, switchDockTab: switchDockTab,
+        toggleRightSidebar: toggleRightSidebar, toggleBottomDock: toggleBottomDock,
+        setConsoleMockMode: setConsoleMockMode
     };
 
-    global.resetDistortionParamsUI = function resetDistortionParamsUI() {
-        var presetSelect = byId("select-distortion-preset");
-        if (presetSelect) presetSelect.value = "standard";
-        global.onDistortionPresetChange("standard");
-    };
-})(window);
+    Object.assign(global, {
+        switchLeftTab: function () {}, switchRightTab: switchRightTab, switchDockTab: switchDockTab,
+        toggleLeftSidebar: function () {}, toggleRightSidebar: toggleRightSidebar, toggleBottomDock: toggleBottomDock,
+        setConsoleMockMode: setConsoleMockMode, updateStateMonitor: updateStateMonitor, renderBatchUI: renderBatchUI,
+        toggleScan: toggleScan, setScanMode: setScanMode, toggleXRay: toggleXRay, setGantryOpacity: setGantryOpacity,
+        togglePatient: togglePatient, changePatientGlbModel: changePatientGlbModel,
+        updatePatientGlbSelectOptions: updatePatientGlbSelectOptions, spawnCustomGlbFromInput: spawnCustomGlbFromInput,
+        onPatientPosSliderChange: onPatientPosSliderChange, onPatientPosInputChange: onPatientPosInputChange,
+        syncAllPatientTransformUI: syncAllPatientTransformUI, resetPatientPositionUI: resetPatientPositionUI,
+        showInfoDialog: showInfoDialog, hideInfoDialog: hideInfoDialog, handleFocusChange: handleFocusChange,
+        onDistortionParamInput: onDistortionParamInput, onDistortionPresetChange: onDistortionPresetChange,
+        resetDistortionParamsUI: resetDistortionParamsUI, toggleCameraStream: toggleCameraStream
+    });
+})(typeof window !== "undefined" ? window : this);
