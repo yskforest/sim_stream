@@ -351,21 +351,22 @@ function buildCTScanner() {
                         { instanceId: instId, attachTo: modelDef.attachTo || "couch", visible: true }
                     );
 
-                    if (isPrimary && instance && instance.transform && window.AppState) {
+                    if (isPrimary && instance && instance.transform && window.CTStore) {
                         patientGroup.visible = AppState.patientVisible;
                         const pos = instance.transform.position || [0, -0.1, 0.45];
                         const rot = instance.transform.rotation || [-90, 0, 0];
-                        window.AppState.patientOffset = {
+                        const scale = instance.transform.scale || [1, 1, 1];
+                        window.CTStore.setRoot("patientOffset", {
                             x: pos[0],
                             y: pos[1],
                             z: pos[2],
                             rotX: rot[0],
                             rotY: rot[1],
-                            rotZ: rot[2]
-                        };
-                        if (typeof window.syncAllPatientTransformUI === "function") {
-                            window.syncAllPatientTransformUI();
-                        }
+                            rotZ: rot[2],
+                            scaleX: scale[0],
+                            scaleY: scale[1],
+                            scaleZ: scale[2]
+                        });
                     }
                 }
             }
@@ -387,3 +388,5 @@ function buildCTScanner() {
     var targetScene = (typeof scene !== "undefined" && scene) ? scene : window.scene;
     if (targetScene) targetScene.add(ctGroup);
 }
+
+window.buildCTScanner = buildCTScanner;

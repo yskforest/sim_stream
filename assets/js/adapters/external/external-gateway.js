@@ -18,6 +18,13 @@
         return { requestId: requestId || null, success: true, payload: payload || null, error: null };
     }
 
+    function detach(payload) {
+        if (payload === undefined || payload === null) return payload;
+        return JSON.parse(JSON.stringify(payload, function (key, value) {
+            return typeof value === "function" ? undefined : value;
+        }));
+    }
+
     function execute(command) {
         var normalized = Object.assign({}, command || {});
         if (!normalized.source) normalized.source = "external";
@@ -40,7 +47,7 @@
                     : { code: "INTERNAL_ERROR", message: "Command execution failed." },
             );
         }
-        return buildSuccess(requestId, result.state !== undefined ? result.state : result);
+        return buildSuccess(requestId, detach(result.state !== undefined ? result.state : result));
     }
 
     // Public API for console app integration.
@@ -49,7 +56,11 @@
             return execute(command);
         },
         getState: function getState() {
-            return execute({ requestId: "state-" + Date.now(), target: "simulator", action: "getState" });
+            var response = execute({ requestId: "state-" + Date.now(), target: "simulator", action: "getState" });
+            if (response.success && global.CTStore && global.CTStore.getSnapshot) {
+                response.payload = global.CTStore.getSnapshot();
+            }
+            return response;
         },
         subscribe: function subscribe(onStateChange) {
             if (typeof onStateChange !== "function") {
@@ -59,7 +70,8 @@
                 return function noop() {};
             }
             return global.CTStore.subscribe(function (state) {
-                onStateChange(buildSuccess(null, state));
+                var snapshot = global.CTStore.getSnapshot ? global.CTStore.getSnapshot() : state;
+                onStateChange(buildSuccess(null, snapshot));
             });
         },
         diagnostics: {

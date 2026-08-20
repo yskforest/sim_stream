@@ -33,6 +33,8 @@ window.Meshes = window.Meshes || {};
         if (typeof global.buildControlRoom === "function") global.buildControlRoom();
         if (typeof global.buildServerRack === "function") global.buildServerRack();
 
+        if (global.CTSceneSync) global.CTSceneSync.setup();
+
         // 5. Initialize UI Controller & Bindings
         if (global.CTUIController && typeof global.CTUIController.setup === "function") {
             global.CTUIController.setup();
@@ -43,13 +45,11 @@ window.Meshes = window.Meshes || {};
             global.setCameraView("free");
         }
 
-        if (global.AppState && typeof global.AppState.notify === "function") {
-            global.AppState.notify();
-        }
+        if (global.CTStore) global.CTStore.notify();
 
         // 7. Subscribe demand render triggers
-        if (global.AppState && typeof global.AppState.subscribe === "function") {
-            global.AppState.subscribe(function () {
+        if (global.CTStore) {
+            global.CTStore.subscribe(function () {
                 global.requestRenderFrame(20);
             });
         }
@@ -81,7 +81,7 @@ window.Meshes = window.Meshes || {};
             isRotorMoving = true;
             var radPerSec = (global.AppState.gantry.rotorSpeed * Math.PI * 2) / 60;
             global.Meshes.rotor.rotation.z += radPerSec * delta;
-            global.AppState.gantry.angle = global.Meshes.rotor.rotation.z % (Math.PI * 2);
+            global.CTStore.patch("gantry", { angle: global.Meshes.rotor.rotation.z % (Math.PI * 2) }, { silent: true });
         }
 
         // Update server rack LEDs
@@ -113,4 +113,3 @@ window.Meshes = window.Meshes || {};
         init();
     }
 })(typeof window !== "undefined" ? window : this);
-

@@ -199,6 +199,18 @@ function verifyUILayout() {
         {
             ok: uiJs.includes('byId("val-distortion-" + k)') && !uiJs.includes('updateDistortionParameters'),
             message: 'Distortion controls update existing value labels without calling a missing service method'
+        },
+        {
+            ok: uiJs.includes('["sliderCouchY", "couch", "moveY"]') &&
+                uiJs.includes('["sliderCouchZ", "couch", "moveZ"]') &&
+                uiJs.includes('["sliderInjectA", "injector", "setA"]') &&
+                uiJs.includes('["sliderInjectB", "injector", "setB"]'),
+            message: 'HW sliders use actions supported by the command bus'
+        },
+        {
+            ok: uiJs.includes('executeCommand("gantry", "setRotorSpeed", { value:') &&
+                uiJs.includes('executeCommand("gantry", "setDetectorRows", { value:'),
+            message: 'Gantry settings use the canonical params.value contract'
         }
     ];
 

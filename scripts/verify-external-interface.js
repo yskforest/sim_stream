@@ -37,6 +37,7 @@ const sandbox = {
 sandbox.window = sandbox;
 const ctx = vm.createContext(sandbox);
 
+loadScript(ctx, "assets/js/core/commands/command-catalog.js");
 loadScript(ctx, "assets/js/adapters/external/protocol-v1.js");
 
 const proto = ctx.CTProtocolV1;
@@ -89,6 +90,9 @@ assert(invalidCameraCodec.error.code === "VALIDATION_ERROR", "Expected VALIDATIO
 // Full integration mock test
 loadScript(ctx, "assets/js/core/store.js");
 loadScript(ctx, "assets/js/core/state.js");
+loadScript(ctx, "assets/js/core/profile/default-profile.js");
+loadScript(ctx, "assets/js/core/profile/profile-service.js");
+ctx.CTProfileService.init(ctx.CTDefaultProfile);
 loadScript(ctx, "assets/js/core/config/models-config.js");
 loadScript(ctx, "assets/js/core/services/model-registry.js");
 loadScript(ctx, "assets/js/core/hw/couch-sim.js");
@@ -96,6 +100,7 @@ loadScript(ctx, "assets/js/core/hw/gantry-sim.js");
 loadScript(ctx, "assets/js/core/hw/injector-sim.js");
 loadScript(ctx, "assets/js/core/hw/camera-sim.js");
 loadScript(ctx, "assets/js/core/services/video-stream-service.js");
+loadScript(ctx, "assets/js/core/services/simulator-service.js");
 loadScript(ctx, "assets/js/core/commands/command-bus.js");
 loadScript(ctx, "assets/js/adapters/external/external-gateway.js");
 
@@ -192,6 +197,67 @@ const gatewayInjRes = ctx.CTExternalGateway.send({
 });
 assert(gatewayInjRes.success === true, "Expected injector setA success");
 assert(ctx.AppState.injector.a === 80, "Expected injector a to be 80");
+
+// Test every HW Settings contract that is wired from the built-in UI.
+const gatewayCouchYRes = ctx.CTExternalGateway.send({
+    requestId: "req-couch-y",
+    target: "couch",
+    action: "moveY",
+    params: { value: 40 },
+});
+assert(gatewayCouchYRes.success === true, "Expected couch moveY success");
+assert(ctx.AppState.couch.y === 40, "Expected couch y to be 40");
+
+const gatewayInjBRes = ctx.CTExternalGateway.send({
+    requestId: "req-inj-b",
+    target: "injector",
+    action: "setB",
+    params: { value: 35 },
+});
+assert(gatewayInjBRes.success === true, "Expected injector setB success");
+assert(ctx.AppState.injector.b === 35, "Expected injector b to be 35");
+
+const gatewayRotorRes = ctx.CTExternalGateway.send({
+    requestId: "req-rotor",
+    target: "gantry",
+    action: "setRotorSpeed",
+    params: { value: 80 },
+});
+assert(gatewayRotorRes.success === true, "Expected gantry setRotorSpeed success");
+assert(ctx.AppState.gantry.rotorSpeed === 80, "Expected rotorSpeed to be 80");
+
+const gatewayRowsRes = ctx.CTExternalGateway.send({
+    requestId: "req-rows",
+    target: "gantry",
+    action: "setDetectorRows",
+    params: { value: 160 },
+});
+assert(gatewayRowsRes.success === true, "Expected gantry setDetectorRows success");
+assert(ctx.AppState.gantry.detectorRows === 160, "Expected detectorRows to be 160");
+
+const invalidRowsRes = ctx.CTExternalGateway.send({
+    requestId: "req-invalid-rows",
+    target: "gantry",
+    action: "setDetectorRows",
+    params: { value: 999 },
+});
+assert(invalidRowsRes.success === false, "Expected unsupported detector rows to fail");
+assert(invalidRowsRes.error.code === "INVALID_DETECTOR_ROWS", "Expected INVALID_DETECTOR_ROWS");
+
+Object.entries(ctx.CTCommandCatalog.definitions).forEach(([name, definition]) => {
+    assert(typeof definition.validate === "function", `Expected validator for ${name}`);
+    assert(typeof definition.run === "function", `Expected handler for ${name}`);
+});
+
+const publicState = ctx.CTExternalGateway.getState();
+assert(publicState.success === true, "Expected getState success");
+assert(publicState.payload.listeners === undefined, "Expected public state to omit internal listeners");
+publicState.payload.couch.y = 999;
+assert(ctx.AppState.couch.y !== 999, "Expected public state to be a detached snapshot");
+
+const commandState = ctx.CTExternalGateway.send({ target: "simulator", action: "getState" });
+commandState.payload.couch.z = 999;
+assert(ctx.AppState.couch.z !== 999, "Expected send(getState) to return a detached snapshot");
 
 // Test camera streaming
 const gatewayRes = ctx.CTExternalGateway.send({

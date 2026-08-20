@@ -66,6 +66,8 @@
 - **保守性**: UIから直接HW状態を変更せず、CommandBus/Store経由で一元管理
 - **可読性**: レイヤ分離されたディレクトリ構成
 - **互換性**: モダンブラウザ動作（ES Modules / WebGL）
+- **依存方向**: Domain/ApplicationはDOM・UI関数・Three.jsシーングラフを直接参照せず、StoreとAdapterを介して連携
+- **外部状態保護**: 外部I/Fへ返す状態は内部Stateと参照を共有しない読み取り用スナップショットとする
 - **リアルタイム性**: 映像配信の低遅延化および60fpsリアルタイム歪曲シェーダーレンダリング
 - **パフォーマンス（Eco Mode）**: アニメーションやユーザー操作がない静止時は再描画ループをスキップし、CPU/GPUリソース消費を最小化
 - **文字コード / 改行**: UTF-8（BOMなし）/ LF
@@ -81,3 +83,5 @@
 8. `config.json` の設定値（カメラ・モデル・ネットワーク）が起動時に正しく反映される
 9. 画面静止時に余計なレンダリング計算がスキップされ、低負荷で動作する
 10. `scripts/verify-external-interface.js` による外部I/Fの自動検証テストがすべて合格する
+11. Command Catalogに登録された全コマンドがvalidatorとhandlerを持ち、UIと外部I/Fで同じ検証・実行経路を使用する
+12. `scripts/verify-refactored-architecture.js` により、SequenceからUI/Sceneへの逆依存、UIから3Dモデルへの直接同期、旧DOMスクリプトローダーが存在しないことを検証できる

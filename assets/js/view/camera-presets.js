@@ -107,3 +107,5 @@ function getCameraTarget(type) {
             return { pos: new THREE.Vector3(4, 3, 5), lookAt: new THREE.Vector3(0, 0.5, 0) };
     }
 }
+
+Object.assign(window, { setCameraView, getCameraTarget });

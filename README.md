@@ -2,6 +2,7 @@
 
 Webブラウザ上で動作するCT装置（ガントリ・寝台・インジェクタ）の3Dリアルタイムシミュレータです。  
 UI操作と外部APIからの遠隔操作を同一の制御基盤（Command Bus）で共通処理します。
+起動は`assets/js/app/bootstrap.js`をComposition RootとするES Module方式で、コマンド定義は`CTCommandCatalog`、状態更新と購読は`CTStore`へ集約しています。
 
 ---
 
@@ -35,6 +36,8 @@ npx serve .
 外部I/Fプロトコルおよび動作を自動検証します。
 ```bash
 node scripts/verify-external-interface.js
+node scripts/verify-refactored-architecture.js
+node scripts/verify-ui-layout.js
 ```
 
 ### 2.4 リアルタイム動画配信サーバーの起動 (HTTP MJPEG / RTSP)

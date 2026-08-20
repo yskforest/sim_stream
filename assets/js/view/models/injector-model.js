@@ -282,3 +282,5 @@ function buildInjector() {
     var targetScene = (typeof scene !== "undefined" && scene) ? scene : window.scene;
     if (targetScene) targetScene.add(injectorGroup);
 }
+
+window.buildInjector = buildInjector;

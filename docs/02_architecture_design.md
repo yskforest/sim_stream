@@ -25,6 +25,7 @@ flowchart TB
         UIPanels["UI Panels (HTML/CSS)"]
         FPSGuide["FPS HUD Guide Badge"]
         View3D["Three.js 3D View / WebGL Canvas"]
+        SceneSync["CTSceneSync (Store → Three.js)"]
         FPSCtrl["CTFPSControls (WASD / Mouse Drag)"]
         DistortionPass["OpenCV Fisheye Distortion Pass\n(GLSL ShaderMaterial + Gamma 2.2)"]
     end
@@ -39,8 +40,10 @@ flowchart TB
 
     subgraph Application["Application Layer (応用層)"]
         CommandBus["CTCommandBus"]
+        CommandCatalog["CTCommandCatalog (Validation + Handler Registry)"]
         LogService["CTCommandLogService"]
         SeqService["CTSequenceRunner (Batch Management)"]
+        SimulatorService["CTSimulatorService (Patient / Model Use Cases)"]
         VideoStreamService["VideoStreamService"]
         ModelRegistry["CTModelRegistryService"]
     end
@@ -66,16 +69,21 @@ flowchart TB
     UIAdapter -->|execute command| CommandBus
     ExtGateway -->|validate| Protocol
     ExtGateway -->|execute command| CommandBus
+    CommandBus -->|validate & execute| CommandCatalog
     
-    CommandBus -->|Check rules| Profile
-    CommandBus -->|Control| Gantry
-    CommandBus -->|Control| Couch
-    CommandBus -->|Control| Injector
-    CommandBus -->|Control stream/params/distortion| Camera
-    CommandBus -->|Control stream| VideoStreamService
-    CommandBus -->|Manage models & 9-DOF| ModelRegistry
-    CommandBus -->|dispatch| Store
+    CommandCatalog -->|Check rules| Profile
+    CommandCatalog -->|Control| Gantry
+    CommandCatalog -->|Control| Couch
+    CommandCatalog -->|Control| Injector
+    CommandCatalog -->|Control stream/params/distortion| Camera
+    Camera -->|Control stream| VideoStreamService
+    SimulatorService -->|Manage models & 9-DOF| ModelRegistry
+    Gantry -->|dispatch| Store
+    Couch -->|dispatch| Store
+    Injector -->|dispatch| Store
+    Camera -->|dispatch| Store
     CommandBus -->|add log| LogService
+    CommandCatalog -->|patient/model use cases| SimulatorService
 
     View3D -->|Render Scene to RenderTarget| DistortionPass
     DistortionPass -->|Render Distorted Frame| View3D
@@ -86,7 +94,8 @@ flowchart TB
 
     Store -->|Manages| State
     State -.->|Notify change & Demand render| UIPanels
-    State -.->|Update models/camera/distortion| View3D
+    State -.->|Notify| SceneSync
+    SceneSync -->|Update models/camera/distortion| View3D
 ```
 
 ---
@@ -383,7 +392,7 @@ stateDiagram-v2
 ```text
 ct-3d-sim/
   ├── config.json                     # ルート外部設定ファイル (カメラ/モデル/ネットワーク)
-  ├── index.html                      # メインHTML・UIパネル構造・スクリプトローダー
+  ├── index.html                      # メインHTML・UIパネル構造・ES Moduleエントリ
   ├── .gitattributes                  # LFS追跡および改行コード定義
   ├── assets/
   │   ├── css/
@@ -394,6 +403,8 @@ ct-3d-sim/
   │   ├── image/                      # 看板・テクスチャ画像 (Git LFS管理)
   │   │   └── 20180129131124.png
   │   └── js/
+  │       ├── app/
+  │       │   └── bootstrap.js        # Composition Root（設定ロードと互換モジュール初期化）
   │       ├── core/                   # ドメイン・アプリケーションコア
   │       │   ├── main.js             # アプリケーション初期化・レンダリングループのオーケストレーション
   │       │   ├── state.js            # AppState (状態実体 & 説明文マッピング)
@@ -404,7 +415,8 @@ ct-3d-sim/
   │       │   │   ├── injector-sim.js # インジェクタ制御ロジック
   │       │   │   └── camera-sim.js   # 仮想カメラ・歪曲制御ロジック
   │       │   ├── commands/
-  │       │   │   └── command-bus.js  # コマンドバス（UI/外部共通の実行経路）
+  │       │   │   ├── command-catalog.js # コマンド定義・検証・handlerの単一情報源
+  │       │   │   └── command-bus.js     # Catalog実行とログ記録に限定したコマンドバス
   │       │   ├── config/
   │       │   │   ├── config-service.js # 外部config.json非同期ローダー
   │       │   │   └── models-config.js  # 3Dモデル定義・登録管理
@@ -413,6 +425,7 @@ ct-3d-sim/
   │       │   │   ├── video-stream-service.js# 映像ストリーミング制御サービス
   │       │   │   ├── command-log-service.js # コマンド実行ログ管理
   │       │   │   ├── sequence-runner.js     # バッチキュー管理・スキャンシーケンス実行制御
+  │       │   │   ├── simulator-service.js   # 患者・モデル操作ユースケース（UI非依存）
   │       │   │   └── performance-service.js # FPS/パフォーマンス計測
   │       │   └── profile/
   │       │       ├── default-profile.js     # 標準HWプロファイル定義
@@ -428,6 +441,7 @@ ct-3d-sim/
   │       │       └── stream-gateway.js      # RTSP / HTTP ストリーミング転送アダプター
   │       └── view/                   # プレゼンテーション・3D表現
   │           ├── scene-manager.js    # 3Dシーン・Eco-Mode・歪曲パイプライン・表示トグル
+  │           ├── scene-sync.js       # Store状態から3Dモデルへの一方向同期
   │           ├── camera-presets.js   # カメラアングルプリセット定義
   │           ├── fps-controls.js     # WASD / マウス視線移動 (FPS Walkthrough)
   │           └── models/
@@ -500,6 +514,15 @@ flowchart TB
   node scripts/verify-external-interface.js
   ```
   全ターゲット（gantry, couch, injector, simulator, camera）および全アクション（歪曲、9-DOF、ストリーミング、視点移動）の自動テストを実行。
+- **コマンド契約検証**:
+  - Catalogの全定義がvalidatorとhandlerを持つこと
+  - HW Settingsのaction名と`params.value`がCatalog契約に一致すること
+  - 未対応Detector Rowsが`INVALID_DETECTOR_ROWS`になること
+- **依存境界検証**:
+  - `index.html`が`app/bootstrap.js`のみをES Moduleエントリとして使用すること
+  - Command BusとProtocolが同一Catalogを利用すること
+  - AppStateが購読機能を持たない純粋データであること
+  - Sequence RunnerがUI関数・Three.js Meshを参照しないこと
 - **映像配信検証**:
   - MJPEG over HTTP ストリームのブラウザ再生確認（`http://localhost:8080/stream/main.mjpg`）
   - RTSP ストリーム (VLC メディアプレイヤー / ffmpeg での受信確認)
@@ -507,3 +530,26 @@ flowchart TB
   - OpenCV Fisheye パラメータ計算と sRGB ガンマ 2.2 補正後のレンダリング結果の目視およびキャプチャ確認
 - **Eco Mode 検証**:
   - アイドル時の GPU/CPU 使用率およびフレームスキップ（`renderDemandCount`）の動作確認
+
+---
+
+## 11. 段階的リアーキテクチャ方針（2026-08）
+
+### 11.1 実施済み段階
+
+1. **契約修復**: Couch/Injector/Rotator/Detector RowsのUIコマンドを外部API v1と同じaction・parameterへ統一。
+2. **Command Catalog導入**: Protocolの許可一覧とCommand Busの分岐を`CTCommandCatalog`へ統合。コマンド追加時の定義箇所を一か所に限定。
+3. **状態・表示分離**: AppStateを純粋データ化し、購読・更新・外部snapshot生成をCTStoreへ集約。3D同期をCTSceneSyncへ分離。
+4. **Use Case分離**: 患者／モデル操作をCTSimulatorServiceへ、スキャンモード差分をSequence Runner内の宣言的Scan Planへ移動。
+5. **ES Module起動**: `assets/js/app/bootstrap.js`をComposition Rootとし、設定ロード後に互換モジュールを決定的順序で初期化。
+
+### 11.2 互換ブリッジ
+
+外部契約である`window.CTExternalGateway`は維持する。既存HTMLのインラインイベントと旧モジュール間参照を壊さず移行するため、内部サービスの一部は当面`window`へ公開される。新規コードはCatalog／Store／明示的Serviceを使用し、暗黙グローバルを追加しない。
+
+### 11.3 次段階
+
+- HTMLのインラインイベントを`data-action`＋イベント委譲へ置換
+- 互換モジュールを個別に`export/import`へ変換
+- 最終的にブラウザ公開グローバルを`window.CTExternalGateway`へ限定
+- `docs/03_external_api_spec.md`のアクション表をCommand Catalogから生成

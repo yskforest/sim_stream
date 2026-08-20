@@ -57,9 +57,9 @@
             height: parseInt(hEl ? hEl.value : "960", 10) || 960,
             fps: parseInt(fpsEl ? fpsEl.value : "30", 10) || 30,
             quality: parseFloat(qualEl ? qualEl.value : "0.85") || 0.85,
-            mode: modeEl ? modeEl.value : "main",
-            codec: codecEl ? codecEl.value : "h264",
-            protocol: protoEl ? protoEl.value : "rtsp",
+            mode: modeEl && modeEl.value ? modeEl.value : "main",
+            codec: codecEl && codecEl.value ? codecEl.value : "h264",
+            protocol: protoEl && protoEl.value ? protoEl.value : "rtsp",
             hfov: parseFloat(fovEl ? fovEl.value : "60") || 60
         };
     }
@@ -93,14 +93,6 @@
             ? "w-full bg-yellow-500 hover:bg-yellow-400 text-xs py-1.5 rounded transition font-bold text-black"
             : "w-full bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600 transition");
 
-        var meshes = global.Meshes || window.Meshes;
-        if (meshes && meshes.xrayBeam && meshes.xrayBeam.material) {
-            meshes.xrayBeam.material.opacity = gantry.xrayVisible ? 0.35 : 0.0;
-        }
-        if (meshes && meshes.patientGroup) {
-            meshes.patientGroup.visible = state.patientVisible;
-        }
-
         updateText("btn-patient-toggle", state.patientVisible ? "Hide Patient" : "Show Patient");
         updateClass("btn-patient-toggle", state.patientVisible
             ? "w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 transition font-bold"
@@ -125,53 +117,6 @@
         updateClass("btn-gantry-trans", gantry.isTranslucent
             ? "flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
             : "flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-1.5 rounded border border-gray-600");
-
-        applyStateToMeshes(state);
-    }
-
-    function applyStateToMeshes(state) {
-        if (!state) return;
-        var meshes = global.Meshes || window.Meshes;
-        if (!meshes) return;
-
-        var yRange = (global.CTProfileService && typeof global.CTProfileService.getCouchWorldRange === "function")
-            ? global.CTProfileService.getCouchWorldRange("y") : { min: 0.45, max: 0.95 };
-        var targetY = yRange.min + (yRange.max - yRange.min) * (state.couch.y / 100);
-
-        if (meshes.tabletopGroup) meshes.tabletopGroup.position.y = targetY;
-
-        if (meshes.bellows && Array.isArray(meshes.bellows)) {
-            var partHeight = (targetY - 0.22) / meshes.bellows.length;
-            meshes.bellows.forEach(function (mesh, idx) {
-                mesh.scale.y = partHeight / 0.1;
-                mesh.position.y = idx * partHeight + partHeight / 2;
-            });
-        }
-
-        var zRange = (global.CTProfileService && typeof global.CTProfileService.getCouchWorldRange === "function")
-            ? global.CTProfileService.getCouchWorldRange("z") : { min: 2.6, max: -1.0 };
-        if (meshes.tabletopGroup) {
-            meshes.tabletopGroup.position.z = zRange.min + (zRange.max - zRange.min) * (state.couch.z / 100);
-        }
-
-        if (meshes.detectorGroup && meshes.xrayBeam) {
-            var maxRows = (global.CTProfileService && typeof global.CTProfileService.getDetectorRowsMax === "function")
-                ? global.CTProfileService.getDetectorRowsMax() : 320;
-            var ratio = state.gantry.detectorRows / maxRows;
-            meshes.detectorGroup.scale.z = ratio;
-            var baseBeam = (global.CTProfileService && typeof global.CTProfileService.getBeamZScaleAtMax === "function")
-                ? global.CTProfileService.getBeamZScaleAtMax() : 0.16;
-            meshes.xrayBeam.scale.z = baseBeam * ratio;
-        }
-
-        function updateSyringe(fluid, plunger, pct) {
-            if (fluid) fluid.scale.y = Math.max(0.01, 1.0 - pct / 100);
-            if (plunger) plunger.position.y = 0.15 - 0.3 * (pct / 100);
-        }
-        if (meshes.injector) {
-            updateSyringe(meshes.injector.fluidA, meshes.injector.plungerA, state.injector.a);
-            updateSyringe(meshes.injector.fluidB, meshes.injector.plungerB, state.injector.b);
-        }
     }
 
     function updateLastCommandMonitor() {
@@ -329,20 +274,20 @@
             unsubscribers.push(function () { el.removeEventListener(event, handler); });
         }
 
-        [["sliderCouchY", "couch", "y"], ["sliderCouchZ", "couch", "z"],
-         ["sliderInjectA", "injector", "a"], ["sliderInjectB", "injector", "b"]
+        [["sliderCouchY", "couch", "moveY"], ["sliderCouchZ", "couch", "moveZ"],
+         ["sliderInjectA", "injector", "setA"], ["sliderInjectB", "injector", "setB"]
         ].forEach(function (def) {
             addListener(UI[def[0]], "input", function (e) {
-                executeCommand(def[1], "setPosition", { axis: def[2], value: parseFloat(e.target.value) });
+                executeCommand(def[1], def[2], { value: parseFloat(e.target.value) });
             });
         });
 
         addListener(UI.sliderRotorSpeed, "input", function (e) {
-            executeCommand("gantry", "setRotorSpeed", { speed: parseFloat(e.target.value) });
+            executeCommand("gantry", "setRotorSpeed", { value: parseFloat(e.target.value) });
         });
 
         addListener(UI.selectDetectorRows, "change", function (e) {
-            executeCommand("gantry", "setDetectorRows", { rows: parseInt(e.target.value, 10) });
+            executeCommand("gantry", "setDetectorRows", { value: parseInt(e.target.value, 10) });
         });
 
         addListener(UI.selectCameraView, "change", function (e) {
@@ -406,10 +351,11 @@
             unsubscribers.push(unsubFrames);
         }
 
-        unsubscribers.push(AppState.subscribe(function (state) {
+        unsubscribers.push(CTStore.subscribe(function (state) {
             syncInteractiveState(state);
             updateStateMonitor();
             renderBatchUI();
+            syncAllPatientTransformUI();
         }));
 
         if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
@@ -471,8 +417,7 @@
     }
 
     function setConsoleMockMode(enabled) {
-        if (!AppState.ui) AppState.ui = {};
-        AppState.ui.consoleMockEnabled = !!enabled;
+        CTStore.patch("ui", { consoleMockEnabled: !!enabled });
 
         var btnMock = byId("pill-mode-mock"), btnExt = byId("pill-mode-external"),
             mockOverlay = byId("mock-console-overlay"), scanBody = byId("mock-console-controls"),
@@ -509,14 +454,10 @@
     function toggleScan() {
         var isScan = !AppState.gantry.isScanning;
         CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setScanning", params: { value: isScan } });
-        if (typeof TWEEN !== "undefined") {
-            new TWEEN.Tween(AppState.gantry).to({ rotorSpeed: isScan ? 100 : 0 }, 2000)
-                .easing(TWEEN.Easing.Quadratic.InOut).onUpdate(function () { AppState.notify(); }).start();
-        }
     }
 
     function setScanMode(mode) {
-        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "scanMode", value: mode } });
+        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "currentScanMode", value: mode } });
     }
 
     function toggleXRay() {
@@ -526,51 +467,15 @@
     }
 
     function setGantryOpacity(isTranslucent) {
-        if (!Meshes.materials) return;
-        var opacity = isTranslucent ? 0.2 : 1.0;
-        if (Meshes.materials.gantry) {
-            Meshes.materials.gantry.transparent = isTranslucent;
-            Meshes.materials.gantry.opacity = opacity;
-            Meshes.materials.gantry.depthWrite = !isTranslucent;
-            Meshes.materials.gantry.needsUpdate = true;
-        }
-        if (Meshes.materials.tunnel) {
-            Meshes.materials.tunnel.transparent = isTranslucent;
-            Meshes.materials.tunnel.opacity = isTranslucent ? 0.35 : 1.0;
-            Meshes.materials.tunnel.transmission = isTranslucent ? 0.9 : 0.0;
-            Meshes.materials.tunnel.depthWrite = !isTranslucent;
-            Meshes.materials.tunnel.needsUpdate = true;
-        }
-        if (Array.isArray(Meshes.materials.accessories)) {
-            Meshes.materials.accessories.forEach(function (mat) {
-                mat.transparent = isTranslucent;
-                mat.opacity = opacity;
-                mat.depthWrite = !isTranslucent;
-                mat.needsUpdate = true;
-            });
-        }
-        if (window.AppState) AppState.update("gantry", "isTranslucent", isTranslucent);
+        executeCommand("gantry", "setField", { key: "isTranslucent", value: !!isTranslucent });
     }
 
     function togglePatient() {
         CTCommandBus.execute({ source: "ui-console", target: "simulator", action: "setPatientVisible", params: { value: !AppState.patientVisible } });
     }
 
-    async function changePatientGlbModel(modelId) {
-        AppState.patientModelId = modelId;
-        if (window.CTModelRegistry && window.Meshes && window.Meshes.patientGroup) {
-            while (Meshes.patientGroup.children.length > 0) {
-                Meshes.patientGroup.remove(Meshes.patientGroup.children[0]);
-            }
-            var instance = await CTModelRegistry.spawnModelInstance(modelId, { instanceId: "patient_primary", attachTo: "couch", visible: AppState.patientVisible });
-            if (instance && instance.sceneObject) {
-                Meshes.patientGroup.add(instance.sceneObject);
-                Meshes.patientGroup.visible = AppState.patientVisible;
-                var pos = instance.transform.position || [0, -0.1, 0.45], rot = instance.transform.rotation || [-90, 0, 0];
-                window.AppState.patientOffset = { x: pos[0], y: pos[1], z: pos[2], rotX: rot[0], rotY: rot[1], rotZ: rot[2] };
-                syncAllPatientTransformUI();
-            }
-        }
+    function changePatientGlbModel(modelId) {
+        return executeCommand("simulator", "setPatientModel", { modelId: modelId });
     }
 
     function updatePatientGlbSelectOptions() {
@@ -598,7 +503,8 @@
             updatePatientGlbSelectOptions();
         }
         try {
-            await CTModelRegistry.spawnModelInstance(modelId, { path: path, attachTo: "couch" });
+            var result = executeCommand("simulator", "loadGlbModel", { id: modelId, path: path, attachTo: "couch" });
+            if (!result || result.success === false) throw new Error("Model command failed");
             alert("Successfully spawned model: " + modelId);
             inputEl.value = "";
         } catch (err) {
@@ -608,22 +514,12 @@
 
     function _updatePatientTransform(key, valStr) {
         if (!window.AppState) return;
-        if (!window.AppState.patientOffset) {
-            window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
-        }
         if (!key) return syncAllPatientTransformUI();
 
         var val = parseFloat(valStr);
         if (isNaN(val)) return;
-        window.AppState.patientOffset[key] = val;
-        syncAllPatientTransformUI();
-
-        var po = window.AppState.patientOffset;
-        if (window.CTModelRegistry) {
-            window.CTModelRegistry.updateInstanceTransform("patient_primary", {
-                position: [po.x, po.y, po.z], rotation: [po.rotX, po.rotY, po.rotZ], scale: [po.scaleX, po.scaleY, po.scaleZ]
-            });
-        }
+        var next = Object.assign({}, window.AppState.patientOffset || {}, { [key]: val });
+        executeCommand("simulator", "setPatientPosition", next);
     }
 
     function onPatientPosSliderChange(key) { var el = byId("slider-patient-pos-" + key); if (el) _updatePatientTransform(key, el.value); }
@@ -641,15 +537,11 @@
     }
 
     function resetPatientPositionUI() {
-        if (!window.AppState) return;
-        window.AppState.patientOffset = { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0 };
-        syncAllPatientTransformUI();
-        var po = window.AppState.patientOffset;
-        if (window.CTModelRegistry) {
-            window.CTModelRegistry.updateInstanceTransform("patient_primary", {
-                position: [po.x, po.y, po.z], rotation: [po.rotX, po.rotY, po.rotZ], scale: [po.scaleX, po.scaleY, po.scaleZ]
-            });
-        }
+        executeCommand("simulator", "setPatientPosition", {
+            x: 0, y: -0.1, z: 0.45,
+            rotX: -90, rotY: 0, rotZ: 0,
+            scaleX: 1, scaleY: 1, scaleZ: 1
+        });
     }
 
     function showInfoDialog(key) {
@@ -699,11 +591,7 @@
         });
         var presetSelect = byId("select-distortion-preset");
         if (presetSelect) presetSelect.value = "custom";
-        if (global.AppState && global.AppState.distortion) {
-            Object.assign(global.AppState.distortion, params);
-        }
-        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(params);
-        if (global.AppState && typeof global.AppState.notify === "function") global.AppState.notify();
+        executeCommand("camera", "setDistortion", params);
     }
 
     function onDistortionPresetChange(presetKey) {
@@ -714,11 +602,7 @@
             if (el) el.value = String(p[k]);
             if (valueLabel) valueLabel.innerText = Number(p[k]).toFixed(2);
         });
-        if (global.AppState && global.AppState.distortion) {
-            Object.assign(global.AppState.distortion, p);
-        }
-        if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(p);
-        if (global.AppState && typeof global.AppState.notify === "function") global.AppState.notify();
+        executeCommand("camera", "setDistortion", p);
     }
 
     function resetDistortionParamsUI() {

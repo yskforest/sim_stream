@@ -31,7 +31,7 @@ const AppState = {
     },
     patientVisible: true,
     patientModelId: (typeof CTModelsConfig !== "undefined" && typeof CTModelsConfig.getDefaultPatientId === "function") ? CTModelsConfig.getDefaultPatientId() : null,
-    patientOffset: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0 },
+    patientOffset: { x: 0, y: -0.1, z: 0.45, rotX: -90, rotY: 0, rotZ: 0, scaleX: 1, scaleY: 1, scaleZ: 1 },
     useGlbPatient: true,
     customGlbModels: [],
     distortion: {
@@ -47,22 +47,6 @@ const AppState = {
         zoom: 1.0
     },
 
-    listeners: [],
-    subscribe(callback) {
-        this.listeners.push(callback);
-        return () => {
-            this.listeners = this.listeners.filter((cb) => cb !== callback);
-        };
-    },
-    update(key, subKey, value) {
-        if (this[key] && this[key][subKey] !== undefined) {
-            this[key][subKey] = value;
-            this.notify();
-        }
-    },
-    notify() {
-        this.listeners.forEach((cb) => cb(this));
-    },
 };
 
 const Descriptions = {

@@ -7,18 +7,20 @@ console.log("=== Verifying Refactored 5-Layer Architecture ===");
 const root = path.join(__dirname, '..');
 const htmlPath = path.join(root, 'index.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
+const bootstrapPath = path.join(root, 'assets/js/app/bootstrap.js');
+const bootstrap = fs.readFileSync(bootstrapPath, 'utf8');
 
 // 1. Extract script list from index.html
 const scriptMatches = [...html.matchAll(/<script[^>]*src="([^"]+)"[^>]*>/g)];
-const scriptListMatch = html.match(/const scripts = \[([\s\S]*?)\];/);
+const scriptListMatch = bootstrap.match(/const scripts = \[([\s\S]*?)\];/);
 
-if (!scriptListMatch) {
-    console.error("FAIL: Could not find scripts array in index.html");
+if (!html.includes('type="module" src="./assets/js/app/bootstrap.js"') || !scriptListMatch) {
+    console.error("FAIL: Could not find the ES module bootstrap or its scripts array");
     process.exit(1);
 }
 
 const scripts = eval("[" + scriptListMatch[1] + "]");
-console.log(`Found ${scripts.length} scripts in dynamic loader list:`);
+console.log(`Found ${scripts.length} compatibility modules in the ES module bootstrap:`);
 
 let hasError = false;
 
@@ -79,11 +81,13 @@ const required5Layers = [
     'assets/js/core/hw/camera-sim.js',
     // Layer 3: Application Services
     'assets/js/core/commands/command-bus.js',
+    'assets/js/core/commands/command-catalog.js',
     'assets/js/core/services/command-log-service.js',
     'assets/js/core/services/sequence-runner.js',
     'assets/js/core/services/model-registry.js',
     'assets/js/core/services/video-stream-service.js',
     'assets/js/core/services/performance-service.js',
+    'assets/js/core/services/simulator-service.js',
     // Layer 4: Adapters
     'assets/js/adapters/external/external-gateway.js',
     'assets/js/adapters/external/protocol-v1.js',
@@ -92,6 +96,7 @@ const required5Layers = [
     'assets/js/adapters/ui/ui-controller.js',
     // Layer 5: Presentation & 3D View
     'assets/js/view/scene-manager.js',
+    'assets/js/view/scene-sync.js',
     'assets/js/view/fps-controls.js',
     'assets/js/view/camera-presets.js',
     'assets/js/view/models/mesh-factory.js',
@@ -109,7 +114,32 @@ required5Layers.forEach(file => {
     }
 });
 
-// 5. Verify sequential loading in a unified VM context (catches duplicate global let/const/var declarations)
+// 5. Verify architecture boundaries introduced by the staged refactor.
+console.log("\n--- Verifying dependency boundaries ---");
+const commandBusCode = fs.readFileSync(path.join(root, 'assets/js/core/commands/command-bus.js'), 'utf8');
+const protocolCode = fs.readFileSync(path.join(root, 'assets/js/adapters/external/protocol-v1.js'), 'utf8');
+const stateCode = fs.readFileSync(path.join(root, 'assets/js/core/state.js'), 'utf8');
+const sequenceCode = fs.readFileSync(path.join(root, 'assets/js/core/services/sequence-runner.js'), 'utf8');
+const uiCode = fs.readFileSync(path.join(root, 'assets/js/adapters/ui/ui-controller.js'), 'utf8');
+
+const boundaryChecks = [
+    [!html.includes('function loadNext('), 'index.html uses the ES module bootstrap instead of DOM script injection'],
+    [commandBusCode.includes('CTCommandCatalog.execute') && !commandBusCode.includes('target ==='), 'Command bus delegates to the command catalog'],
+    [protocolCode.includes('CTCommandCatalog.validate'), 'Protocol validation shares the command catalog'],
+    [!stateCode.includes('subscribe(') && !stateCode.includes('listeners:'), 'AppState is serializable data without store behavior'],
+    [!sequenceCode.includes('toggleScan') && !sequenceCode.includes('toggleXRay') && !sequenceCode.includes('global.Meshes'), 'Sequence runner has no UI or scene dependency'],
+    [!uiCode.includes('function applyStateToMeshes'), '3D state synchronization is outside the UI adapter']
+];
+boundaryChecks.forEach(([ok, message]) => {
+    if (!ok) {
+        console.error(`  [FAIL] ${message}`);
+        hasError = true;
+    } else {
+        console.log(`  [OK] ${message}`);
+    }
+});
+
+// 6. Verify compatibility modules in a unified VM context.
 console.log("\n--- Testing sequential execution in a shared global VM context ---");
 const contextObj = {
     window: {},

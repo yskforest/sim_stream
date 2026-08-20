@@ -9,7 +9,6 @@
 
     function toggleFisheye(en) {
         isFisheye = typeof en === "boolean" ? en : !isFisheye;
-        if (global.AppState && global.AppState.distortion) global.AppState.distortion.enabled = isFisheye;
         var btn = document.getElementById("btn-fisheye-toggle"), toggle = document.getElementById("input-distortion-enable");
         if (btn) { btn.style.backgroundColor = isFisheye ? "#7e22ce" : ""; btn.textContent = isFisheye ? "Disable Fisheye Lens" : "Toggle Fisheye Lens"; }
         if (toggle) toggle.checked = isFisheye;

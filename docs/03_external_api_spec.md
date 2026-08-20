@@ -36,8 +36,8 @@ sequenceDiagram
 | メソッド名 | 引数 | 戻り値 | 説明 |
 | :--- | :--- | :--- | :--- |
 | `send(command)` | `command: Object` | `ResponseEnvelope` | コマンドを発行し、同期的に結果を受け取る |
-| `getState()` | なし | `ResponseEnvelope` | シミュレータ全体の最新状態を取得する |
-| `subscribe(onStateChange)` | `callback: Function` | `unsubscribe: Function` | 状態変化時の自動通知を購読する（解除関数を返却） |
+| `getState()` | なし | `ResponseEnvelope` | シミュレータ全体の最新状態を、内部Stateと参照を共有しないスナップショットとして取得する |
+| `subscribe(onStateChange)` | `callback: Function` | `unsubscribe: Function` | 状態変化時に読み取り用スナップショットを購読する（解除関数を返却） |
 | `diagnostics.getRecentCommands()` | なし | `Array` | 直近のコマンド実行履歴を取得する |
 | `diagnostics.clearCommandLog()` | なし | なし | コマンド実行履歴を全消去する |
 
@@ -91,7 +91,7 @@ sequenceDiagram
 | | `setDetectorRows` | `value: number` | 検出器列数を設定 (例: `320`) |
 | | `setXrayVisible` | `value: boolean` | X線ビームの表示切替 |
 | | `setRotorSpeed` | `value: number` | 回転速度を設定 (rpm) |
-| | `setField` | `key: string`, `value: any` | フィールド直接更新 |
+| | `setField` | `key: string`, `value: any` | 内部進行状態の更新。許可キー: `scanSequence`, `activeBatchIndex`, `currentScanMode`, `injectorSyncIndex`, `countdown`, `cancelRequested`, `isTranslucent` |
 | | `getState` | なし | ガントリの現在状態を取得 |
 | **`couch`**<br>(寝台部) | `moveY` | `value: number` | 寝台の上下位置変更 (mm / %) |
 | | `moveZ` | `value: number` | 寝台の前後位置変更 (mm / %) |
@@ -124,7 +124,10 @@ sequenceDiagram
 | `TARGET_NOT_FOUND` | 指定された `target` が存在しない | 許可されたターゲット名 (`gantry` 等) を使用する |
 | `UNSUPPORTED_ACTION` | 存在しない `action` 名の指定 | サポートアクション一覧表を確認する |
 | `INVALID_DETECTOR_ROWS` | 未許可の検出器列数を指定 | `ProfileService` の許可値を確認する |
+| `UNSUPPORTED_FIELD` | `setField`でホワイトリスト外のキーを指定 | 専用アクションまたは許可された内部進行状態キーを使用する |
 | `INTERNAL_ERROR` | 内部モジュール（CommandBus等）未初期化 | シミュレータの起動状態を確認する |
+
+コマンドの対応可否、parameter検証、実行handlerは`CTCommandCatalog`を単一情報源とし、UIと外部Gatewayの両方に同じ検証を適用します。
 
 ---
 
