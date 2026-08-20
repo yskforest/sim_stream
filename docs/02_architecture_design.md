@@ -546,6 +546,7 @@ flowchart TB
 6. **イベント委譲**: HTMLおよび動的Batch UIのインラインイベントを`data-action`へ統一し、`CTUIController`の単一委譲ハンドラで処理。
 7. **制御CoreのES Module化**: Catalog／Command Bus／Protocol／Command Logを`export/import`化。UI・Sequence・External Gatewayから個別グローバル参照を除去。
 8. **仕様同期の自動化**: Catalog定義に文書メタデータを併置し、`docs/03_external_api_spec.md`のアクション表を自動生成・差分検査。
+9. **Sequence終了保証**: 正常完了・停止要求・例外の全経路を`finally`でIdleへ収束させ、`isRunning=false`設定後のStore通知でRunボタンを復帰。
 
 ### 11.2 互換ブリッジ
 

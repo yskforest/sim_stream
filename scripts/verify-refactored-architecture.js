@@ -340,5 +340,45 @@ if (hasError) {
     }
     console.log("  [OK] Batch add, update, and remove operations are functional");
 
-    console.log("\nALL 5-LAYER REFACTORING & ARCHITECTURE TESTS PASSED!");
+    console.log("\n--- Testing Sequence Completion Lifecycle ---");
+    vmContext.TWEEN = undefined;
+    vmContext.setTimeout = callback => { callback(); return 0; };
+    let runningAtLastNotification = null;
+    const unsubscribeSequenceTest = vmContext.CTStore.subscribe(() => {
+        runningAtLastNotification = vmContext.CTSequenceRunner.isRunning();
+    });
+    vmContext.CTSequenceRunner.runAutoSequence().then(async () => {
+        unsubscribeSequenceTest();
+        const gantry = vmContext.AppState.gantry;
+        const completed = !vmContext.CTSequenceRunner.isRunning() && runningAtLastNotification === false &&
+            gantry.activeBatchIndex === -1 && gantry.cancelRequested === false && gantry.isScanning === false;
+        if (!completed) {
+            console.error("  [FAIL] Sequence completion did not publish its idle state");
+            process.exitCode = 1;
+            return;
+        }
+        console.log("  [OK] Normal completion publishes idle state");
+
+        let runningAfterStopNotification = null;
+        const unsubscribeStopTest = vmContext.CTStore.subscribe(() => {
+            runningAfterStopNotification = vmContext.CTSequenceRunner.isRunning();
+        });
+        const stoppedRun = vmContext.CTSequenceRunner.runAutoSequence();
+        vmContext.CTSequenceRunner.stopAutoSequence();
+        await stoppedRun;
+        unsubscribeStopTest();
+        const stoppedCleanly = !vmContext.CTSequenceRunner.isRunning() && runningAfterStopNotification === false &&
+            gantry.activeBatchIndex === -1 && gantry.cancelRequested === false && gantry.isScanning === false;
+        if (!stoppedCleanly) {
+            console.error("  [FAIL] Stopped sequence did not publish its idle state");
+            process.exitCode = 1;
+            return;
+        }
+        console.log("  [OK] Stop request publishes idle state");
+        console.log("\nALL 5-LAYER REFACTORING & ARCHITECTURE TESTS PASSED!");
+    }).catch(error => {
+        unsubscribeSequenceTest();
+        console.error("  [FAIL] Sequence completion test threw:", error.stack || error.message);
+        process.exitCode = 1;
+    });
 }
