@@ -85,34 +85,37 @@ sequenceDiagram
 
 ## 4. サポートターゲット・アクション一覧
 
+<!-- COMMAND_CATALOG:START -->
+<!-- この範囲は scripts/sync-command-reference.js により生成されます。 -->
 | ターゲット | アクション名 | パラメータ名・型 | 説明 |
 | :--- | :--- | :--- | :--- |
-| **`gantry`**<br>(ガントリ部) | `setScanning` | `value: boolean` | スキャン動作の開始 (`true`) / 停止 (`false`) |
-| | `setDetectorRows` | `value: number` | 検出器列数を設定 (例: `320`) |
-| | `setXrayVisible` | `value: boolean` | X線ビームの表示切替 |
-| | `setRotorSpeed` | `value: number` | 回転速度を設定 (rpm) |
-| | `setField` | `key: string`, `value: any` | 内部進行状態の更新。許可キー: `scanSequence`, `activeBatchIndex`, `currentScanMode`, `injectorSyncIndex`, `countdown`, `cancelRequested`, `isTranslucent` |
-| | `getState` | なし | ガントリの現在状態を取得 |
-| **`couch`**<br>(寝台部) | `moveY` | `value: number` | 寝台の上下位置変更 (mm / %) |
-| | `moveZ` | `value: number` | 寝台の前後位置変更 (mm / %) |
-| | `getState` | なし | 寝台の現在状態を取得 |
-| **`injector`**<br>(インジェクタ部) | `setA` | `value: number` | A剤（造影剤）注入量の設定 (%) |
-| | `setB` | `value: number` | B剤（生理食塩水）注入量の設定 (%) |
-| | `getState` | なし | インジェクタの現在状態を取得 |
-| **`simulator`**<br>(全体・モデル制御) | `setPatientVisible` | `value: boolean` | 患者モデルの表示 (`true`) / 非表示 (`false`) |
-| | `setPatientModel` | `modelId: string` | 表示するアクティブ患者GLBモデルIDを指定 |
-| | `setPatientPosition` | `x?: number, y?: number, z?: number,`<br>`rotX?: number, rotY?: number, rotZ?: number,`<br>`scaleX?: number, scaleY?: number, scaleZ?: number` | 患者モデルの9-DOFトランスフォーム（位置・角度・拡大縮小）を変更 |
-| | `loadGlbModel` | `id: string, path: string, attachTo?: string, position?: Array, rotation?: Array, scale?: Array` | GLB 3Dモデルを動的に読み込んでアタッチ |
-| | `getState` | なし | 全体の現在状態を取得 |
-| **`camera`**<br>(仮想カメラ・歪曲・配信) | `startStream` | `codec: string` (`'h264'` \| `'mjpeg'`),<br>`protocol: string` (`'rtsp'` \| `'http'`),<br>`fps?: number, width?: number, height?: number, mode?: string` | 仮想カメラ映像のエンコードストリーミング配信を開始 |
-| | `stopStream` | なし | 映像ストリーミング配信を停止 |
-| | `getStreamUrl` | なし | 現在配信中のストリーミングURLを取得 |
-| | `setDistortion` | `enabled?: boolean, k1?: number, k2?: number, k3?: number, k4?: number, fx?: number, fy?: number, cx?: number, cy?: number, zoom?: number` | OpenCV 魚眼カメラ歪曲パラメータを動的更新 |
-| | `setTransform` | `position?: { x, y, z }, lookAt?: { x, y, z }` | 撮影用メインカメラの位置と注視点を設定 |
-| | `setVirtualTransform` | `position?: { x, y, z }, lookAt?: { x, y, z }` | 独立仮想カメラの位置と注視点を設定 |
-| | `setFov` | `value: number` (または `fov: number`) | 垂直画角（FOV度数）を設定 |
-| | `setHFov` | `value: number` (または `hfov: number`) | 水平画角（HFOV度数）を設定 |
-| | `getState` | なし | カメラおよび配信・歪曲状態を取得 |
+| **`gantry`**<br>(ガントリ部) | `setField` | `key: string, value: any` | 許可された内部進行状態を更新 |
+|  | `setDetectorRows` | `value: number` | 検出器列数を設定 |
+|  | `setScanning` | `value: boolean` | スキャン動作を開始・停止 |
+|  | `setXrayVisible` | `value: boolean` | X線ビームの表示を切替 |
+|  | `setRotorSpeed` | `value: number` | 回転速度（rpm）を設定 |
+|  | `getState` | `なし` | ガントリ状態を取得 |
+| **`couch`**<br>(寝台部) | `moveY` | `value: number` | 寝台の上下位置を変更 |
+|  | `moveZ` | `value: number` | 寝台の前後位置を変更 |
+|  | `getState` | `なし` | 寝台状態を取得 |
+| **`injector`**<br>(インジェクタ部) | `setA` | `value: number` | A剤（造影剤）注入量を設定 |
+|  | `setB` | `value: number` | B剤（生理食塩水）注入量を設定 |
+|  | `getState` | `なし` | インジェクタ状態を取得 |
+| **`simulator`**<br>(全体・モデル制御) | `setPatientVisible` | `value: boolean` | 患者モデルの表示を切替 |
+|  | `setPatientModel` | `modelId?: string` | 患者モデルを選択 |
+|  | `setPatientPosition` | `x/y/z?, rotX/rotY/rotZ?, scaleX/scaleY/scaleZ?: number` | 患者モデルの9-DOFを変更 |
+|  | `loadGlbModel` | `path: string, id/attachTo?: string, position/rotation/scale?: Array` | GLBモデルを動的に読込 |
+|  | `getState` | `なし` | シミュレータ全体状態を取得 |
+| **`camera`**<br>(仮想カメラ・歪曲・配信) | `startStream` | `codec/protocol?: string, fps/width/height/quality/hfov?: number` | 映像配信を開始 |
+|  | `stopStream` | `なし` | 映像配信を停止 |
+|  | `getStreamUrl` | `なし` | 配信URLを取得 |
+|  | `setDistortion` | `enabled?: boolean, k1/k2/k3/k4/fx/fy/cx/cy/zoom?: number` | 魚眼歪曲パラメータを更新 |
+|  | `setTransform` | `position/lookAt?: {x,y,z}` | メインカメラの位置と注視点を設定 |
+|  | `setVirtualTransform` | `position/lookAt?: {x,y,z}` | 仮想カメラの位置と注視点を設定 |
+|  | `setFov` | `value または fov: number` | 垂直画角を設定 |
+|  | `setHFov` | `value または hfov: number` | 水平画角を設定 |
+|  | `getState` | `なし` | カメラ・配信・歪曲状態を取得 |
+<!-- COMMAND_CATALOG:END -->
 
 ---
 
@@ -127,7 +130,7 @@ sequenceDiagram
 | `UNSUPPORTED_FIELD` | `setField`でホワイトリスト外のキーを指定 | 専用アクションまたは許可された内部進行状態キーを使用する |
 | `INTERNAL_ERROR` | 内部モジュール（CommandBus等）未初期化 | シミュレータの起動状態を確認する |
 
-コマンドの対応可否、parameter検証、実行handlerは`CTCommandCatalog`を単一情報源とし、UIと外部Gatewayの両方に同じ検証を適用します。
+コマンドの対応可否、parameter検証、実行handler、上表の文書メタデータは`CTCommandCatalog`を単一情報源とし、UIと外部Gatewayの両方に同じ検証を適用します。表の更新は`node scripts/sync-command-reference.js --write`、差分検査は引数なしで実行します。
 
 ---
 

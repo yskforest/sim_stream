@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/OrbitControls.js";
 import { GLTFLoader } from "three/addons/GLTFLoader.js";
 
-// Phase-4 composition root. Legacy modules still publish compatibility globals,
-// while loading order and asynchronous config initialization are owned here.
+// Composition root. Control-core modules use explicit ES imports; remaining
+// Three.js compatibility modules are migrated behind namespaced boundaries.
 window.THREE = Object.assign({}, THREE, { OrbitControls, GLTFLoader });
 
 const scripts = [

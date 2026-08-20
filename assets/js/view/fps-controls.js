@@ -30,9 +30,7 @@
     }
 
     function requestFPSRender(count) {
-        if (typeof global.requestRenderFrame === "function") {
-            global.requestRenderFrame(count || 2);
-        }
+        if (global.CTSceneManager) global.CTSceneManager.requestRenderFrame(count || 2);
     }
 
     function onKeyDown(e) {

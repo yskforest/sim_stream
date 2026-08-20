@@ -1,5 +1,6 @@
-(function attachProtocolV1(global) {
-    "use strict";
+import { CTCommandCatalog } from "../../core/commands/command-catalog.js";
+
+"use strict";
 
     function nowIso() {
         return new Date().toISOString();
@@ -12,12 +13,9 @@
         return error;
     }
 
-    global.CTProtocolV1 = {
+    export const CTProtocolV1 = {
         validateCommand: function validateCommand(command) {
-            if (!global.CTCommandCatalog) {
-                return { valid: false, error: { code: "INTERNAL_ERROR", message: "COMMAND_CATALOG_UNAVAILABLE" } };
-            }
-            return global.CTCommandCatalog.validate(command);
+            return CTCommandCatalog.validate(command);
         },
         buildSuccess: function buildSuccess(requestId, payload) {
             return {
@@ -38,4 +36,3 @@
             };
         }
     };
-})(typeof window !== "undefined" ? window : globalThis);

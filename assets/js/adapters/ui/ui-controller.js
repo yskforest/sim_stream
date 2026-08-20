@@ -1,3 +1,6 @@
+import { CTCommandBus } from "../../core/commands/command-bus.js";
+import { CTCommandLogService } from "../../core/services/command-log-service.js";
+
 // CT 3D Simulator - UI Controller Adapter (Slim & Modular)
 (function attachUIController(global) {
     "use strict";
@@ -120,8 +123,7 @@
     }
 
     function updateLastCommandMonitor() {
-        if (!global.CTCommandLogService) return;
-        var logs = global.CTCommandLogService.list();
+        var logs = CTCommandLogService.list();
         var last = logs.length > 0 ? logs[logs.length - 1] : null;
         var src = byId("monitor-last-source"), res = byId("monitor-last-result"), err = byId("monitor-last-error");
         if (!src || !res || !err) return;
@@ -164,8 +166,8 @@
 
     function renderCommandLog() {
         var container = byId("command-log-list");
-        if (!container || !global.CTCommandLogService) return;
-        var logs = global.CTCommandLogService.list();
+        if (!container) return;
+        var logs = CTCommandLogService.list();
         if (logs.length === 0) {
             container.innerHTML = '<div class="text-gray-500 text-center py-2">No commands logged yet</div>';
             return;
@@ -193,7 +195,6 @@
         var runBtn = byId("btn-run-sequence");
         if (runBtn) {
             runBtn.innerText = isAutoRun ? "Stop Sequence" : "Run All Batches";
-            runBtn.onclick = isAutoRun ? global.stopAutoSequence : global.runAutoSequence;
             runBtn.disabled = isAutoRun && AppState.gantry.cancelRequested;
             runBtn.className = isAutoRun
                 ? "bg-red-700 hover:bg-red-600 text-white font-bold px-3 py-1 rounded text-xs shadow-md transition-colors"
@@ -220,29 +221,18 @@
             return '<div class="batch-card flex flex-col justify-between p-2 rounded-lg border text-xs relative transition-all duration-200 ' + cardBorder + '">' +
                 '<div class="flex items-center justify-between border-b border-slate-700/60 pb-1 mb-1.5">' +
                     '<span class="font-bold text-slate-300 text-[11px]">#' + (idx + 1) + "</span>" +
-                    '<button class="btn-del text-slate-500 hover:text-red-400 font-bold text-sm px-1 ' + (seq.length <= 1 || isRunning ? "opacity-30 pointer-events-none" : "") + '" ' + dis + ">&times;</button>" +
+                    '<button class="btn-del text-slate-500 hover:text-red-400 font-bold text-sm px-1 ' + (seq.length <= 1 || isRunning ? "opacity-30 pointer-events-none" : "") + '" data-action="remove-batch" data-index="' + idx + '" ' + dis + ">&times;</button>" +
                 "</div>" +
                 '<div class="space-y-1.5 mb-2">' +
-                    '<select class="sel-mode w-full bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500" ' + dis + ">" + optionsHtml + "</select>" +
+                    '<select class="sel-mode w-full bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500" data-action="batch-mode" data-event="change" data-index="' + idx + '" ' + dis + ">" + optionsHtml + "</select>" +
                     '<div class="flex items-center justify-between text-[9px] text-slate-400 bg-slate-950/60 px-1.5 py-0.5 rounded border border-slate-800">' +
                         "<span>Delay:</span>" +
-                        '<div class="flex items-center gap-0.5"><input type="number" class="inp-delay w-10 bg-transparent text-right font-mono text-white focus:outline-none" value="' + (b.delay || 0) + '" min="0" max="60" ' + dis + " /><span>s</span></div>" +
+                        '<div class="flex items-center gap-0.5"><input type="number" class="inp-delay w-10 bg-transparent text-right font-mono text-white focus:outline-none" value="' + (b.delay || 0) + '" min="0" max="60" data-action="batch-delay" data-event="change" data-index="' + idx + '" ' + dis + " /><span>s</span></div>" +
                     "</div>" +
                 "</div>" +
-                '<button class="btn-sync w-full py-0.5 rounded text-[8px] font-bold transition-colors ' + (isSync ? "bg-purple-600 text-white border border-purple-400" : "bg-slate-950 text-slate-400 border border-slate-700 hover:bg-slate-800") + " " + (isRunning ? "opacity-50 cursor-not-allowed" : "") + '" ' + dis + ">INJ: " + (isSync ? "ON" : "OFF") + "</button>" +
+                '<button class="btn-sync w-full py-0.5 rounded text-[8px] font-bold transition-colors ' + (isSync ? "bg-purple-600 text-white border border-purple-400" : "bg-slate-950 text-slate-400 border border-slate-700 hover:bg-slate-800") + " " + (isRunning ? "opacity-50 cursor-not-allowed" : "") + '" data-action="injector-sync" data-index="' + idx + '" ' + dis + ">INJ: " + (isSync ? "ON" : "OFF") + "</button>" +
             "</div>";
         }).join("");
-
-        Array.from(container.children || []).forEach(function (card, idx) {
-            var delBtn = card.querySelector(".btn-del");
-            if (delBtn) delBtn.onclick = function () { removeScanBatch(idx); };
-            var sel = card.querySelector(".sel-mode");
-            if (sel) sel.onchange = function (e) { updateBatchData(idx, "mode", e.target.value); };
-            var inp = card.querySelector(".inp-delay");
-            if (inp) inp.onchange = function (e) { updateBatchData(idx, "delay", parseInt(e.target.value, 10) || 0); };
-            var syn = card.querySelector(".btn-sync");
-            if (syn) syn.onclick = function () { setInjectorSync(idx); };
-        });
 
         var addBtn = byId("btn-add-batch");
         if (addBtn) {
@@ -274,6 +264,10 @@
             unsubscribers.push(function () { el.removeEventListener(event, handler); });
         }
 
+        ["click", "input", "change"].forEach(function (eventName) {
+            addListener(document, eventName, handleActionEvent);
+        });
+
         [["sliderCouchY", "couch", "moveY"], ["sliderCouchZ", "couch", "moveZ"],
          ["sliderInjectA", "injector", "setA"], ["sliderInjectB", "injector", "setB"]
         ].forEach(function (def) {
@@ -291,7 +285,7 @@
         });
 
         addListener(UI.selectCameraView, "change", function (e) {
-            if (typeof global.setCameraView === "function") global.setCameraView(e.target.value);
+            if (global.CTCameraPresets) global.CTCameraPresets.setView(e.target.value);
         });
 
         addListener(UI.selectFocus, "change", function (e) {
@@ -301,7 +295,7 @@
         var btnClearLog = byId("btn-clear-command-log");
         if (btnClearLog) {
             addListener(btnClearLog, "click", function () {
-                if (global.CTCommandLogService) global.CTCommandLogService.clear();
+                CTCommandLogService.clear();
             });
         }
 
@@ -324,7 +318,7 @@
             if (global.CTVideoStreamService) {
                 global.CTVideoStreamService.start(cfg);
             }
-            if (global.requestRenderFrame) global.requestRenderFrame(15);
+            if (global.CTSceneManager) global.CTSceneManager.requestRenderFrame(15);
         }
 
         [streamMode, streamCodec, streamProto, streamFps, streamQual, streamW, streamH, streamHfov].filter(Boolean).forEach(function (el) {
@@ -358,8 +352,8 @@
             syncAllPatientTransformUI();
         }));
 
-        if (global.CTCommandLogService && typeof global.CTCommandLogService.subscribe === "function") {
-            unsubscribers.push(global.CTCommandLogService.subscribe(function () {
+        if (typeof CTCommandLogService.subscribe === "function") {
+            unsubscribers.push(CTCommandLogService.subscribe(function () {
                 renderCommandLog();
                 updateLastCommandMonitor();
             }));
@@ -448,16 +442,12 @@
             var cfg = getStreamConfigFromUI();
             CTCommandBus.execute({ source: "ui-console", target: "camera", action: "startStream", params: cfg });
         }
-        if (global.requestRenderFrame) global.requestRenderFrame(30);
+        if (global.CTSceneManager) global.CTSceneManager.requestRenderFrame(30);
     }
 
     function toggleScan() {
         var isScan = !AppState.gantry.isScanning;
         CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setScanning", params: { value: isScan } });
-    }
-
-    function setScanMode(mode) {
-        CTCommandBus.execute({ source: "ui-console", target: "gantry", action: "setField", params: { key: "currentScanMode", value: mode } });
     }
 
     function toggleXRay() {
@@ -522,9 +512,6 @@
         executeCommand("simulator", "setPatientPosition", next);
     }
 
-    function onPatientPosSliderChange(key) { var el = byId("slider-patient-pos-" + key); if (el) _updatePatientTransform(key, el.value); }
-    function onPatientPosInputChange(key) { var el = byId("input-patient-pos-" + key); if (el) _updatePatientTransform(key, el.value); }
-
     function syncAllPatientTransformUI() {
         if (!window.AppState || !window.AppState.patientOffset) return;
         var po = window.AppState.patientOffset;
@@ -565,7 +552,7 @@
         if (!value) return;
         if (value === "XrayTube" || value === "Detector") setGantryOpacity(true);
         else if (value === "Gantry" || value === "TouchPanel") setGantryOpacity(false);
-        if (typeof global.setCameraView === "function") global.setCameraView("focus_" + value);
+        if (global.CTCameraPresets) global.CTCameraPresets.setView("focus_" + value);
         showInfoDialog(value);
     }
 
@@ -611,25 +598,56 @@
         onDistortionPresetChange("standard");
     }
 
+    function handleActionEvent(event) {
+        var el = event.target && event.target.closest ? event.target.closest("[data-action]") : null;
+        if (!el || el.disabled || event.type !== (el.dataset.event || "click")) return;
+
+        var action = el.dataset.action;
+        var scene = global.CTSceneManager;
+        var sequence = global.CTSequenceRunner;
+        var index = parseInt(el.dataset.index, 10);
+
+        if (action === "console-mode") setConsoleMockMode(el.dataset.enabled === "true");
+        else if (action === "toggle-eco" && scene) scene.toggleEcoMode();
+        else if (action === "toggle-performance" && global.CTPerformanceService) global.CTPerformanceService.toggleHud();
+        else if (action === "toggle-bottom-dock") toggleBottomDock();
+        else if (action === "toggle-right-sidebar") toggleRightSidebar();
+        else if (action === "switch-right-tab") switchRightTab(el.dataset.tab);
+        else if (action === "switch-dock-tab") { event.stopPropagation(); switchDockTab(el.dataset.tab); }
+        else if (action === "set-gantry-opacity") setGantryOpacity(el.dataset.enabled === "true");
+        else if (action === "toggle-laser" && scene) scene.toggleLaserAlignment();
+        else if (action === "graphics-quality" && scene) scene.setGraphicsQuality(el.value);
+        else if (action === "toggle-xray") toggleXRay();
+        else if (action === "toggle-phantom" && scene) scene.toggleWaterPhantom();
+        else if (action === "toggle-axes" && scene) scene.toggleAxesHelper();
+        else if (action === "toggle-patient") togglePatient();
+        else if (action === "set-fisheye") executeCommand("camera", "setDistortion", { enabled: el.checked });
+        else if (action === "toggle-fisheye") executeCommand("camera", "setDistortion", { enabled: !AppState.distortion.enabled });
+        else if (action === "distortion-preset") onDistortionPresetChange(el.value);
+        else if (action === "distortion-input") onDistortionParamInput();
+        else if (action === "reset-distortion") resetDistortionParamsUI();
+        else if (action === "patient-model") changePatientGlbModel(el.value);
+        else if (action === "patient-transform") _updatePatientTransform(el.dataset.key, el.value);
+        else if (action === "reset-patient-transform") resetPatientPositionUI();
+        else if (action === "spawn-glb") spawnCustomGlbFromInput();
+        else if (action === "toggle-scan") toggleScan();
+        else if (action === "add-batch" && sequence) sequence.addScanBatch();
+        else if (action === "toggle-sequence" && sequence) (sequence.isRunning() ? sequence.stopAutoSequence() : sequence.runAutoSequence());
+        else if (action === "remove-batch" && sequence) sequence.removeScanBatch(index);
+        else if (action === "batch-mode" && sequence) sequence.updateBatchData(index, "mode", el.value);
+        else if (action === "batch-delay" && sequence) sequence.updateBatchData(index, "delay", parseInt(el.value, 10) || 0);
+        else if (action === "injector-sync" && sequence) sequence.setInjectorSync(index);
+        else if (action === "hide-info") hideInfoDialog();
+    }
+
     global.CTUIController = {
         setup: setupUI, teardown: teardownUI, renderBatchQueue: renderBatchUI,
         renderMonitor: updateStateMonitor, renderCommandLog: renderCommandLog,
         switchRightTab: switchRightTab, switchDockTab: switchDockTab,
         toggleRightSidebar: toggleRightSidebar, toggleBottomDock: toggleBottomDock,
-        setConsoleMockMode: setConsoleMockMode
-    };
-
-    Object.assign(global, {
-        switchLeftTab: function () {}, switchRightTab: switchRightTab, switchDockTab: switchDockTab,
-        toggleLeftSidebar: function () {}, toggleRightSidebar: toggleRightSidebar, toggleBottomDock: toggleBottomDock,
-        setConsoleMockMode: setConsoleMockMode, updateStateMonitor: updateStateMonitor, renderBatchUI: renderBatchUI,
-        toggleScan: toggleScan, setScanMode: setScanMode, toggleXRay: toggleXRay, setGantryOpacity: setGantryOpacity,
-        togglePatient: togglePatient, changePatientGlbModel: changePatientGlbModel,
-        updatePatientGlbSelectOptions: updatePatientGlbSelectOptions, spawnCustomGlbFromInput: spawnCustomGlbFromInput,
-        onPatientPosSliderChange: onPatientPosSliderChange, onPatientPosInputChange: onPatientPosInputChange,
-        syncAllPatientTransformUI: syncAllPatientTransformUI, resetPatientPositionUI: resetPatientPositionUI,
-        showInfoDialog: showInfoDialog, hideInfoDialog: hideInfoDialog, handleFocusChange: handleFocusChange,
+        setConsoleMockMode: setConsoleMockMode, toggleCameraStream: toggleCameraStream,
+        hideInfo: hideInfoDialog,
         onDistortionParamInput: onDistortionParamInput, onDistortionPresetChange: onDistortionPresetChange,
-        resetDistortionParamsUI: resetDistortionParamsUI, toggleCameraStream: toggleCameraStream
-    });
+        resetDistortionParamsUI: resetDistortionParamsUI
+    };
 })(typeof window !== "undefined" ? window : this);

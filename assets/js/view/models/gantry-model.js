@@ -199,7 +199,7 @@ function buildCTScanner() {
     const couchGroup = new THREE.Group();
 
     // Floor Base Pedestal (Compact, rounded motor housing on the floor)
-    const couchFloorBase = createRoundedBox(0.70, 0.18, 1.40, 0.06, baseCoverMat);
+    const couchFloorBase = CTMeshFactory.createRoundedBox(0.70, 0.18, 1.40, 0.06, baseCoverMat);
     couchFloorBase.position.set(0, -0.09, 2.6);
     couchFloorBase.castShadow = true;
     couchFloorBase.receiveShadow = true;
@@ -212,7 +212,7 @@ function buildCTScanner() {
     }
 
     // Middle sliding mechanism cover
-    const couchMidBase = createRoundedBox(0.56, 0.12, 1.30, 0.04, new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.4 }));
+    const couchMidBase = CTMeshFactory.createRoundedBox(0.56, 0.12, 1.30, 0.04, new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.4 }));
     couchMidBase.position.set(0, 0.06, 2.6);
     couchMidBase.castShadow = true;
     couchMidBase.receiveShadow = true;
@@ -226,7 +226,7 @@ function buildCTScanner() {
     for (let i = 0; i < bellowsCount; i++) {
         const width = 0.50 - i * 0.015;
         const depth = 1.15 - i * 0.03;
-        const bMesh = createRoundedBox(width, 0.08, depth, 0.03, new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 }));
+        const bMesh = CTMeshFactory.createRoundedBox(width, 0.08, depth, 0.03, new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 }));
         bMesh.castShadow = true;
         bMesh.receiveShadow = true;
         bellowsParts.push(bMesh);
@@ -240,7 +240,7 @@ function buildCTScanner() {
     tabletopGroup.position.set(0, 0.88, 2.6);
 
     // Under-table Sliding Support Carriage (Cantilevered cradle frame)
-    const supportBase = createRoundedBox(0.46, 0.09, 1.70, 0.04, new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 }));
+    const supportBase = CTMeshFactory.createRoundedBox(0.46, 0.09, 1.70, 0.04, new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 }));
     supportBase.position.set(0, -0.06, -0.25);
     supportBase.castShadow = true;
     supportBase.receiveShadow = true;
@@ -307,14 +307,14 @@ function buildCTScanner() {
         bumpMap: carbonTexture,
         bumpScale: 0.002
     });
-    const tabletop = createRoundedBox(0.44, 0.025, 2.40, 0.02, carbonMat);
+    const tabletop = CTMeshFactory.createRoundedBox(0.44, 0.025, 2.40, 0.02, carbonMat);
     tabletop.position.set(0, 0.012, -0.35);
     tabletop.castShadow = true;
     tabletop.receiveShadow = true;
     tabletopGroup.add(tabletop);
 
     // Soft Comfort Mattress with pale medical blue-gray vinyl cover (2.25m length)
-    const mattress = createRoundedBox(0.42, 0.035, 2.25, 0.02, new THREE.MeshStandardMaterial({ color: 0x9cb0c5, roughness: 0.65 }));
+    const mattress = CTMeshFactory.createRoundedBox(0.42, 0.035, 2.25, 0.02, new THREE.MeshStandardMaterial({ color: 0x9cb0c5, roughness: 0.65 }));
     mattress.position.set(0, 0.042, -0.35);
     mattress.castShadow = true;
     mattress.receiveShadow = true;
@@ -389,4 +389,4 @@ function buildCTScanner() {
     if (targetScene) targetScene.add(ctGroup);
 }
 
-window.buildCTScanner = buildCTScanner;
+window.CTGantryModel = { build: buildCTScanner };

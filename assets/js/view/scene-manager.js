@@ -256,10 +256,9 @@
         toggleFisheye: toggleFisheye, updateCameraDistortion: updateCameraDistortion,
         toggleEcoMode: toggleEcoMode, setGraphicsQuality: setGraphicsQuality,
         toggleLaserAlignment: toggleLaserAlignment, toggleWaterPhantom: toggleWaterPhantom,
-        toggleAxesHelper: toggleAxesHelper, toggleWorldAxes: toggleAxesHelper,
+        toggleAxesHelper: toggleAxesHelper,
         setupFisheyePipeline: setupFisheyePipeline
     };
 
     global.CTSceneManager = manager;
-    Object.assign(global, manager);
 })(typeof window !== "undefined" ? window : this);

@@ -250,6 +250,4 @@
     };
 
     global.CTMeshFactory = factory;
-    global.createRoundedBox = factory.createRoundedBox;
 })(typeof window !== "undefined" ? window : this);
-

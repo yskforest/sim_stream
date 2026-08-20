@@ -1,10 +1,12 @@
+import { CTCommandBus } from "../commands/command-bus.js";
+
 (function attachSequenceRunner(global) {
     "use strict";
 
     var isRunning = false;
     var wait = function (ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); };
     var command = function (target, action, params) {
-        return global.CTCommandBus.execute({ source: "sequence", target: target, action: action, params: params || {} });
+        return CTCommandBus.execute({ source: "sequence", target: target, action: action, params: params || {} });
     };
     var currentState = function () { return global.CTStore && global.CTStore.getState(); };
     var cancelled = function () { var state = currentState(); return !state || state.gantry.cancelRequested; };
@@ -117,46 +119,46 @@
             var state = currentState();
             if (!state || isRunning) return;
             isRunning = true;
-            command("gantry", "setField", { key: "cancelRequested", value: false });
-            command("gantry", "setXrayVisible", { value: false });
-            command("gantry", "setScanning", { value: false });
-            await move("couch", "y", 80, 2000);
+            try {
+                command("gantry", "setField", { key: "cancelRequested", value: false });
+                command("gantry", "setXrayVisible", { value: false });
+                command("gantry", "setScanning", { value: false });
+                await move("couch", "y", 80, 2000);
 
-            var sequence = state.gantry.scanSequence.slice();
-            for (var i = 0; i < sequence.length && !cancelled(); i++) {
-                var batch = sequence[i];
-                command("gantry", "setField", { key: "activeBatchIndex", value: i });
-                command("gantry", "setField", { key: "currentScanMode", value: batch.mode });
-                for (var delay = batch.delay || 0; delay > 0 && !cancelled(); delay--) {
-                    command("gantry", "setField", { key: "countdown", value: delay });
+                var sequence = state.gantry.scanSequence.slice();
+                for (var i = 0; i < sequence.length && !cancelled(); i++) {
+                    var batch = sequence[i];
+                    command("gantry", "setField", { key: "activeBatchIndex", value: i });
+                    command("gantry", "setField", { key: "currentScanMode", value: batch.mode });
+                    for (var delay = batch.delay || 0; delay > 0 && !cancelled(); delay--) {
+                        command("gantry", "setField", { key: "countdown", value: delay });
+                        await wait(1000);
+                    }
+                    command("gantry", "setField", { key: "countdown", value: 0 });
+                    if (state.gantry.injectorSyncIndex === i) move("injector", "a", 100, 4000);
+                    await runBatch(batch.mode);
                     await wait(1000);
                 }
-                command("gantry", "setField", { key: "countdown", value: 0 });
-                if (state.gantry.injectorSyncIndex === i) move("injector", "a", 100, 4000);
-                await runBatch(batch.mode);
-                await wait(1000);
-            }
 
-            xray(false);
-            command("gantry", "setScanning", { value: false });
-            command("gantry", "setField", { key: "activeBatchIndex", value: -1 });
-            command("gantry", "setField", { key: "countdown", value: 0 });
-            await move("couch", "z", 0, 2000);
-            await move("couch", "y", 0, 2000);
-            var firstMode = (state.gantry.scanSequence[0] && state.gantry.scanSequence[0].mode) || "scano";
-            command("gantry", "setField", { key: "currentScanMode", value: firstMode });
-            command("gantry", "setField", { key: "cancelRequested", value: false });
-            isRunning = false;
+                xray(false);
+                command("gantry", "setScanning", { value: false });
+                command("gantry", "setField", { key: "activeBatchIndex", value: -1 });
+                command("gantry", "setField", { key: "countdown", value: 0 });
+                await move("couch", "z", 0, 2000);
+                await move("couch", "y", 0, 2000);
+                var firstMode = (state.gantry.scanSequence[0] && state.gantry.scanSequence[0].mode) || "scano";
+                command("gantry", "setField", { key: "currentScanMode", value: firstMode });
+            } finally {
+                // Change the runner flag before the final Store notification so UI renders "Run".
+                isRunning = false;
+                xray(false);
+                command("gantry", "setScanning", { value: false });
+                command("gantry", "setField", { key: "activeBatchIndex", value: -1 });
+                command("gantry", "setField", { key: "countdown", value: 0 });
+                command("gantry", "setField", { key: "cancelRequested", value: false });
+            }
         }
     };
 
     global.CTSequenceRunner = runner;
-    Object.assign(global, {
-        addScanBatch: runner.addScanBatch,
-        removeScanBatch: runner.removeScanBatch,
-        updateBatchData: runner.updateBatchData,
-        setInjectorSync: runner.setInjectorSync,
-        runAutoSequence: runner.runAutoSequence,
-        stopAutoSequence: runner.stopAutoSequence
-    });
 })(typeof window !== "undefined" ? window : globalThis);

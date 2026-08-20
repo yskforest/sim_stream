@@ -9,6 +9,9 @@ const htmlPath = path.join(root, 'index.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
 const bootstrapPath = path.join(root, 'assets/js/app/bootstrap.js');
 const bootstrap = fs.readFileSync(bootstrapPath, 'utf8');
+const toVmScript = code => code
+    .replace(/^import\s+[^;]+;\s*$/gm, '')
+    .replace(/\bexport\s+(?=(const|let|var|function|class)\b)/g, '');
 
 // 1. Extract script list from index.html
 const scriptMatches = [...html.matchAll(/<script[^>]*src="([^"]+)"[^>]*>/g)];
@@ -20,7 +23,7 @@ if (!html.includes('type="module" src="./assets/js/app/bootstrap.js"') || !scrip
 }
 
 const scripts = eval("[" + scriptListMatch[1] + "]");
-console.log(`Found ${scripts.length} compatibility modules in the ES module bootstrap:`);
+console.log(`Found ${scripts.length} application modules in the ES module bootstrap:`);
 
 let hasError = false;
 
@@ -33,13 +36,27 @@ scripts.forEach((relPath) => {
         return;
     }
 
-    const code = fs.readFileSync(fullPath, 'utf8');
+    const code = toVmScript(fs.readFileSync(fullPath, 'utf8'));
     try {
         new vm.Script(code, { filename: relPath });
         console.log(`  [OK] Valid syntax: ${relPath}`);
     } catch (e) {
         console.error(`  [FAIL] Syntax Error in ${relPath}:`, e.message);
         hasError = true;
+    }
+});
+
+// Verify that relative ES module imports resolve on disk.
+scripts.concat(['./assets/js/app/bootstrap.js']).forEach(relPath => {
+    const fullPath = path.join(root, relPath);
+    const code = fs.readFileSync(fullPath, 'utf8');
+    for (const match of code.matchAll(/\b(?:import|export)\s+(?:[^'";]+?\s+from\s+)?["']([^"']+)["']/g)) {
+        if (!match[1].startsWith('.')) continue;
+        const dependency = path.resolve(path.dirname(fullPath), match[1]);
+        if (!fs.existsSync(dependency)) {
+            console.error(`  [FAIL] Unresolved import in ${relPath}: ${match[1]}`);
+            hasError = true;
+        }
     }
 });
 
@@ -121,14 +138,19 @@ const protocolCode = fs.readFileSync(path.join(root, 'assets/js/adapters/externa
 const stateCode = fs.readFileSync(path.join(root, 'assets/js/core/state.js'), 'utf8');
 const sequenceCode = fs.readFileSync(path.join(root, 'assets/js/core/services/sequence-runner.js'), 'utf8');
 const uiCode = fs.readFileSync(path.join(root, 'assets/js/adapters/ui/ui-controller.js'), 'utf8');
+const runtimeCode = scripts.map(relPath => fs.readFileSync(path.join(root, relPath), 'utf8')).join('\n');
 
 const boundaryChecks = [
     [!html.includes('function loadNext('), 'index.html uses the ES module bootstrap instead of DOM script injection'],
     [commandBusCode.includes('CTCommandCatalog.execute') && !commandBusCode.includes('target ==='), 'Command bus delegates to the command catalog'],
     [protocolCode.includes('CTCommandCatalog.validate'), 'Protocol validation shares the command catalog'],
+    [commandBusCode.includes('import { CTCommandCatalog }') && protocolCode.includes('import { CTCommandCatalog }'), 'Command core uses ES module imports instead of command globals'],
     [!stateCode.includes('subscribe(') && !stateCode.includes('listeners:'), 'AppState is serializable data without store behavior'],
     [!sequenceCode.includes('toggleScan') && !sequenceCode.includes('toggleXRay') && !sequenceCode.includes('global.Meshes'), 'Sequence runner has no UI or scene dependency'],
-    [!uiCode.includes('function applyStateToMeshes'), '3D state synchronization is outside the UI adapter']
+    [sequenceCode.indexOf('isRunning = false;', sequenceCode.indexOf('finally')) < sequenceCode.lastIndexOf('key: "cancelRequested"'), 'Sequence completion clears running state before its final UI notification'],
+    [!uiCode.includes('function applyStateToMeshes'), '3D state synchronization is outside the UI adapter'],
+    [!/(?:onclick|onchange|oninput)\s*=/.test(html + runtimeCode), 'UI events use data-action delegation instead of inline/property handlers'],
+    [!runtimeCode.includes('global.CTCommandBus') && !runtimeCode.includes('global.CTCommandCatalog') && !runtimeCode.includes('global.CTProtocolV1'), 'Control-core modules are not published as browser globals']
 ];
 boundaryChecks.forEach(([ok, message]) => {
     if (!ok) {
@@ -187,6 +209,7 @@ const contextObj = {
         PerspectiveCamera: function() { this.aspect = 1; this.updateProjectionMatrix = () => {}; this.position = { set: () => {} }; },
         OrthographicCamera: function() {},
         WebGLRenderTarget: function() { this.texture = {}; this.dispose = () => {}; },
+        GLTFLoader: function() { this.load = (_path, done) => done({ scene: new contextObj.THREE.Group() }); },
         WebGLRenderer: function() {
             this.setPixelRatio = () => {}; this.setSize = () => {}; this.setRenderTarget = () => {};
             this.render = () => {}; this.domElement = {}; this.shadowMap = {};
@@ -198,6 +221,8 @@ const contextObj = {
         Vector2: function() { this.set = () => {}; },
         Vector3: function() { this.set = () => {}; },
         Vector4: function() { this.set = () => {}; },
+        MathUtils: { degToRad: degrees => degrees * Math.PI / 180 },
+        Box3: function() { this.min = { y: 0 }; this.setFromObject = () => this; this.getSize = target => Object.assign(target, { x: 1, y: 1, z: 1 }); },
         CanvasTexture: function() { this.wrapS = 1000; this.wrapT = 1000; this.repeat = { set: () => {} }; },
         RepeatWrapping: 1000,
         PlaneGeometry: function() { this.rotateX = () => {}; this.rotateY = () => {}; this.rotateZ = () => {}; this.translate = () => {}; },
@@ -217,7 +242,7 @@ const contextObj = {
         CapsuleGeometry: function() { this.rotateX = () => {}; this.rotateY = () => {}; this.rotateZ = () => {}; this.translate = () => {}; },
         CircleGeometry: function() { this.rotateX = () => {}; this.rotateY = () => {}; this.rotateZ = () => {}; this.translate = () => {}; },
         GridHelper: function() { this.position = {}; },
-        Group: function() { this.position = { set: () => {} }; this.rotation = { set: () => {} }; this.scale = { set: () => {} }; this.add = () => {}; this.traverse = () => {}; },
+        Group: function() { this.position = { set: () => {} }; this.rotation = { set: () => {} }; this.scale = { set: () => {} }; this.add = () => {}; this.traverse = () => {}; this.clone = () => new contextObj.THREE.Group(); },
         ShaderMaterial: function() { this.uniforms = { uK: { value: { set: () => {} } }, uFocal: { value: { set: () => {} } }, uCenter: { value: { set: () => {} } }, uZoom: { value: 1.0 }, tDiffuse: { value: null } }; },
         MeshBasicMaterial: function() {},
         MeshStandardMaterial: function() {},
@@ -235,7 +260,7 @@ const vmContext = vm.createContext(contextObj);
 
 scripts.forEach((relPath) => {
     const fullPath = path.join(root, relPath);
-    const code = fs.readFileSync(fullPath, 'utf8');
+    const code = toVmScript(fs.readFileSync(fullPath, 'utf8'));
     try {
         vm.runInContext(code, vmContext, { filename: relPath });
         console.log(`  [OK] Evaluated in shared context: ${relPath}`);
@@ -251,39 +276,39 @@ if (hasError) {
 } else {
     // Verify Stream Start / Stop toggle logic
     console.log("\n--- Testing Camera Stream Start / Stop ---");
-    if (typeof vmContext.toggleCameraStream === "function") {
-        vmContext.toggleCameraStream();
+    if (vmContext.CTUIController && typeof vmContext.CTUIController.toggleCameraStream === "function") {
+        vmContext.CTUIController.toggleCameraStream();
         const activeState = vmContext.AppState.camera;
         console.log("  [OK] toggleCameraStream() started streaming. isStreaming:", activeState.isStreaming, "URL:", activeState.streamUrl);
         if (!activeState.isStreaming) {
             console.error("  [FAIL] Expected camera.isStreaming to be true after start");
             process.exit(1);
         }
-        vmContext.toggleCameraStream();
+        vmContext.CTUIController.toggleCameraStream();
         console.log("  [OK] toggleCameraStream() stopped streaming. isStreaming:", activeState.isStreaming);
         if (activeState.isStreaming) {
             console.error("  [FAIL] Expected camera.isStreaming to be false after stop");
             process.exit(1);
         }
     } else {
-        console.error("  [FAIL] global.toggleCameraStream is not a function");
+        console.error("  [FAIL] CTUIController.toggleCameraStream is not a function");
         process.exit(1);
     }
 
     console.log("\n--- Testing Refactored UI Feature Wiring ---");
-    if (typeof vmContext.toggleWorldAxes !== "function") {
-        console.error("  [FAIL] global.toggleWorldAxes is not a function");
+    if (!vmContext.CTSceneManager || typeof vmContext.CTSceneManager.toggleAxesHelper !== "function") {
+        console.error("  [FAIL] CTSceneManager.toggleAxesHelper is not a function");
         process.exit(1);
     }
-    console.log("  [OK] Legacy world-axes UI handler is exported");
+    console.log("  [OK] World-axes action is namespaced under CTSceneManager");
 
     try {
-        vmContext.onDistortionPresetChange("fisheye");
+        vmContext.CTUIController.onDistortionPresetChange("fisheye");
         if (vmContext.AppState.distortion.k1 !== 0.4 || vmContext.AppState.distortion.zoom !== 0.95) {
             console.error("  [FAIL] Distortion preset did not update AppState");
             process.exit(1);
         }
-        vmContext.onDistortionParamInput();
+        vmContext.CTUIController.onDistortionParamInput();
         console.log("  [OK] Distortion preset and slider handlers execute without missing-service errors");
     } catch (e) {
         console.error("  [FAIL] Distortion UI handler threw:", e.stack || e.message);
@@ -297,18 +322,18 @@ if (hasError) {
     console.log("  [OK] CTSequenceRunner exposes its running state");
 
     const initialBatchCount = vmContext.AppState.gantry.scanSequence.length;
-    vmContext.addScanBatch();
+    vmContext.CTSequenceRunner.addScanBatch();
     if (vmContext.AppState.gantry.scanSequence.length !== initialBatchCount + 1) {
         console.error("  [FAIL] addScanBatch did not append a batch");
         process.exit(1);
     }
     const addedBatchIndex = vmContext.AppState.gantry.scanSequence.length - 1;
-    vmContext.updateBatchData(addedBatchIndex, "delay", 7);
+    vmContext.CTSequenceRunner.updateBatchData(addedBatchIndex, "delay", 7);
     if (vmContext.AppState.gantry.scanSequence[addedBatchIndex].delay !== 7) {
         console.error("  [FAIL] updateBatchData did not update the batch");
         process.exit(1);
     }
-    vmContext.removeScanBatch(addedBatchIndex);
+    vmContext.CTSequenceRunner.removeScanBatch(addedBatchIndex);
     if (vmContext.AppState.gantry.scanSequence.length !== initialBatchCount) {
         console.error("  [FAIL] removeScanBatch did not remove the batch");
         process.exit(1);

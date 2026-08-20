@@ -96,7 +96,7 @@
         },
         setDistortion: function setDistortion(params) {
             global.CTStore.patch("distortion", params || {});
-            if (typeof global.updateCameraDistortion === "function") global.updateCameraDistortion(params || {});
+            if (global.CTSceneManager) global.CTSceneManager.updateCameraDistortion(params || {});
             return { success: true, distortion: global.CTStore.getState().distortion };
         }
     };

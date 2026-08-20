@@ -40,7 +40,7 @@
                     <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     PERF DIAGNOSTICS
                 </div>
-                <button id="btn-close-perf-hud" onclick="CTPerformanceService.toggleHud(false)" class="text-slate-400 hover:text-white text-xs px-1 hover:bg-slate-800 rounded">×</button>
+                <button id="btn-close-perf-hud" data-action="toggle-performance" class="text-slate-400 hover:text-white text-xs px-1 hover:bg-slate-800 rounded">×</button>
             </div>
             
             <!-- 3D Render Stats -->

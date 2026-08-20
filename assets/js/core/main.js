@@ -27,11 +27,13 @@ window.Meshes = window.Meshes || {};
         }
 
         // 4. Build 3D Models
-        if (typeof global.buildRoom === "function") global.buildRoom();
-        if (typeof global.buildCTScanner === "function") global.buildCTScanner();
-        if (typeof global.buildInjector === "function") global.buildInjector();
-        if (typeof global.buildControlRoom === "function") global.buildControlRoom();
-        if (typeof global.buildServerRack === "function") global.buildServerRack();
+        if (global.CTRoomModel) global.CTRoomModel.buildRoom();
+        if (global.CTGantryModel) global.CTGantryModel.build();
+        if (global.CTInjectorModel) global.CTInjectorModel.build();
+        if (global.CTRoomModel) {
+            global.CTRoomModel.buildControlRoom();
+            global.CTRoomModel.buildServerRack();
+        }
 
         if (global.CTSceneSync) global.CTSceneSync.setup();
 
@@ -41,23 +43,21 @@ window.Meshes = window.Meshes || {};
         }
 
         // 6. Set Default View
-        if (typeof global.setCameraView === "function") {
-            global.setCameraView("free");
-        }
+        if (global.CTCameraPresets) global.CTCameraPresets.setView("free");
 
         if (global.CTStore) global.CTStore.notify();
 
         // 7. Subscribe demand render triggers
         if (global.CTStore) {
             global.CTStore.subscribe(function () {
-                global.requestRenderFrame(20);
+                global.CTSceneManager.requestRenderFrame(20);
             });
         }
 
-        window.addEventListener("pointerdown", function () { global.requestRenderFrame(30); });
+        window.addEventListener("pointerdown", function () { global.CTSceneManager.requestRenderFrame(30); });
         window.addEventListener("mousemove", function () {
             if (global.controls && global.controls.state !== -1) {
-                global.requestRenderFrame(10);
+                global.CTSceneManager.requestRenderFrame(10);
             }
         });
 

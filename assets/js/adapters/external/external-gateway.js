@@ -1,21 +1,14 @@
+import { CTCommandBus } from "../../core/commands/command-bus.js";
+import { CTCommandLogService } from "../../core/services/command-log-service.js";
+import { CTProtocolV1 } from "./protocol-v1.js";
+
 (function attachExternalGateway(global) {
     function buildError(requestId, error) {
-        if (global.CTProtocolV1 && typeof global.CTProtocolV1.buildError === "function") {
-            return global.CTProtocolV1.buildError(requestId, error);
-        }
-        return {
-            requestId: requestId || null,
-            success: false,
-            payload: null,
-            error: error || { code: "INTERNAL_ERROR", message: "Unknown error." },
-        };
+        return CTProtocolV1.buildError(requestId, error);
     }
 
     function buildSuccess(requestId, payload) {
-        if (global.CTProtocolV1 && typeof global.CTProtocolV1.buildSuccess === "function") {
-            return global.CTProtocolV1.buildSuccess(requestId, payload);
-        }
-        return { requestId: requestId || null, success: true, payload: payload || null, error: null };
+        return CTProtocolV1.buildSuccess(requestId, payload);
     }
 
     function detach(payload) {
@@ -29,16 +22,11 @@
         var normalized = Object.assign({}, command || {});
         if (!normalized.source) normalized.source = "external";
         var requestId = normalized && normalized.requestId ? normalized.requestId : null;
-        if (global.CTProtocolV1 && typeof global.CTProtocolV1.validateCommand === "function") {
-            var checked = global.CTProtocolV1.validateCommand(normalized);
-            if (!checked.valid) {
-                return buildError(requestId, checked.error);
-            }
+        var checked = CTProtocolV1.validateCommand(normalized);
+        if (!checked.valid) {
+            return buildError(requestId, checked.error);
         }
-        if (!global.CTCommandBus) {
-            return buildError(requestId, { code: "INTERNAL_ERROR", message: "COMMAND_BUS_UNAVAILABLE" });
-        }
-        var result = global.CTCommandBus.execute(normalized);
+        var result = CTCommandBus.execute(normalized);
         if (!result || result.success === false) {
             return buildError(
                 requestId,
@@ -76,11 +64,10 @@
         },
         diagnostics: {
             getRecentCommands: function getRecentCommands() {
-                if (!global.CTCommandLogService) return [];
-                return global.CTCommandLogService.list();
+                return CTCommandLogService.list();
             },
             clearCommandLog: function clearCommandLog() {
-                if (global.CTCommandLogService) global.CTCommandLogService.clear();
+                CTCommandLogService.clear();
             },
         },
     };

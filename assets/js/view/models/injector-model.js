@@ -283,4 +283,4 @@ function buildInjector() {
     if (targetScene) targetScene.add(injectorGroup);
 }
 
-window.buildInjector = buildInjector;
+window.CTInjectorModel = { build: buildInjector };

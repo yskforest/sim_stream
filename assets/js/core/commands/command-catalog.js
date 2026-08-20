@@ -1,5 +1,4 @@
-(function attachCommandCatalog(global) {
-    "use strict";
+"use strict";
 
     function valid() { return { valid: true, error: null }; }
     function invalid(message) {
@@ -29,6 +28,9 @@
             }
             return service[methodName].apply(service, args ? args(params) : []);
         };
+    }
+    function define(validate, run, params, description) {
+        return { validate: validate, run: run, docs: { params: params, description: description } };
     }
 
     var numberValue = value("number");
@@ -69,43 +71,43 @@
     }
 
     var definitions = {
-        "gantry.setField": { validate: gantryField, run: invoke("GantrySim", "setField", function (p) { return [p.key, p.value]; }) },
-        "gantry.setDetectorRows": { validate: numberValue, run: invoke("GantrySim", "setDetectorRows", function (p) { return [p.value]; }) },
-        "gantry.setScanning": { validate: booleanValue, run: invoke("GantrySim", "setScanning", function (p) { return [p.value]; }) },
-        "gantry.setXrayVisible": { validate: booleanValue, run: invoke("GantrySim", "setXrayVisible", function (p) { return [p.value]; }) },
-        "gantry.setRotorSpeed": { validate: numberValue, run: invoke("GantrySim", "setRotorSpeed", function (p) { return [p.value]; }) },
-        "gantry.getState": { validate: noParams, run: function (g) { return { success: true, state: g.CTStore.getState().gantry }; } },
+        "gantry.setField": define(gantryField, invoke("GantrySim", "setField", function (p) { return [p.key, p.value]; }), "key: string, value: any", "許可された内部進行状態を更新"),
+        "gantry.setDetectorRows": define(numberValue, invoke("GantrySim", "setDetectorRows", function (p) { return [p.value]; }), "value: number", "検出器列数を設定"),
+        "gantry.setScanning": define(booleanValue, invoke("GantrySim", "setScanning", function (p) { return [p.value]; }), "value: boolean", "スキャン動作を開始・停止"),
+        "gantry.setXrayVisible": define(booleanValue, invoke("GantrySim", "setXrayVisible", function (p) { return [p.value]; }), "value: boolean", "X線ビームの表示を切替"),
+        "gantry.setRotorSpeed": define(numberValue, invoke("GantrySim", "setRotorSpeed", function (p) { return [p.value]; }), "value: number", "回転速度（rpm）を設定"),
+        "gantry.getState": define(noParams, function (g) { return { success: true, state: g.CTStore.getState().gantry }; }, "なし", "ガントリ状態を取得"),
 
-        "couch.moveY": { validate: numberValue, run: invoke("CouchSim", "moveToY", function (p) { return [p.value]; }) },
-        "couch.moveZ": { validate: numberValue, run: invoke("CouchSim", "moveToZ", function (p) { return [p.value]; }) },
-        "couch.getState": { validate: noParams, run: function (g) { return { success: true, state: g.CTStore.getState().couch }; } },
+        "couch.moveY": define(numberValue, invoke("CouchSim", "moveToY", function (p) { return [p.value]; }), "value: number", "寝台の上下位置を変更"),
+        "couch.moveZ": define(numberValue, invoke("CouchSim", "moveToZ", function (p) { return [p.value]; }), "value: number", "寝台の前後位置を変更"),
+        "couch.getState": define(noParams, function (g) { return { success: true, state: g.CTStore.getState().couch }; }, "なし", "寝台状態を取得"),
 
-        "injector.setA": { validate: numberValue, run: invoke("InjectorSim", "setContrastA", function (p) { return [p.value]; }) },
-        "injector.setB": { validate: numberValue, run: invoke("InjectorSim", "setSalineB", function (p) { return [p.value]; }) },
-        "injector.getState": { validate: noParams, run: function (g) { return { success: true, state: g.CTStore.getState().injector }; } },
+        "injector.setA": define(numberValue, invoke("InjectorSim", "setContrastA", function (p) { return [p.value]; }), "value: number", "A剤（造影剤）注入量を設定"),
+        "injector.setB": define(numberValue, invoke("InjectorSim", "setSalineB", function (p) { return [p.value]; }), "value: number", "B剤（生理食塩水）注入量を設定"),
+        "injector.getState": define(noParams, function (g) { return { success: true, state: g.CTStore.getState().injector }; }, "なし", "インジェクタ状態を取得"),
 
-        "simulator.setPatientVisible": { validate: booleanValue, run: invoke("CTSimulatorService", "setPatientVisible", function (p) { return [p.value]; }) },
-        "simulator.setPatientModel": { validate: optionalTypes(["modelId"], "string"), run: invoke("CTSimulatorService", "setPatientModel", function (p) { return [p.modelId]; }) },
-        "simulator.setPatientPosition": { validate: patientNumbers, run: invoke("CTSimulatorService", "setPatientPosition", function (p) { return [p]; }) },
-        "simulator.loadGlbModel": { validate: function (p) { return requireType(p, "path", "string"); }, run: invoke("CTSimulatorService", "loadGlbModel", function (p) { return [p]; }) },
-        "simulator.getState": { validate: noParams, run: invoke("CTSimulatorService", "getState") },
+        "simulator.setPatientVisible": define(booleanValue, invoke("CTSimulatorService", "setPatientVisible", function (p) { return [p.value]; }), "value: boolean", "患者モデルの表示を切替"),
+        "simulator.setPatientModel": define(optionalTypes(["modelId"], "string"), invoke("CTSimulatorService", "setPatientModel", function (p) { return [p.modelId]; }), "modelId?: string", "患者モデルを選択"),
+        "simulator.setPatientPosition": define(patientNumbers, invoke("CTSimulatorService", "setPatientPosition", function (p) { return [p]; }), "x/y/z?, rotX/rotY/rotZ?, scaleX/scaleY/scaleZ?: number", "患者モデルの9-DOFを変更"),
+        "simulator.loadGlbModel": define(function (p) { return requireType(p, "path", "string"); }, invoke("CTSimulatorService", "loadGlbModel", function (p) { return [p]; }), "path: string, id/attachTo?: string, position/rotation/scale?: Array", "GLBモデルを動的に読込"),
+        "simulator.getState": define(noParams, invoke("CTSimulatorService", "getState"), "なし", "シミュレータ全体状態を取得"),
 
-        "camera.startStream": { validate: streamParams, run: invoke("CameraSim", "startStream", function (p) { return [p]; }) },
-        "camera.stopStream": { validate: noParams, run: invoke("CameraSim", "stopStream") },
-        "camera.getStreamUrl": { validate: noParams, run: invoke("CameraSim", "getStreamUrl") },
-        "camera.setDistortion": { validate: distortionParams, run: invoke("CameraSim", "setDistortion", function (p) { return [p]; }) },
-        "camera.setTransform": { validate: cameraTransformParams, run: invoke("CameraSim", "setTransform", function (p) { return [p.position, p.lookAt]; }) },
-        "camera.setVirtualTransform": { validate: cameraTransformParams, run: invoke("CameraSim", "setVirtualTransform", function (p) { return [p.position, p.lookAt]; }) },
-        "camera.setFov": { validate: cameraAngleParams, run: invoke("CameraSim", "setFov", function (p) { return [typeof p.value === "number" ? p.value : p.fov]; }) },
-        "camera.setHFov": { validate: cameraAngleParams, run: invoke("CameraSim", "setHFov", function (p) { return [typeof p.value === "number" ? p.value : p.hfov]; }) },
-        "camera.getState": { validate: noParams, run: invoke("CameraSim", "getState") }
+        "camera.startStream": define(streamParams, invoke("CameraSim", "startStream", function (p) { return [p]; }), "codec/protocol?: string, fps/width/height/quality/hfov?: number", "映像配信を開始"),
+        "camera.stopStream": define(noParams, invoke("CameraSim", "stopStream"), "なし", "映像配信を停止"),
+        "camera.getStreamUrl": define(noParams, invoke("CameraSim", "getStreamUrl"), "なし", "配信URLを取得"),
+        "camera.setDistortion": define(distortionParams, invoke("CameraSim", "setDistortion", function (p) { return [p]; }), "enabled?: boolean, k1/k2/k3/k4/fx/fy/cx/cy/zoom?: number", "魚眼歪曲パラメータを更新"),
+        "camera.setTransform": define(cameraTransformParams, invoke("CameraSim", "setTransform", function (p) { return [p.position, p.lookAt]; }), "position/lookAt?: {x,y,z}", "メインカメラの位置と注視点を設定"),
+        "camera.setVirtualTransform": define(cameraTransformParams, invoke("CameraSim", "setVirtualTransform", function (p) { return [p.position, p.lookAt]; }), "position/lookAt?: {x,y,z}", "仮想カメラの位置と注視点を設定"),
+        "camera.setFov": define(cameraAngleParams, invoke("CameraSim", "setFov", function (p) { return [typeof p.value === "number" ? p.value : p.fov]; }), "value または fov: number", "垂直画角を設定"),
+        "camera.setHFov": define(cameraAngleParams, invoke("CameraSim", "setHFov", function (p) { return [typeof p.value === "number" ? p.value : p.hfov]; }), "value または hfov: number", "水平画角を設定"),
+        "camera.getState": define(noParams, invoke("CameraSim", "getState"), "なし", "カメラ・配信・歪曲状態を取得")
     };
 
     function get(command) {
         return command && definitions[command.target + "." + command.action];
     }
 
-    global.CTCommandCatalog = {
+    export const CTCommandCatalog = {
         definitions: definitions,
         get: get,
         validate: function validate(command) {
@@ -126,4 +128,3 @@
             return spec ? spec.run(context, command.params || {}) : { success: false, error: { code: "UNSUPPORTED_ACTION", message: "Unsupported command." } };
         }
     };
-})(typeof window !== "undefined" ? window : globalThis);

@@ -516,6 +516,7 @@ flowchart TB
   全ターゲット（gantry, couch, injector, simulator, camera）および全アクション（歪曲、9-DOF、ストリーミング、視点移動）の自動テストを実行。
 - **コマンド契約検証**:
   - Catalogの全定義がvalidatorとhandlerを持つこと
+  - `node scripts/sync-command-reference.js`で外部API表とCatalogの一致を検証すること
   - HW Settingsのaction名と`params.value`がCatalog契約に一致すること
   - 未対応Detector Rowsが`INVALID_DETECTOR_ROWS`になること
 - **依存境界検証**:
@@ -542,14 +543,16 @@ flowchart TB
 3. **状態・表示分離**: AppStateを純粋データ化し、購読・更新・外部snapshot生成をCTStoreへ集約。3D同期をCTSceneSyncへ分離。
 4. **Use Case分離**: 患者／モデル操作をCTSimulatorServiceへ、スキャンモード差分をSequence Runner内の宣言的Scan Planへ移動。
 5. **ES Module起動**: `assets/js/app/bootstrap.js`をComposition Rootとし、設定ロード後に互換モジュールを決定的順序で初期化。
+6. **イベント委譲**: HTMLおよび動的Batch UIのインラインイベントを`data-action`へ統一し、`CTUIController`の単一委譲ハンドラで処理。
+7. **制御CoreのES Module化**: Catalog／Command Bus／Protocol／Command Logを`export/import`化。UI・Sequence・External Gatewayから個別グローバル参照を除去。
+8. **仕様同期の自動化**: Catalog定義に文書メタデータを併置し、`docs/03_external_api_spec.md`のアクション表を自動生成・差分検査。
 
 ### 11.2 互換ブリッジ
 
-外部契約である`window.CTExternalGateway`は維持する。既存HTMLのインラインイベントと旧モジュール間参照を壊さず移行するため、内部サービスの一部は当面`window`へ公開される。新規コードはCatalog／Store／明示的Serviceを使用し、暗黙グローバルを追加しない。
+外部契約である`window.CTExternalGateway`は維持する。制御CoreはES Module境界へ移行済みで、3D表示系の互換モジュールは`CTSceneManager`、`CTRoomModel`、`CTGantryModel`等の名前空間単位で公開する。新規コードはCatalog／Store／明示的Serviceを使用し、個別関数の暗黙グローバルを追加しない。
 
-### 11.3 次段階
+### 11.3 継続改善
 
-- HTMLのインラインイベントを`data-action`＋イベント委譲へ置換
-- 互換モジュールを個別に`export/import`へ変換
-- 最終的にブラウザ公開グローバルを`window.CTExternalGateway`へ限定
-- `docs/03_external_api_spec.md`のアクション表をCommand Catalogから生成
+- Three.js表示系は既存モデル資産との互換性を保ちながら、変更対象になったモジュールから順に`export/import`へ移行する
+- 外部利用可能な公開契約は`window.CTExternalGateway`のみとし、内部名前空間は互換APIとして文書化しない
+- Catalog表を変更する場合は`node scripts/sync-command-reference.js --write`を実行し、通常検証では引数なしで差分を検出する

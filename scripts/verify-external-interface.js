@@ -4,7 +4,9 @@ const path = require("path");
 
 function loadScript(ctx, relPath) {
     const p = path.resolve(__dirname, "..", relPath);
-    const code = fs.readFileSync(p, "utf8");
+    const code = fs.readFileSync(p, "utf8")
+        .replace(/^import\s+[^;]+;\s*$/gm, "")
+        .replace(/\bexport\s+(?=(const|let|var|function|class)\b)/g, "");
     vm.runInContext(code, ctx, { filename: p });
 }
 
@@ -40,7 +42,7 @@ const ctx = vm.createContext(sandbox);
 loadScript(ctx, "assets/js/core/commands/command-catalog.js");
 loadScript(ctx, "assets/js/adapters/external/protocol-v1.js");
 
-const proto = ctx.CTProtocolV1;
+const proto = vm.runInContext("CTProtocolV1", ctx);
 assert(proto, "CTProtocolV1 is not available");
 
 const valid = proto.validateCommand({
@@ -101,6 +103,7 @@ loadScript(ctx, "assets/js/core/hw/injector-sim.js");
 loadScript(ctx, "assets/js/core/hw/camera-sim.js");
 loadScript(ctx, "assets/js/core/services/video-stream-service.js");
 loadScript(ctx, "assets/js/core/services/simulator-service.js");
+loadScript(ctx, "assets/js/core/services/command-log-service.js");
 loadScript(ctx, "assets/js/core/commands/command-bus.js");
 loadScript(ctx, "assets/js/adapters/external/external-gateway.js");
 
@@ -244,7 +247,7 @@ const invalidRowsRes = ctx.CTExternalGateway.send({
 assert(invalidRowsRes.success === false, "Expected unsupported detector rows to fail");
 assert(invalidRowsRes.error.code === "INVALID_DETECTOR_ROWS", "Expected INVALID_DETECTOR_ROWS");
 
-Object.entries(ctx.CTCommandCatalog.definitions).forEach(([name, definition]) => {
+Object.entries(vm.runInContext("CTCommandCatalog", ctx).definitions).forEach(([name, definition]) => {
     assert(typeof definition.validate === "function", `Expected validator for ${name}`);
     assert(typeof definition.run === "function", `Expected handler for ${name}`);
 });

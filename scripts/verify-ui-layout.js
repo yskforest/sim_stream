@@ -132,10 +132,8 @@ function verifyUILayout() {
 
     // 2. Verify UI Controller functions
     const requiredFunctions = [
-        "switchLeftTab",
         "switchRightTab",
         "switchDockTab",
-        "toggleLeftSidebar",
         "toggleRightSidebar",
         "toggleBottomDock",
         "setConsoleMockMode",
@@ -157,6 +155,16 @@ function verifyUILayout() {
     }
     console.log(`PASS: All ${requiredFunctions.length} UI controller navigation functions exist`);
 
+    const performanceJs = fs.readFileSync(path.resolve(__dirname, "../assets/js/core/services/performance-service.js"), "utf8");
+    const actionSources = [html, uiJs, performanceJs].join("\n");
+    const declaredActions = [...actionSources.matchAll(/data-action=["']([^"']+)["']/g)].map(match => match[1]);
+    const missingActions = [...new Set(declaredActions)].filter(action => !uiJs.includes(`action === "${action}"`));
+    if (missingActions.length > 0) {
+        console.error("FAIL: Delegated UI actions without handlers:", missingActions);
+        process.exit(1);
+    }
+    console.log(`PASS: All ${new Set(declaredActions).size} delegated UI actions have handlers`);
+
     // 3. Verify cross-file UI wiring that simple ID-presence checks cannot catch.
     const wiringChecks = [
         {
@@ -169,12 +177,12 @@ function verifyUILayout() {
         },
         {
             ok: uiJs.includes('global.CTSequenceRunner.isRunning()') &&
-                uiJs.includes('runBtn.onclick = isAutoRun ? global.stopAutoSequence : global.runAutoSequence'),
-            message: 'Sequence UI reads runner state and switches the RUN button to the stop handler'
+                html.includes('data-action="toggle-sequence"') && uiJs.includes('sequence.stopAutoSequence() : sequence.runAutoSequence()'),
+            message: 'Sequence UI reads runner state and delegates the RUN/STOP action'
         },
         {
-            ok: html.includes('onclick="toggleWorldAxes()"') && sceneManagerJs.includes('toggleWorldAxes: toggleAxesHelper'),
-            message: 'World-axes HTML handler has a compatible scene-manager export'
+            ok: html.includes('data-action="toggle-axes"') && uiJs.includes('scene.toggleAxesHelper()'),
+            message: 'World-axes control uses delegated actions and the scene-manager namespace'
         },
         {
             ok: sceneManagerJs.includes('if (demandFrames <= 0) return;') && !sceneManagerJs.includes('if (isEco && demandFrames <= 0) return;'),

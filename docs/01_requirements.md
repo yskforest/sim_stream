@@ -85,3 +85,5 @@
 10. `scripts/verify-external-interface.js` による外部I/Fの自動検証テストがすべて合格する
 11. Command Catalogに登録された全コマンドがvalidatorとhandlerを持ち、UIと外部I/Fで同じ検証・実行経路を使用する
 12. `scripts/verify-refactored-architecture.js` により、SequenceからUI/Sceneへの逆依存、UIから3Dモデルへの直接同期、旧DOMスクリプトローダーが存在しないことを検証できる
+13. HTMLおよび動的UIにインラインイベント属性・DOMイベントプロパティ代入がなく、`data-action`によるイベント委譲で操作できる
+14. `docs/03_external_api_spec.md`のコマンド表がCommand Catalogから生成され、`scripts/sync-command-reference.js`で差分を検出できる

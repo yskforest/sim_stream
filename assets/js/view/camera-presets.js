@@ -1,6 +1,6 @@
 function setCameraView(viewType) {
     if (!viewType.startsWith("focus_")) {
-        hideInfoDialog();
+        if (window.CTUIController) window.CTUIController.hideInfo();
     }
 
     var isFree = (viewType === "free");
@@ -29,7 +29,7 @@ function setCameraView(viewType) {
 
     // Free / FPS 間の切替では現在の位置と向きを保持する
     if (isFree || isFPS) {
-        if (window.requestRenderFrame) window.requestRenderFrame(15);
+        if (window.CTSceneManager) window.CTSceneManager.requestRenderFrame(15);
         return;
     }
 
@@ -41,7 +41,7 @@ function setCameraView(viewType) {
 
     if (typeof TWEEN !== "undefined") {
         new TWEEN.Tween(cam.position).to(target.pos, 1000).easing(TWEEN.Easing.Cubic.Out)
-            .onUpdate(function() { if (window.requestRenderFrame) window.requestRenderFrame(5); })
+            .onUpdate(function() { if (window.CTSceneManager) window.CTSceneManager.requestRenderFrame(5); })
             .start();
         if (ctrl) {
             new TWEEN.Tween(ctrl.target)
@@ -49,7 +49,7 @@ function setCameraView(viewType) {
                 .easing(TWEEN.Easing.Cubic.Out)
                 .onUpdate(function() {
                     if (ctrl) ctrl.update();
-                    if (window.requestRenderFrame) window.requestRenderFrame(5);
+                    if (window.CTSceneManager) window.CTSceneManager.requestRenderFrame(5);
                 })
                 .start();
         }
@@ -59,7 +59,7 @@ function setCameraView(viewType) {
             ctrl.target.copy(target.lookAt);
             ctrl.update();
         }
-        if (window.requestRenderFrame) window.requestRenderFrame(15);
+        if (window.CTSceneManager) window.CTSceneManager.requestRenderFrame(15);
     }
 }
 
@@ -108,4 +108,4 @@ function getCameraTarget(type) {
     }
 }
 
-Object.assign(window, { setCameraView, getCameraTarget });
+window.CTCameraPresets = { setView: setCameraView, getTarget: getCameraTarget };

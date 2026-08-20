@@ -193,4 +193,4 @@ function buildServerRack() {
     targetScene.add(rackGroup);
 }
 
-Object.assign(window, { buildRoom, buildControlRoom, buildServerRack });
+window.CTRoomModel = { buildRoom, buildControlRoom, buildServerRack };

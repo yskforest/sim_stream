@@ -22,24 +22,24 @@
 
             <!-- Central Mode Switcher -->
             <div class="mode-pill-group" title="Switch between built-in UI Mock and External Console Application Control">
-                <button id="pill-mode-mock" class="mode-pill-btn active" onclick="setConsoleMockMode(true)">Mock Console</button>
-                <button id="pill-mode-external" class="mode-pill-btn" onclick="setConsoleMockMode(false)">External Console</button>
+                <button id="pill-mode-mock" class="mode-pill-btn active" data-action="console-mode" data-enabled="true">Mock Console</button>
+                <button id="pill-mode-external" class="mode-pill-btn" data-action="console-mode" data-enabled="false">External Console</button>
             </div>
 
             <!-- Top Action Buttons -->
             <div class="flex items-center gap-2">
-                <button id="btn-eco-toggle" class="top-bar-btn border-emerald-500/50 text-emerald-300 hover:bg-emerald-950/60" onclick="toggleEcoMode()" title="Toggle Eco Mode (Lower CPU/GPU load)">
+                <button id="btn-eco-toggle" class="top-bar-btn border-emerald-500/50 text-emerald-300 hover:bg-emerald-950/60" data-action="toggle-eco" title="Toggle Eco Mode (Lower CPU/GPU load)">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                     ECO
                 </button>
-                <button id="btn-hud-toggle" class="top-bar-btn" onclick="CTPerformanceService.toggleHud()" title="Toggle Performance Overlay">
+                <button id="btn-hud-toggle" class="top-bar-btn" data-action="toggle-performance" title="Toggle Performance Overlay">
                     PERF
                 </button>
                 <div class="h-4 w-px bg-slate-700 mx-1"></div>
-                <button id="btn-toggle-dock" class="top-bar-btn active" onclick="toggleBottomDock()" title="Toggle Bottom Console / Monitor Dock">
+                <button id="btn-toggle-dock" class="top-bar-btn active" data-action="toggle-bottom-dock" title="Toggle Bottom Console / Monitor Dock">
                     ▼ Console & Monitor Dock
                 </button>
-                <button id="btn-toggle-right-sidebar" class="top-bar-btn active" onclick="toggleRightSidebar()" title="Toggle Right Settings Sidebar">
+                <button id="btn-toggle-right-sidebar" class="top-bar-btn active" data-action="toggle-right-sidebar" title="Toggle Right Settings Sidebar">
                     Settings ▶
                 </button>
             </div>
@@ -48,10 +48,10 @@
         <!-- Right Sidebar (View, Camera, Lens, Patient) -->
         <aside id="right-sidebar" class="sidebar-panel">
             <div class="sidebar-tabs">
-                <button class="tab-btn active" data-tab="view" onclick="switchRightTab('view')">3D View</button>
-                <button class="tab-btn tab-purple" data-tab="lens" onclick="switchRightTab('lens')">Lens Fisheye</button>
-                <button class="tab-btn" data-tab="stream" onclick="switchRightTab('stream')">Stream</button>
-                <button class="tab-btn" data-tab="patient" onclick="switchRightTab('patient')">Patient 9-DOF</button>
+                <button class="tab-btn active" data-action="switch-right-tab" data-tab="view">3D View</button>
+                <button class="tab-btn tab-purple" data-action="switch-right-tab" data-tab="lens">Lens Fisheye</button>
+                <button class="tab-btn" data-action="switch-right-tab" data-tab="stream">Stream</button>
+                <button class="tab-btn" data-action="switch-right-tab" data-tab="patient">Patient 9-DOF</button>
             </div>
 
             <div class="sidebar-content">
@@ -75,7 +75,6 @@
                         </select>
                         <select
                             id="select-focus"
-                            onchange="handleFocusChange(this.value)"
                             class="w-full bg-slate-800 text-white text-xs p-1.5 rounded border border-slate-600"
                         >
                             <option value="" disabled selected>Select Focus Target...</option>
@@ -108,14 +107,14 @@
                         <div class="flex gap-2">
                             <button
                                 id="btn-gantry-opaque"
-                                onclick="setGantryOpacity(false)"
+                                data-action="set-gantry-opacity" data-enabled="false"
                                 class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
                             >
                                 Opaque
                             </button>
                             <button
                                 id="btn-gantry-trans"
-                                onclick="setGantryOpacity(true)"
+                                data-action="set-gantry-opacity" data-enabled="true"
                                 class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs py-1.5 rounded border border-slate-600"
                             >
                                 Translucent
@@ -124,14 +123,14 @@
                         <div class="flex gap-2">
                             <button
                                 id="btn-laser-toggle"
-                                onclick="toggleLaserAlignment()"
+                                data-action="toggle-laser"
                                 class="flex-1 bg-red-700 hover:bg-red-600 text-xs py-1.5 rounded border border-red-500 font-bold"
                             >
                                 Laser Crosshair
                             </button>
                             <select
                                 id="select-graphics-quality"
-                                onchange="setGraphicsQuality(this.value)"
+                                data-action="graphics-quality" data-event="change"
                                 class="flex-1 bg-slate-800 text-white text-xs p-1.5 rounded border border-slate-600"
                             >
                                 <option value="high" selected>High (ACES/2x)</option>
@@ -140,28 +139,28 @@
                         </div>
                         <button
                             id="btn-xray-toggle"
-                            onclick="toggleXRay()"
+                            data-action="toggle-xray"
                             class="w-full bg-slate-800 hover:bg-slate-700 text-xs py-1.5 rounded border border-slate-600"
                         >
                             Show X-Ray Beam
                         </button>
                         <button
                             id="btn-phantom-toggle"
-                            onclick="toggleWaterPhantom()"
+                            data-action="toggle-phantom"
                             class="w-full bg-slate-800 hover:bg-slate-700 text-xs py-1.5 rounded border border-slate-600"
                         >
                             Toggle Water Phantom
                         </button>
                         <button
                             id="btn-axes-toggle"
-                            onclick="toggleWorldAxes()"
+                            data-action="toggle-axes"
                             class="w-full bg-slate-800 hover:bg-slate-700 text-xs py-1.5 rounded border border-slate-600 text-amber-400 font-bold"
                         >
                             Toggle XYZ Axes (Origin)
                         </button>
                         <button
                             id="btn-patient-toggle"
-                            onclick="togglePatient()"
+                            data-action="toggle-patient"
                             class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded border border-blue-500 font-bold"
                         >
                             Hide Patient
@@ -175,13 +174,13 @@
                         <div class="card-title card-title-purple">
                             <span>OpenCV Fisheye Distortion</span>
                             <label class="relative inline-flex items-center cursor-pointer" title="Enable/Disable Camera Lens Distortion">
-                                <input type="checkbox" id="input-distortion-enable" class="sr-only peer" onchange="toggleFisheye(this.checked)" />
+                                <input type="checkbox" id="input-distortion-enable" class="sr-only peer" data-action="set-fisheye" data-event="change" />
                                 <div class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
                             </label>
                         </div>
                         <button
                             id="btn-fisheye-toggle"
-                            onclick="toggleFisheye()"
+                            data-action="toggle-fisheye"
                             class="w-full bg-purple-900 hover:bg-purple-800 text-xs py-1.5 rounded border border-purple-700 font-bold transition shadow"
                         >
                             Toggle Fisheye Effect
@@ -192,7 +191,7 @@
                         <label class="text-[11px] text-slate-400 block">Lens Distortion Preset</label>
                         <select
                             id="select-distortion-preset"
-                            onchange="onDistortionPresetChange(this.value)"
+                            data-action="distortion-preset" data-event="change"
                             class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white text-xs"
                         >
                             <option value="standard" selected>Standard Fisheye (k1: 0.20, k2: 0.05)</option>
@@ -212,25 +211,25 @@
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>k1:</span><span id="val-distortion-k1" class="font-mono text-purple-300">0.20</span>
                                 </div>
-                                <input type="range" id="slider-distortion-k1" min="-0.8" max="0.8" step="0.01" value="0.20" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-k1" min="-0.8" max="0.8" step="0.01" value="0.20" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>k2:</span><span id="val-distortion-k2" class="font-mono text-purple-300">0.05</span>
                                 </div>
-                                <input type="range" id="slider-distortion-k2" min="-0.5" max="0.5" step="0.01" value="0.05" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-k2" min="-0.5" max="0.5" step="0.01" value="0.05" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>k3:</span><span id="val-distortion-k3" class="font-mono text-purple-300">0.00</span>
                                 </div>
-                                <input type="range" id="slider-distortion-k3" min="-0.3" max="0.3" step="0.01" value="0.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-k3" min="-0.3" max="0.3" step="0.01" value="0.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>k4:</span><span id="val-distortion-k4" class="font-mono text-purple-300">0.00</span>
                                 </div>
-                                <input type="range" id="slider-distortion-k4" min="-0.2" max="0.2" step="0.01" value="0.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-k4" min="-0.2" max="0.2" step="0.01" value="0.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                         </div>
                     </div>
@@ -244,35 +243,35 @@
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Focal (fx):</span><span id="val-distortion-fx" class="font-mono text-purple-300">1.00</span>
                                 </div>
-                                <input type="range" id="slider-distortion-fx" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-fx" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Center (cx):</span><span id="val-distortion-cx" class="font-mono text-purple-300">0.50</span>
                                 </div>
-                                <input type="range" id="slider-distortion-cx" min="0.2" max="0.8" step="0.01" value="0.50" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-cx" min="0.2" max="0.8" step="0.01" value="0.50" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Focal (fy):</span><span id="val-distortion-fy" class="font-mono text-purple-300">1.00</span>
                                 </div>
-                                <input type="range" id="slider-distortion-fy" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-fy" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Center (cy):</span><span id="val-distortion-cy" class="font-mono text-purple-300">0.50</span>
                                 </div>
-                                <input type="range" id="slider-distortion-cy" min="0.2" max="0.8" step="0.01" value="0.50" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                                <input type="range" id="slider-distortion-cy" min="0.2" max="0.8" step="0.01" value="0.50" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                             </div>
                         </div>
                         <div class="pt-1">
                             <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                 <span>Zoom Scale:</span><span id="val-distortion-zoom" class="font-mono text-purple-300">1.00</span>
                             </div>
-                            <input type="range" id="slider-distortion-zoom" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" oninput="onDistortionParamInput()" />
+                            <input type="range" id="slider-distortion-zoom" min="0.5" max="2.0" step="0.05" value="1.00" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-purple-500" data-action="distortion-input" data-event="input" />
                         </div>
                         <div class="flex justify-end pt-1">
-                            <button onclick="resetDistortionParamsUI()" class="text-[10px] text-purple-400 hover:text-purple-300 hover:underline">Reset Parameters</button>
+                            <button data-action="reset-distortion" class="text-[10px] text-purple-400 hover:text-purple-300 hover:underline">Reset Parameters</button>
                         </div>
                     </div>
                 </div>
@@ -360,7 +359,7 @@
                         </div>
                         <select
                             id="select-patient-glb"
-                            onchange="changePatientGlbModel(this.value)"
+                            data-action="patient-model" data-event="change"
                             class="w-full bg-slate-800 text-white text-xs p-1.5 rounded border border-slate-600"
                         ></select>
                     </div>
@@ -368,7 +367,7 @@
                     <div class="card-section space-y-2.5">
                         <div class="card-title">
                             <span>9-DOF Transform Controls</span>
-                            <button onclick="resetPatientPositionUI()" class="text-[10px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset 9-DOF</button>
+                            <button data-action="reset-patient-transform" class="text-[10px] text-blue-400 hover:text-blue-300 hover:underline font-normal">Reset 9-DOF</button>
                         </div>
 
                         <!-- Position (X, Y, Z) -->
@@ -377,23 +376,23 @@
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>X (Left/Right):</span>
-                                    <input type="number" id="input-patient-pos-x" value="0.00" step="0.05" min="-5" max="5" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('x')" />
+                                    <input type="number" id="input-patient-pos-x" value="0.00" step="0.05" min="-5" max="5" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="x" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-x" min="-2.0" max="2.0" step="0.01" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('x')" />
+                                <input type="range" id="slider-patient-pos-x" min="-2.0" max="2.0" step="0.01" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="x" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Y (Height):</span>
-                                    <input type="number" id="input-patient-pos-y" value="-0.10" step="0.05" min="-5" max="5" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('y')" />
+                                    <input type="number" id="input-patient-pos-y" value="-0.10" step="0.05" min="-5" max="5" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="y" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-y" min="-1.5" max="1.5" step="0.01" value="-0.1" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('y')" />
+                                <input type="range" id="slider-patient-pos-y" min="-1.5" max="1.5" step="0.01" value="-0.1" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="y" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Z (Forward/Back):</span>
-                                    <input type="number" id="input-patient-pos-z" value="0.45" step="0.05" min="-5" max="5" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('z')" />
+                                    <input type="number" id="input-patient-pos-z" value="0.45" step="0.05" min="-5" max="5" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="z" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-z" min="-2.0" max="2.0" step="0.01" value="0.45" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('z')" />
+                                <input type="range" id="slider-patient-pos-z" min="-2.0" max="2.0" step="0.01" value="0.45" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="z" data-event="input" />
                             </div>
                         </div>
 
@@ -403,23 +402,23 @@
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Rot X (Pitch):</span>
-                                    <input type="number" id="input-patient-pos-rotX" value="-90" step="1" min="-360" max="360" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotX')" />
+                                    <input type="number" id="input-patient-pos-rotX" value="-90" step="1" min="-360" max="360" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="rotX" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-rotX" min="-180" max="180" step="1" value="-90" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotX')" />
+                                <input type="range" id="slider-patient-pos-rotX" min="-180" max="180" step="1" value="-90" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="rotX" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Rot Y (Yaw):</span>
-                                    <input type="number" id="input-patient-pos-rotY" value="0" step="1" min="-360" max="360" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotY')" />
+                                    <input type="number" id="input-patient-pos-rotY" value="0" step="1" min="-360" max="360" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="rotY" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-rotY" min="-180" max="180" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotY')" />
+                                <input type="range" id="slider-patient-pos-rotY" min="-180" max="180" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="rotY" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Rot Z (Roll):</span>
-                                    <input type="number" id="input-patient-pos-rotZ" value="0" step="1" min="-360" max="360" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('rotZ')" />
+                                    <input type="number" id="input-patient-pos-rotZ" value="0" step="1" min="-360" max="360" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="rotZ" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-rotZ" min="-180" max="180" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('rotZ')" />
+                                <input type="range" id="slider-patient-pos-rotZ" min="-180" max="180" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="rotZ" data-event="input" />
                             </div>
                         </div>
 
@@ -429,23 +428,23 @@
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Scale X:</span>
-                                    <input type="number" id="input-patient-pos-scaleX" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('scaleX')" />
+                                    <input type="number" id="input-patient-pos-scaleX" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="scaleX" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-scaleX" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('scaleX')" />
+                                <input type="range" id="slider-patient-pos-scaleX" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="scaleX" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Scale Y:</span>
-                                    <input type="number" id="input-patient-pos-scaleY" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('scaleY')" />
+                                    <input type="number" id="input-patient-pos-scaleY" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="scaleY" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-scaleY" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('scaleY')" />
+                                <input type="range" id="slider-patient-pos-scaleY" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="scaleY" data-event="input" />
                             </div>
                             <div>
                                 <div class="flex justify-between text-slate-400 text-[10px] mb-0.5">
                                     <span>Scale Z:</span>
-                                    <input type="number" id="input-patient-pos-scaleZ" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" oninput="onPatientPosInputChange('scaleZ')" />
+                                    <input type="number" id="input-patient-pos-scaleZ" value="1.00" step="0.05" min="0.01" max="10" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 text-right font-mono text-white text-[10px]" data-action="patient-transform" data-key="scaleZ" data-event="input" />
                                 </div>
-                                <input type="range" id="slider-patient-pos-scaleZ" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" oninput="onPatientPosSliderChange('scaleZ')" />
+                                <input type="range" id="slider-patient-pos-scaleZ" min="0.1" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded appearance-none cursor-pointer" data-action="patient-transform" data-key="scaleZ" data-event="input" />
                             </div>
                         </div>
                     </div>
@@ -462,7 +461,7 @@
                                 class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white flex-1 text-xs"
                             />
                             <button
-                                onclick="spawnCustomGlbFromInput()"
+                                data-action="spawn-glb"
                                 class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1 rounded text-xs transition"
                             >
                                 Load
@@ -475,12 +474,12 @@
 
         <!-- Bottom Status & Console Dock -->
         <footer id="bottom-dock">
-            <div class="dock-header" onclick="toggleBottomDock()">
+            <div class="dock-header" data-action="toggle-bottom-dock">
                 <div class="flex items-center gap-2">
-                    <button class="tab-btn active" data-tab="scan" onclick="event.stopPropagation(); switchDockTab('scan')">Scan Console</button>
-                    <button class="tab-btn" data-tab="hw" onclick="event.stopPropagation(); switchDockTab('hw')">HW Settings</button>
-                    <button class="tab-btn" data-tab="monitor" onclick="event.stopPropagation(); switchDockTab('monitor')">HW Monitor</button>
-                    <button class="tab-btn" data-tab="log" onclick="event.stopPropagation(); switchDockTab('log')">Command Log</button>
+                    <button class="tab-btn active" data-action="switch-dock-tab" data-tab="scan">Scan Console</button>
+                    <button class="tab-btn" data-action="switch-dock-tab" data-tab="hw">HW Settings</button>
+                    <button class="tab-btn" data-action="switch-dock-tab" data-tab="monitor">HW Monitor</button>
+                    <button class="tab-btn" data-action="switch-dock-tab" data-tab="log">Command Log</button>
                 </div>
                 <div class="flex items-center gap-2 text-slate-400 text-xs">
                     <span id="status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-slate-300 border border-slate-600">STANDBY</span>
@@ -515,7 +514,7 @@
                                 </div>
                                 <button
                                     id="btn-scan-toggle"
-                                    onclick="toggleScan()"
+                                    data-action="toggle-scan"
                                     class="w-full bg-green-600 hover:bg-green-500 text-sm py-2 rounded-md font-bold shadow-lg transition"
                                 >
                                     Start Scan
@@ -539,14 +538,14 @@
                             <div class="flex gap-1.5 pt-2 border-t border-slate-800">
                                 <button
                                     id="btn-add-batch"
-                                    onclick="addScanBatch()"
+                                    data-action="add-batch"
                                     class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-semibold py-1.5 rounded text-xs transition"
                                 >
                                     + Add Batch
                                 </button>
                                 <button
                                     id="btn-run-sequence"
-                                    onclick="runAutoSequence()"
+                                    data-action="toggle-sequence"
                                     class="flex-[2] bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-bold py-1.5 rounded text-xs shadow-md transition"
                                 >
                                     RUN Sequence
@@ -718,7 +717,7 @@
         <div id="info-dialog" class="fixed top-16 left-1/2 -translate-x-1/2 w-96 bg-slate-900/95 border border-blue-500/50 rounded-xl p-4 shadow-2xl backdrop-blur-md z-50 hidden pointer-events-auto">
             <div class="flex justify-between items-start mb-2 border-b border-slate-700 pb-2">
                 <h3 id="info-dialog-title" class="text-sm font-bold text-blue-400">Target Name</h3>
-                <button onclick="hideInfoDialog()" class="text-slate-400 hover:text-white text-lg leading-none font-bold">
+                <button data-action="hide-info" class="text-slate-400 hover:text-white text-lg leading-none font-bold">
                     &times;
                 </button>
             </div>

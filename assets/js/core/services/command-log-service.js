@@ -1,4 +1,3 @@
-(function attachCommandLogService(global) {
     var MAX_ENTRIES = 500;
     var entries = [];
     var listeners = [];
@@ -21,7 +20,7 @@
         emit(entry);
     }
 
-    var service = {
+    export const CTCommandLogService = {
         add: function add(entry) {
             push({
                 timestamp: new Date().toISOString(),
@@ -51,6 +50,3 @@
             return JSON.stringify(entries, null, 2);
         },
     };
-
-    global.CTCommandLogService = service;
-})(window);

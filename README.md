@@ -38,7 +38,10 @@ npx serve .
 node scripts/verify-external-interface.js
 node scripts/verify-refactored-architecture.js
 node scripts/verify-ui-layout.js
+node scripts/sync-command-reference.js
 ```
+
+コマンド追加・説明変更後は`node scripts/sync-command-reference.js --write`で外部API表を再生成します。
 
 ### 2.4 リアルタイム動画配信サーバーの起動 (HTTP MJPEG / RTSP)
 `http://127.0.0.1:8080/live/ct-camera.mjpg` で外部ブラウザやVLCプレイヤーから閲覧する場合は、ストリーミングサーバーを起動します。
