@@ -27,8 +27,11 @@ function setCameraView(viewType) {
         sel.value = viewType;
     }
 
-    // FPS モードへの切替時は自由歩行操作へ移行
-    if (isFPS) return;
+    // Free / FPS 間の切替では現在の位置と向きを保持する
+    if (isFree || isFPS) {
+        if (window.requestRenderFrame) window.requestRenderFrame(15);
+        return;
+    }
 
     var target = getCameraTarget(viewType);
     if (!target) return;

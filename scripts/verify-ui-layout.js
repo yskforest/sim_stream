@@ -16,6 +16,12 @@ function verifyUILayout() {
     const sceneManagerPath = path.resolve(__dirname, "../assets/js/view/scene-manager.js");
     const sceneManagerJs = fs.readFileSync(sceneManagerPath, "utf-8");
 
+    const fpsControlsPath = path.resolve(__dirname, "../assets/js/view/fps-controls.js");
+    const fpsControlsJs = fs.readFileSync(fpsControlsPath, "utf-8");
+
+    const cameraPresetsPath = path.resolve(__dirname, "../assets/js/view/camera-presets.js");
+    const cameraPresetsJs = fs.readFileSync(cameraPresetsPath, "utf-8");
+
     // 1. Verify Top App Bar & Switcher
     const requiredIds = [
         "top-app-bar",
@@ -173,6 +179,22 @@ function verifyUILayout() {
         {
             ok: sceneManagerJs.includes('if (demandFrames <= 0) return;') && !sceneManagerJs.includes('if (isEco && demandFrames <= 0) return;'),
             message: 'Demand-driven rendering skips idle frames in every graphics mode'
+        },
+        {
+            ok: sceneManagerJs.includes('if (isFpsActive) requestRenderFrame(2);') &&
+                fpsControlsJs.includes('requestFPSRender(2);'),
+            message: 'FPS mode continuously requests frames from the demand-driven renderer'
+        },
+        {
+            ok: cameraPresetsJs.includes('if (isFree || isFPS)') &&
+                !html.includes('onchange="setCameraView(this.value)"'),
+            message: 'Free/FPS transitions preserve the current view and camera selection has one change handler'
+        },
+        {
+            ok: fpsControlsJs.includes('window.addEventListener("blur", resetInputState') &&
+                fpsControlsJs.includes('document.addEventListener("visibilitychange"') &&
+                fpsControlsJs.includes('window.controls.target.copy(target)'),
+            message: 'FPS input resets on focus loss and keeps the OrbitControls target synchronized'
         },
         {
             ok: uiJs.includes('byId("val-distortion-" + k)') && !uiJs.includes('updateDistortionParameters'),

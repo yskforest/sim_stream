@@ -165,6 +165,8 @@
         if (typeof TWEEN !== "undefined") TWEEN.update();
         var gantry = global.AppState && global.AppState.gantry;
         if (gantry && (gantry.isScanning || gantry.rotorSpeed > 0 || gantry.activeBatchIndex >= 0)) requestRenderFrame(10);
+        var isFpsActive = global.CTFPSControls && typeof global.CTFPSControls.isEnabled === "function" && global.CTFPSControls.isEnabled();
+        if (isFpsActive) requestRenderFrame(2);
         if (global.controls && global.controls.update) global.controls.update();
 
         if (demandFrames <= 0) return;
